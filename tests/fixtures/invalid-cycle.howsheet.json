@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-cycle",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "순환 분기",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-a",
+      "order": 0,
+      "title": "A",
+      "blocks": [
+        {
+          "id": "block-a",
+          "order": 0,
+          "type": "checklist",
+          "items": [
+            {
+              "id": "chk-a",
+              "label": "계속한다",
+              "required": false
+            }
+          ]
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [
+        {
+          "id": "rule-a-exit",
+          "sourceBlockId": "block-a",
+          "operator": "checked",
+          "targetStepId": "step-exit",
+          "priority": 0
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-b"
+    },
+    {
+      "id": "step-b",
+      "order": 1,
+      "title": "B",
+      "blocks": [
+        {
+          "id": "block-b",
+          "order": 0,
+          "type": "text",
+          "markdown": "B"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-c"
+    },
+    {
+      "id": "step-c",
+      "order": 2,
+      "title": "C",
+      "blocks": [
+        {
+          "id": "block-c",
+          "order": 0,
+          "type": "checklist",
+          "items": [
+            {
+              "id": "chk-c",
+              "label": "다시 시도한다",
+              "required": false
+            }
+          ]
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [
+        {
+          "id": "rule-c-back",
+          "sourceBlockId": "block-c",
+          "operator": "checked",
+          "targetStepId": "step-a",
+          "priority": 0
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false
+    },
+    {
+      "id": "step-exit",
+      "order": 3,
+      "title": "종료",
+      "blocks": [
+        {
+          "id": "block-exit",
+          "order": 0,
+          "type": "text",
+          "markdown": "끝났습니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    }
+  ],
+  "startStepId": "step-a",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

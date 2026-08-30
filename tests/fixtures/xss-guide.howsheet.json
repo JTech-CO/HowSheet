@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-xss",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "<script>alert('title')</script> &     </script>",
+    "language": "ko-KR",
+    "summary": "  </script>",
+    "audience": "<script>alert('audience')</script>"
+  },
+  "preparation": [],
+  "warnings": [
+    {
+      "id": "warn-1",
+      "severity": "danger",
+      "title": "</script><script>alert('warn')</script>",
+      "body": "<img src=x onerror=alert(1)>",
+      "requiresAcknowledgement": true,
+      "acknowledgementLabel": "<b>확인</b>",
+      "order": 0
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "<img src=x onerror=alert('step')>",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "<script>alert('md')</script>\n\n[클릭](javascript:alert('link'))\n\n[데이터 URL](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)\n\n![이미지](x\" onerror=\"alert('img'))\n\n<div onmouseover=\"alert('raw')\">raw html</div>\n\n<svg onload=alert('svg')><circle r=\"1\"/></svg>\n\n<img src=\"data:image/svg+xml,%3Csvg onload%3Dalert(1)%3E\">\n\n<iframe srcdoc=\"<script>alert('srcdoc')</script>\"></iframe>\n\n<a href=\"vbscript:alert(1)\">vbscript</a>\n\n정상 링크: [문서](https://example.com)\n\n줄 구분자 U+2028: 문단 구분자 U+2029: 끝"
+        },
+        {
+          "id": "block-2",
+          "order": 1,
+          "type": "code",
+          "language": "html",
+          "code": "</script><script>alert('escape')</script>\n// U+2028:  U+2029: ",
+          "copyLabel": "복사"
+        },
+        {
+          "id": "block-3",
+          "order": 2,
+          "type": "link",
+          "label": "<b>굵게</b> & \"따옴표\"",
+          "url": "https://example.com/?q=%3Cscript%3E",
+          "description": "</script> 를 포함한 설명"
+        },
+        {
+          "id": "block-4",
+          "order": 3,
+          "type": "image",
+          "assetId": "asset-xss",
+          "alt": "<script>alert('alt')</script>",
+          "caption": "</script> 캡션"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "<script>alert('success')</script>"
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "</script>",
+    "message": "<script>alert('done')</script>",
+    "showSummary": true
+  },
+  "assets": [
+    {
+      "id": "asset-xss",
+      "fileName": "\"><script>alert(1)</script>.png",
+      "mimeType": "image/png",
+      "byteSize": 1024,
+      "checksum": "sha256-deadbeef"
+    }
+  ],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

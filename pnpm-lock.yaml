@@ -17,6 +17,9 @@ importers:
       react-router-dom:
         specifier: 7.18.3
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zod:
+        specifier: 4.5.2
+        version: 4.5.2
     devDependencies:
       '@eslint/js':
         specifier: 9.39.5

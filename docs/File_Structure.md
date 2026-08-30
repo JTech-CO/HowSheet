@@ -312,7 +312,7 @@ storage  ←  store              styles  ←  전 계층 (토큰 참조)
 - `dangerouslySetInnerHTML`을 사용하는 모듈은 프로젝트 전체에서 `components/content/MarkdownText/` **한 곳뿐**이다. (기술 §7.1-2)
 - 살균 자체는 프레임워크에 의존하지 않는 `features/sanitize/`가 수행한다. React 화면은 `MarkdownText`를 통해, 내보낸 HTML은 `reader-runtime/reader-renderer.ts`가 직접 이 순수 함수를 호출한다.
 - 이 분리가 없으면 리더 런타임이 살균기를 복제해야 하고, 그 순간 기술 §7.1-2의 "경계 한 곳" 규칙과 INV-07이 동시에 깨진다.
-- URL 프로토콜 허용 목록은 `utils/url.ts`가 단독으로 소유한다. 링크 렌더러와 Markdown 매퍼가 각자 판정하지 않는다.
+- URL 프로토콜 허용 목록(`ALLOWED_URL_PROTOCOLS`)과 판정 함수는 `domain/guide.types.ts`·`domain/guide.schema.ts`가 단독으로 소유한다. §2.2.4의 필드 검증 규칙이라 스키마가 파싱 시점에 판정해야 하고, §3.2-1이 domain의 외부 계층 import를 금지하므로 `utils/`에 둘 수 없다. `utils/url.ts`는 도메인 상수를 가져다 쓰는 브라우저측 헬퍼만 담는다. 링크 렌더러와 Markdown 매퍼가 각자 판정하지 않는다.
 
 ### 3.4. 번들 분리
 
@@ -478,7 +478,7 @@ format:check → lint → typecheck → test:unit → test:integration → test:
 
 ## 7. 확정된 구조 결정
 
-아래 9건은 기술 백서와 디자인 백서가 실제로 충돌했거나 두 백서 모두 침묵하던 항목이다. **2026년 8월 30일 사용자 승인으로 전부 권장안대로 확정했다.** §1~§6의 트리와 규칙은 이 결정을 이미 반영한 상태이므로, 구현 시에는 §1~§6을 그대로 따르면 된다. 이 절은 그 배치가 왜 그렇게 됐는지에 대한 근거 기록이다.
+아래 항목은 기술 백서와 디자인 백서가 실제로 충돌했거나 두 백서 모두 침묵하던 것들이다. D-01~~D-09는 통합 시점에, D-10 이후는 구현 중에 드러난 것으로 각각 승인을 받았다. **2026년 8월 30일 사용자 승인으로 전부 권장안대로 확정했다.** §1~~§6의 트리와 규칙은 이 결정을 이미 반영한 상태이므로, 구현 시에는 §1~§6을 그대로 따르면 된다. 이 절은 그 배치가 왜 그렇게 됐는지에 대한 근거 기록이다.
 
 M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴다. 이후 이 결정을 바꾸려면 §10의 변경 절차를 따른다.
 
@@ -550,6 +550,18 @@ M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴�
 - **결정**: `artifacts/qa/phase-reports/`만 커밋한다. `screenshots/`, `accessibility/`, `performance/`, `security/`, `exports/`는 `.gitignore`에 넣고 CI 아티팩트로 업로드한다.
 - **근거**: 하네스 §0.11은 증거를 `artifacts/qa/`에 두게 하지만 §0.6은 대용량 HTML·비디오·임시 이미지 커밋을 금지한다. phase 보고서와 릴리스 후보 요약은 텍스트이고 세션 인계에 필요하므로 커밋 대상이다.
 - **후속**: M6 벤치마크 수치, M9 export 측정치, M12 체크섬처럼 **판정 근거가 되는 수치는 보고서 본문에 적는다.** `performance/`나 `exports/`의 원본 파일이 커밋되지 않으므로, 파일만 남기고 수치를 적지 않으면 다음 세션이 재현할 수 없다.
+
+### D-10. URL 프로토콜 허용 목록의 소유자 — `domain` 확정
+
+- **결정**: `ALLOWED_URL_PROTOCOLS`와 판정 함수 `isAllowedUrl`을 `domain/guide.types.ts`·`domain/guide.schema.ts`가 소유한다. `utils/url.ts`는 이 상수를 가져다 쓰는 브라우저측 헬퍼만 담는다.
+- **근거**: 링크 프로토콜 제한은 기술 §2.2.4의 **필드 검증 규칙**이라 Zod 스키마가 파싱 시점에 판정해야 한다. 그런데 §3.2-1이 domain의 외부 계층 import를 금지하므로 domain이 `utils/`를 참조할 수 없다. 원래 §3.3에 적었던 "`utils/url.ts`가 단독 소유"는 이 제약과 양립할 수 없었다.
+- **영향**: §3.3 문구를 고쳤다. 판정이 한 곳에만 있어야 한다는 원칙은 그대로다.
+
+### D-11. `reader-runtime` 경계를 전이 의존까지 검사
+
+- **결정**: `verify:architecture`가 `reader-runtime`에서 도달 가능한 내부 모듈이 끌어오는 **외부 패키지까지** 검사한다. 직접 import뿐 아니라 경유 import도 위반이다.
+- **근거**: `@/domain/guide.schema.ts`는 §3.2-3의 허용 경로에 있지만 `zod`를 import한다. 리더가 그 모듈을 쓰면 zod가 리더 번들에 들어가는데, 직접 import만 보면 이것이 M9의 `verify:bundle`까지 드러나지 않는다. INV-11의 "편집기 전용 라이브러리를 import하지 않음"은 전이 의존을 포함해야 의미가 있다.
+- **영향**: 리더가 쓸 domain 모듈은 외부 의존이 없어야 한다. `guide.types.ts`, `progress.types.ts`, `validation.types.ts`는 조건을 만족하고 `guide.schema.ts`는 만족하지 않는다.
 
 ---
 

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-no-terminal",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "종료 단계 없음",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "하나",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-2"
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "둘",
+      "blocks": [
+        {
+          "id": "block-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-3"
+    },
+    {
+      "id": "step-3",
+      "order": 2,
+      "title": "셋",
+      "blocks": [
+        {
+          "id": "block-3",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-3"
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

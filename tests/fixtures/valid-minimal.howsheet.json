@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-discord-pc-recovery",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "모바일 Discord 계정으로 PC 로그인 복구하기",
+    "language": "ko-KR",
+    "summary": "모바일에 로그인된 계정을 이용해 PC 로그인을 복구합니다.",
+    "audience": "모바일 Discord에는 로그인되어 있지만 PC 비밀번호를 잊은 사용자"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "모바일 계정 정보 확인",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "모바일 앱에서 등록된 이메일 또는 전화번호를 확인합니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "계정에 연결된 이메일 또는 전화번호를 확인했습니다."
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "복구 절차 완료",
+    "message": "PC에서 Discord에 로그인할 수 있는지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

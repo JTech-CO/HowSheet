@@ -1,0 +1,3051 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-large-100",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "100단계 성능 기준 가이드",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "1단계",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "1단계 본문입니다."
+        },
+        {
+          "id": "decide-1",
+          "order": 1,
+          "type": "decision",
+          "question": "1단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-1-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-1-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-1-b",
+          "sourceBlockId": "decide-1",
+          "operator": "equals",
+          "value": "opt-1-b",
+          "targetStepId": "step-3",
+          "priority": 30
+        },
+        {
+          "id": "rule-1-a",
+          "sourceBlockId": "decide-1",
+          "operator": "equals",
+          "value": "opt-1-a",
+          "targetStepId": "step-2",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "1단계를 완료했습니다.",
+      "defaultNextStepId": "step-2"
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "2단계",
+      "blocks": [
+        {
+          "id": "block-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "2단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "2단계를 완료했습니다.",
+      "defaultNextStepId": "step-3"
+    },
+    {
+      "id": "step-3",
+      "order": 2,
+      "title": "3단계",
+      "blocks": [
+        {
+          "id": "block-3",
+          "order": 0,
+          "type": "text",
+          "markdown": "3단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "3단계를 완료했습니다.",
+      "defaultNextStepId": "step-4"
+    },
+    {
+      "id": "step-4",
+      "order": 3,
+      "title": "4단계",
+      "blocks": [
+        {
+          "id": "block-4",
+          "order": 0,
+          "type": "text",
+          "markdown": "4단계 본문입니다."
+        },
+        {
+          "id": "decide-4",
+          "order": 1,
+          "type": "decision",
+          "question": "4단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-4-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-4-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-4-b",
+          "sourceBlockId": "decide-4",
+          "operator": "equals",
+          "value": "opt-4-b",
+          "targetStepId": "step-6",
+          "priority": 30
+        },
+        {
+          "id": "rule-4-a",
+          "sourceBlockId": "decide-4",
+          "operator": "equals",
+          "value": "opt-4-a",
+          "targetStepId": "step-5",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "4단계를 완료했습니다.",
+      "defaultNextStepId": "step-5"
+    },
+    {
+      "id": "step-5",
+      "order": 4,
+      "title": "5단계",
+      "blocks": [
+        {
+          "id": "block-5",
+          "order": 0,
+          "type": "text",
+          "markdown": "5단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "5단계를 완료했습니다.",
+      "defaultNextStepId": "step-6"
+    },
+    {
+      "id": "step-6",
+      "order": 5,
+      "title": "6단계",
+      "blocks": [
+        {
+          "id": "block-6",
+          "order": 0,
+          "type": "text",
+          "markdown": "6단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "6단계를 완료했습니다.",
+      "defaultNextStepId": "step-7"
+    },
+    {
+      "id": "step-7",
+      "order": 6,
+      "title": "7단계",
+      "blocks": [
+        {
+          "id": "block-7",
+          "order": 0,
+          "type": "text",
+          "markdown": "7단계 본문입니다."
+        },
+        {
+          "id": "decide-7",
+          "order": 1,
+          "type": "decision",
+          "question": "7단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-7-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-7-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-7-b",
+          "sourceBlockId": "decide-7",
+          "operator": "equals",
+          "value": "opt-7-b",
+          "targetStepId": "step-9",
+          "priority": 30
+        },
+        {
+          "id": "rule-7-a",
+          "sourceBlockId": "decide-7",
+          "operator": "equals",
+          "value": "opt-7-a",
+          "targetStepId": "step-8",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "7단계를 완료했습니다.",
+      "defaultNextStepId": "step-8"
+    },
+    {
+      "id": "step-8",
+      "order": 7,
+      "title": "8단계",
+      "blocks": [
+        {
+          "id": "block-8",
+          "order": 0,
+          "type": "text",
+          "markdown": "8단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "8단계를 완료했습니다.",
+      "defaultNextStepId": "step-9"
+    },
+    {
+      "id": "step-9",
+      "order": 8,
+      "title": "9단계",
+      "blocks": [
+        {
+          "id": "block-9",
+          "order": 0,
+          "type": "text",
+          "markdown": "9단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "9단계를 완료했습니다.",
+      "defaultNextStepId": "step-10"
+    },
+    {
+      "id": "step-10",
+      "order": 9,
+      "title": "10단계",
+      "blocks": [
+        {
+          "id": "block-10",
+          "order": 0,
+          "type": "text",
+          "markdown": "10단계 본문입니다."
+        },
+        {
+          "id": "decide-10",
+          "order": 1,
+          "type": "decision",
+          "question": "10단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-10-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-10-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-10-b",
+          "sourceBlockId": "decide-10",
+          "operator": "equals",
+          "value": "opt-10-b",
+          "targetStepId": "step-12",
+          "priority": 30
+        },
+        {
+          "id": "rule-10-a",
+          "sourceBlockId": "decide-10",
+          "operator": "equals",
+          "value": "opt-10-a",
+          "targetStepId": "step-11",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "10단계를 완료했습니다.",
+      "defaultNextStepId": "step-11"
+    },
+    {
+      "id": "step-11",
+      "order": 10,
+      "title": "11단계",
+      "blocks": [
+        {
+          "id": "block-11",
+          "order": 0,
+          "type": "text",
+          "markdown": "11단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "11단계를 완료했습니다.",
+      "defaultNextStepId": "step-12"
+    },
+    {
+      "id": "step-12",
+      "order": 11,
+      "title": "12단계",
+      "blocks": [
+        {
+          "id": "block-12",
+          "order": 0,
+          "type": "text",
+          "markdown": "12단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "12단계를 완료했습니다.",
+      "defaultNextStepId": "step-13"
+    },
+    {
+      "id": "step-13",
+      "order": 12,
+      "title": "13단계",
+      "blocks": [
+        {
+          "id": "block-13",
+          "order": 0,
+          "type": "text",
+          "markdown": "13단계 본문입니다."
+        },
+        {
+          "id": "decide-13",
+          "order": 1,
+          "type": "decision",
+          "question": "13단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-13-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-13-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-13-b",
+          "sourceBlockId": "decide-13",
+          "operator": "equals",
+          "value": "opt-13-b",
+          "targetStepId": "step-15",
+          "priority": 30
+        },
+        {
+          "id": "rule-13-a",
+          "sourceBlockId": "decide-13",
+          "operator": "equals",
+          "value": "opt-13-a",
+          "targetStepId": "step-14",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "13단계를 완료했습니다.",
+      "defaultNextStepId": "step-14"
+    },
+    {
+      "id": "step-14",
+      "order": 13,
+      "title": "14단계",
+      "blocks": [
+        {
+          "id": "block-14",
+          "order": 0,
+          "type": "text",
+          "markdown": "14단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "14단계를 완료했습니다.",
+      "defaultNextStepId": "step-15"
+    },
+    {
+      "id": "step-15",
+      "order": 14,
+      "title": "15단계",
+      "blocks": [
+        {
+          "id": "block-15",
+          "order": 0,
+          "type": "text",
+          "markdown": "15단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "15단계를 완료했습니다.",
+      "defaultNextStepId": "step-16"
+    },
+    {
+      "id": "step-16",
+      "order": 15,
+      "title": "16단계",
+      "blocks": [
+        {
+          "id": "block-16",
+          "order": 0,
+          "type": "text",
+          "markdown": "16단계 본문입니다."
+        },
+        {
+          "id": "decide-16",
+          "order": 1,
+          "type": "decision",
+          "question": "16단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-16-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-16-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-16-b",
+          "sourceBlockId": "decide-16",
+          "operator": "equals",
+          "value": "opt-16-b",
+          "targetStepId": "step-18",
+          "priority": 30
+        },
+        {
+          "id": "rule-16-a",
+          "sourceBlockId": "decide-16",
+          "operator": "equals",
+          "value": "opt-16-a",
+          "targetStepId": "step-17",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "16단계를 완료했습니다.",
+      "defaultNextStepId": "step-17"
+    },
+    {
+      "id": "step-17",
+      "order": 16,
+      "title": "17단계",
+      "blocks": [
+        {
+          "id": "block-17",
+          "order": 0,
+          "type": "text",
+          "markdown": "17단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "17단계를 완료했습니다.",
+      "defaultNextStepId": "step-18"
+    },
+    {
+      "id": "step-18",
+      "order": 17,
+      "title": "18단계",
+      "blocks": [
+        {
+          "id": "block-18",
+          "order": 0,
+          "type": "text",
+          "markdown": "18단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "18단계를 완료했습니다.",
+      "defaultNextStepId": "step-19"
+    },
+    {
+      "id": "step-19",
+      "order": 18,
+      "title": "19단계",
+      "blocks": [
+        {
+          "id": "block-19",
+          "order": 0,
+          "type": "text",
+          "markdown": "19단계 본문입니다."
+        },
+        {
+          "id": "decide-19",
+          "order": 1,
+          "type": "decision",
+          "question": "19단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-19-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-19-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-19-b",
+          "sourceBlockId": "decide-19",
+          "operator": "equals",
+          "value": "opt-19-b",
+          "targetStepId": "step-21",
+          "priority": 30
+        },
+        {
+          "id": "rule-19-a",
+          "sourceBlockId": "decide-19",
+          "operator": "equals",
+          "value": "opt-19-a",
+          "targetStepId": "step-20",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "19단계를 완료했습니다.",
+      "defaultNextStepId": "step-20"
+    },
+    {
+      "id": "step-20",
+      "order": 19,
+      "title": "20단계",
+      "blocks": [
+        {
+          "id": "block-20",
+          "order": 0,
+          "type": "text",
+          "markdown": "20단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "20단계를 완료했습니다.",
+      "defaultNextStepId": "step-21"
+    },
+    {
+      "id": "step-21",
+      "order": 20,
+      "title": "21단계",
+      "blocks": [
+        {
+          "id": "block-21",
+          "order": 0,
+          "type": "text",
+          "markdown": "21단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "21단계를 완료했습니다.",
+      "defaultNextStepId": "step-22"
+    },
+    {
+      "id": "step-22",
+      "order": 21,
+      "title": "22단계",
+      "blocks": [
+        {
+          "id": "block-22",
+          "order": 0,
+          "type": "text",
+          "markdown": "22단계 본문입니다."
+        },
+        {
+          "id": "decide-22",
+          "order": 1,
+          "type": "decision",
+          "question": "22단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-22-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-22-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-22-b",
+          "sourceBlockId": "decide-22",
+          "operator": "equals",
+          "value": "opt-22-b",
+          "targetStepId": "step-24",
+          "priority": 30
+        },
+        {
+          "id": "rule-22-a",
+          "sourceBlockId": "decide-22",
+          "operator": "equals",
+          "value": "opt-22-a",
+          "targetStepId": "step-23",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "22단계를 완료했습니다.",
+      "defaultNextStepId": "step-23"
+    },
+    {
+      "id": "step-23",
+      "order": 22,
+      "title": "23단계",
+      "blocks": [
+        {
+          "id": "block-23",
+          "order": 0,
+          "type": "text",
+          "markdown": "23단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "23단계를 완료했습니다.",
+      "defaultNextStepId": "step-24"
+    },
+    {
+      "id": "step-24",
+      "order": 23,
+      "title": "24단계",
+      "blocks": [
+        {
+          "id": "block-24",
+          "order": 0,
+          "type": "text",
+          "markdown": "24단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "24단계를 완료했습니다.",
+      "defaultNextStepId": "step-25"
+    },
+    {
+      "id": "step-25",
+      "order": 24,
+      "title": "25단계",
+      "blocks": [
+        {
+          "id": "block-25",
+          "order": 0,
+          "type": "text",
+          "markdown": "25단계 본문입니다."
+        },
+        {
+          "id": "decide-25",
+          "order": 1,
+          "type": "decision",
+          "question": "25단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-25-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-25-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-25-b",
+          "sourceBlockId": "decide-25",
+          "operator": "equals",
+          "value": "opt-25-b",
+          "targetStepId": "step-27",
+          "priority": 30
+        },
+        {
+          "id": "rule-25-a",
+          "sourceBlockId": "decide-25",
+          "operator": "equals",
+          "value": "opt-25-a",
+          "targetStepId": "step-26",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "25단계를 완료했습니다.",
+      "defaultNextStepId": "step-26"
+    },
+    {
+      "id": "step-26",
+      "order": 25,
+      "title": "26단계",
+      "blocks": [
+        {
+          "id": "block-26",
+          "order": 0,
+          "type": "text",
+          "markdown": "26단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "26단계를 완료했습니다.",
+      "defaultNextStepId": "step-27"
+    },
+    {
+      "id": "step-27",
+      "order": 26,
+      "title": "27단계",
+      "blocks": [
+        {
+          "id": "block-27",
+          "order": 0,
+          "type": "text",
+          "markdown": "27단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "27단계를 완료했습니다.",
+      "defaultNextStepId": "step-28"
+    },
+    {
+      "id": "step-28",
+      "order": 27,
+      "title": "28단계",
+      "blocks": [
+        {
+          "id": "block-28",
+          "order": 0,
+          "type": "text",
+          "markdown": "28단계 본문입니다."
+        },
+        {
+          "id": "decide-28",
+          "order": 1,
+          "type": "decision",
+          "question": "28단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-28-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-28-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-28-b",
+          "sourceBlockId": "decide-28",
+          "operator": "equals",
+          "value": "opt-28-b",
+          "targetStepId": "step-30",
+          "priority": 30
+        },
+        {
+          "id": "rule-28-a",
+          "sourceBlockId": "decide-28",
+          "operator": "equals",
+          "value": "opt-28-a",
+          "targetStepId": "step-29",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "28단계를 완료했습니다.",
+      "defaultNextStepId": "step-29"
+    },
+    {
+      "id": "step-29",
+      "order": 28,
+      "title": "29단계",
+      "blocks": [
+        {
+          "id": "block-29",
+          "order": 0,
+          "type": "text",
+          "markdown": "29단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "29단계를 완료했습니다.",
+      "defaultNextStepId": "step-30"
+    },
+    {
+      "id": "step-30",
+      "order": 29,
+      "title": "30단계",
+      "blocks": [
+        {
+          "id": "block-30",
+          "order": 0,
+          "type": "text",
+          "markdown": "30단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "30단계를 완료했습니다.",
+      "defaultNextStepId": "step-31"
+    },
+    {
+      "id": "step-31",
+      "order": 30,
+      "title": "31단계",
+      "blocks": [
+        {
+          "id": "block-31",
+          "order": 0,
+          "type": "text",
+          "markdown": "31단계 본문입니다."
+        },
+        {
+          "id": "decide-31",
+          "order": 1,
+          "type": "decision",
+          "question": "31단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-31-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-31-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-31-b",
+          "sourceBlockId": "decide-31",
+          "operator": "equals",
+          "value": "opt-31-b",
+          "targetStepId": "step-33",
+          "priority": 30
+        },
+        {
+          "id": "rule-31-a",
+          "sourceBlockId": "decide-31",
+          "operator": "equals",
+          "value": "opt-31-a",
+          "targetStepId": "step-32",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "31단계를 완료했습니다.",
+      "defaultNextStepId": "step-32"
+    },
+    {
+      "id": "step-32",
+      "order": 31,
+      "title": "32단계",
+      "blocks": [
+        {
+          "id": "block-32",
+          "order": 0,
+          "type": "text",
+          "markdown": "32단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "32단계를 완료했습니다.",
+      "defaultNextStepId": "step-33"
+    },
+    {
+      "id": "step-33",
+      "order": 32,
+      "title": "33단계",
+      "blocks": [
+        {
+          "id": "block-33",
+          "order": 0,
+          "type": "text",
+          "markdown": "33단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "33단계를 완료했습니다.",
+      "defaultNextStepId": "step-34"
+    },
+    {
+      "id": "step-34",
+      "order": 33,
+      "title": "34단계",
+      "blocks": [
+        {
+          "id": "block-34",
+          "order": 0,
+          "type": "text",
+          "markdown": "34단계 본문입니다."
+        },
+        {
+          "id": "decide-34",
+          "order": 1,
+          "type": "decision",
+          "question": "34단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-34-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-34-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-34-b",
+          "sourceBlockId": "decide-34",
+          "operator": "equals",
+          "value": "opt-34-b",
+          "targetStepId": "step-36",
+          "priority": 30
+        },
+        {
+          "id": "rule-34-a",
+          "sourceBlockId": "decide-34",
+          "operator": "equals",
+          "value": "opt-34-a",
+          "targetStepId": "step-35",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "34단계를 완료했습니다.",
+      "defaultNextStepId": "step-35"
+    },
+    {
+      "id": "step-35",
+      "order": 34,
+      "title": "35단계",
+      "blocks": [
+        {
+          "id": "block-35",
+          "order": 0,
+          "type": "text",
+          "markdown": "35단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "35단계를 완료했습니다.",
+      "defaultNextStepId": "step-36"
+    },
+    {
+      "id": "step-36",
+      "order": 35,
+      "title": "36단계",
+      "blocks": [
+        {
+          "id": "block-36",
+          "order": 0,
+          "type": "text",
+          "markdown": "36단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "36단계를 완료했습니다.",
+      "defaultNextStepId": "step-37"
+    },
+    {
+      "id": "step-37",
+      "order": 36,
+      "title": "37단계",
+      "blocks": [
+        {
+          "id": "block-37",
+          "order": 0,
+          "type": "text",
+          "markdown": "37단계 본문입니다."
+        },
+        {
+          "id": "decide-37",
+          "order": 1,
+          "type": "decision",
+          "question": "37단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-37-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-37-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-37-b",
+          "sourceBlockId": "decide-37",
+          "operator": "equals",
+          "value": "opt-37-b",
+          "targetStepId": "step-39",
+          "priority": 30
+        },
+        {
+          "id": "rule-37-a",
+          "sourceBlockId": "decide-37",
+          "operator": "equals",
+          "value": "opt-37-a",
+          "targetStepId": "step-38",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "37단계를 완료했습니다.",
+      "defaultNextStepId": "step-38"
+    },
+    {
+      "id": "step-38",
+      "order": 37,
+      "title": "38단계",
+      "blocks": [
+        {
+          "id": "block-38",
+          "order": 0,
+          "type": "text",
+          "markdown": "38단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "38단계를 완료했습니다.",
+      "defaultNextStepId": "step-39"
+    },
+    {
+      "id": "step-39",
+      "order": 38,
+      "title": "39단계",
+      "blocks": [
+        {
+          "id": "block-39",
+          "order": 0,
+          "type": "text",
+          "markdown": "39단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "39단계를 완료했습니다.",
+      "defaultNextStepId": "step-40"
+    },
+    {
+      "id": "step-40",
+      "order": 39,
+      "title": "40단계",
+      "blocks": [
+        {
+          "id": "block-40",
+          "order": 0,
+          "type": "text",
+          "markdown": "40단계 본문입니다."
+        },
+        {
+          "id": "decide-40",
+          "order": 1,
+          "type": "decision",
+          "question": "40단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-40-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-40-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-40-b",
+          "sourceBlockId": "decide-40",
+          "operator": "equals",
+          "value": "opt-40-b",
+          "targetStepId": "step-42",
+          "priority": 30
+        },
+        {
+          "id": "rule-40-a",
+          "sourceBlockId": "decide-40",
+          "operator": "equals",
+          "value": "opt-40-a",
+          "targetStepId": "step-41",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "40단계를 완료했습니다.",
+      "defaultNextStepId": "step-41"
+    },
+    {
+      "id": "step-41",
+      "order": 40,
+      "title": "41단계",
+      "blocks": [
+        {
+          "id": "block-41",
+          "order": 0,
+          "type": "text",
+          "markdown": "41단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "41단계를 완료했습니다.",
+      "defaultNextStepId": "step-42"
+    },
+    {
+      "id": "step-42",
+      "order": 41,
+      "title": "42단계",
+      "blocks": [
+        {
+          "id": "block-42",
+          "order": 0,
+          "type": "text",
+          "markdown": "42단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "42단계를 완료했습니다.",
+      "defaultNextStepId": "step-43"
+    },
+    {
+      "id": "step-43",
+      "order": 42,
+      "title": "43단계",
+      "blocks": [
+        {
+          "id": "block-43",
+          "order": 0,
+          "type": "text",
+          "markdown": "43단계 본문입니다."
+        },
+        {
+          "id": "decide-43",
+          "order": 1,
+          "type": "decision",
+          "question": "43단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-43-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-43-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-43-b",
+          "sourceBlockId": "decide-43",
+          "operator": "equals",
+          "value": "opt-43-b",
+          "targetStepId": "step-45",
+          "priority": 30
+        },
+        {
+          "id": "rule-43-a",
+          "sourceBlockId": "decide-43",
+          "operator": "equals",
+          "value": "opt-43-a",
+          "targetStepId": "step-44",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "43단계를 완료했습니다.",
+      "defaultNextStepId": "step-44"
+    },
+    {
+      "id": "step-44",
+      "order": 43,
+      "title": "44단계",
+      "blocks": [
+        {
+          "id": "block-44",
+          "order": 0,
+          "type": "text",
+          "markdown": "44단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "44단계를 완료했습니다.",
+      "defaultNextStepId": "step-45"
+    },
+    {
+      "id": "step-45",
+      "order": 44,
+      "title": "45단계",
+      "blocks": [
+        {
+          "id": "block-45",
+          "order": 0,
+          "type": "text",
+          "markdown": "45단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "45단계를 완료했습니다.",
+      "defaultNextStepId": "step-46"
+    },
+    {
+      "id": "step-46",
+      "order": 45,
+      "title": "46단계",
+      "blocks": [
+        {
+          "id": "block-46",
+          "order": 0,
+          "type": "text",
+          "markdown": "46단계 본문입니다."
+        },
+        {
+          "id": "decide-46",
+          "order": 1,
+          "type": "decision",
+          "question": "46단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-46-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-46-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-46-b",
+          "sourceBlockId": "decide-46",
+          "operator": "equals",
+          "value": "opt-46-b",
+          "targetStepId": "step-48",
+          "priority": 30
+        },
+        {
+          "id": "rule-46-a",
+          "sourceBlockId": "decide-46",
+          "operator": "equals",
+          "value": "opt-46-a",
+          "targetStepId": "step-47",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "46단계를 완료했습니다.",
+      "defaultNextStepId": "step-47"
+    },
+    {
+      "id": "step-47",
+      "order": 46,
+      "title": "47단계",
+      "blocks": [
+        {
+          "id": "block-47",
+          "order": 0,
+          "type": "text",
+          "markdown": "47단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "47단계를 완료했습니다.",
+      "defaultNextStepId": "step-48"
+    },
+    {
+      "id": "step-48",
+      "order": 47,
+      "title": "48단계",
+      "blocks": [
+        {
+          "id": "block-48",
+          "order": 0,
+          "type": "text",
+          "markdown": "48단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "48단계를 완료했습니다.",
+      "defaultNextStepId": "step-49"
+    },
+    {
+      "id": "step-49",
+      "order": 48,
+      "title": "49단계",
+      "blocks": [
+        {
+          "id": "block-49",
+          "order": 0,
+          "type": "text",
+          "markdown": "49단계 본문입니다."
+        },
+        {
+          "id": "decide-49",
+          "order": 1,
+          "type": "decision",
+          "question": "49단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-49-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-49-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-49-b",
+          "sourceBlockId": "decide-49",
+          "operator": "equals",
+          "value": "opt-49-b",
+          "targetStepId": "step-51",
+          "priority": 30
+        },
+        {
+          "id": "rule-49-a",
+          "sourceBlockId": "decide-49",
+          "operator": "equals",
+          "value": "opt-49-a",
+          "targetStepId": "step-50",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "49단계를 완료했습니다.",
+      "defaultNextStepId": "step-50"
+    },
+    {
+      "id": "step-50",
+      "order": 49,
+      "title": "50단계",
+      "blocks": [
+        {
+          "id": "block-50",
+          "order": 0,
+          "type": "text",
+          "markdown": "50단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "50단계를 완료했습니다.",
+      "defaultNextStepId": "step-51"
+    },
+    {
+      "id": "step-51",
+      "order": 50,
+      "title": "51단계",
+      "blocks": [
+        {
+          "id": "block-51",
+          "order": 0,
+          "type": "text",
+          "markdown": "51단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "51단계를 완료했습니다.",
+      "defaultNextStepId": "step-52"
+    },
+    {
+      "id": "step-52",
+      "order": 51,
+      "title": "52단계",
+      "blocks": [
+        {
+          "id": "block-52",
+          "order": 0,
+          "type": "text",
+          "markdown": "52단계 본문입니다."
+        },
+        {
+          "id": "decide-52",
+          "order": 1,
+          "type": "decision",
+          "question": "52단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-52-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-52-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-52-b",
+          "sourceBlockId": "decide-52",
+          "operator": "equals",
+          "value": "opt-52-b",
+          "targetStepId": "step-54",
+          "priority": 30
+        },
+        {
+          "id": "rule-52-a",
+          "sourceBlockId": "decide-52",
+          "operator": "equals",
+          "value": "opt-52-a",
+          "targetStepId": "step-53",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "52단계를 완료했습니다.",
+      "defaultNextStepId": "step-53"
+    },
+    {
+      "id": "step-53",
+      "order": 52,
+      "title": "53단계",
+      "blocks": [
+        {
+          "id": "block-53",
+          "order": 0,
+          "type": "text",
+          "markdown": "53단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "53단계를 완료했습니다.",
+      "defaultNextStepId": "step-54"
+    },
+    {
+      "id": "step-54",
+      "order": 53,
+      "title": "54단계",
+      "blocks": [
+        {
+          "id": "block-54",
+          "order": 0,
+          "type": "text",
+          "markdown": "54단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "54단계를 완료했습니다.",
+      "defaultNextStepId": "step-55"
+    },
+    {
+      "id": "step-55",
+      "order": 54,
+      "title": "55단계",
+      "blocks": [
+        {
+          "id": "block-55",
+          "order": 0,
+          "type": "text",
+          "markdown": "55단계 본문입니다."
+        },
+        {
+          "id": "decide-55",
+          "order": 1,
+          "type": "decision",
+          "question": "55단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-55-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-55-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-55-b",
+          "sourceBlockId": "decide-55",
+          "operator": "equals",
+          "value": "opt-55-b",
+          "targetStepId": "step-57",
+          "priority": 30
+        },
+        {
+          "id": "rule-55-a",
+          "sourceBlockId": "decide-55",
+          "operator": "equals",
+          "value": "opt-55-a",
+          "targetStepId": "step-56",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "55단계를 완료했습니다.",
+      "defaultNextStepId": "step-56"
+    },
+    {
+      "id": "step-56",
+      "order": 55,
+      "title": "56단계",
+      "blocks": [
+        {
+          "id": "block-56",
+          "order": 0,
+          "type": "text",
+          "markdown": "56단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "56단계를 완료했습니다.",
+      "defaultNextStepId": "step-57"
+    },
+    {
+      "id": "step-57",
+      "order": 56,
+      "title": "57단계",
+      "blocks": [
+        {
+          "id": "block-57",
+          "order": 0,
+          "type": "text",
+          "markdown": "57단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "57단계를 완료했습니다.",
+      "defaultNextStepId": "step-58"
+    },
+    {
+      "id": "step-58",
+      "order": 57,
+      "title": "58단계",
+      "blocks": [
+        {
+          "id": "block-58",
+          "order": 0,
+          "type": "text",
+          "markdown": "58단계 본문입니다."
+        },
+        {
+          "id": "decide-58",
+          "order": 1,
+          "type": "decision",
+          "question": "58단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-58-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-58-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-58-b",
+          "sourceBlockId": "decide-58",
+          "operator": "equals",
+          "value": "opt-58-b",
+          "targetStepId": "step-60",
+          "priority": 30
+        },
+        {
+          "id": "rule-58-a",
+          "sourceBlockId": "decide-58",
+          "operator": "equals",
+          "value": "opt-58-a",
+          "targetStepId": "step-59",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "58단계를 완료했습니다.",
+      "defaultNextStepId": "step-59"
+    },
+    {
+      "id": "step-59",
+      "order": 58,
+      "title": "59단계",
+      "blocks": [
+        {
+          "id": "block-59",
+          "order": 0,
+          "type": "text",
+          "markdown": "59단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "59단계를 완료했습니다.",
+      "defaultNextStepId": "step-60"
+    },
+    {
+      "id": "step-60",
+      "order": 59,
+      "title": "60단계",
+      "blocks": [
+        {
+          "id": "block-60",
+          "order": 0,
+          "type": "text",
+          "markdown": "60단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "60단계를 완료했습니다.",
+      "defaultNextStepId": "step-61"
+    },
+    {
+      "id": "step-61",
+      "order": 60,
+      "title": "61단계",
+      "blocks": [
+        {
+          "id": "block-61",
+          "order": 0,
+          "type": "text",
+          "markdown": "61단계 본문입니다."
+        },
+        {
+          "id": "decide-61",
+          "order": 1,
+          "type": "decision",
+          "question": "61단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-61-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-61-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-61-b",
+          "sourceBlockId": "decide-61",
+          "operator": "equals",
+          "value": "opt-61-b",
+          "targetStepId": "step-63",
+          "priority": 30
+        },
+        {
+          "id": "rule-61-a",
+          "sourceBlockId": "decide-61",
+          "operator": "equals",
+          "value": "opt-61-a",
+          "targetStepId": "step-62",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "61단계를 완료했습니다.",
+      "defaultNextStepId": "step-62"
+    },
+    {
+      "id": "step-62",
+      "order": 61,
+      "title": "62단계",
+      "blocks": [
+        {
+          "id": "block-62",
+          "order": 0,
+          "type": "text",
+          "markdown": "62단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "62단계를 완료했습니다.",
+      "defaultNextStepId": "step-63"
+    },
+    {
+      "id": "step-63",
+      "order": 62,
+      "title": "63단계",
+      "blocks": [
+        {
+          "id": "block-63",
+          "order": 0,
+          "type": "text",
+          "markdown": "63단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "63단계를 완료했습니다.",
+      "defaultNextStepId": "step-64"
+    },
+    {
+      "id": "step-64",
+      "order": 63,
+      "title": "64단계",
+      "blocks": [
+        {
+          "id": "block-64",
+          "order": 0,
+          "type": "text",
+          "markdown": "64단계 본문입니다."
+        },
+        {
+          "id": "decide-64",
+          "order": 1,
+          "type": "decision",
+          "question": "64단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-64-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-64-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-64-b",
+          "sourceBlockId": "decide-64",
+          "operator": "equals",
+          "value": "opt-64-b",
+          "targetStepId": "step-66",
+          "priority": 30
+        },
+        {
+          "id": "rule-64-a",
+          "sourceBlockId": "decide-64",
+          "operator": "equals",
+          "value": "opt-64-a",
+          "targetStepId": "step-65",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "64단계를 완료했습니다.",
+      "defaultNextStepId": "step-65"
+    },
+    {
+      "id": "step-65",
+      "order": 64,
+      "title": "65단계",
+      "blocks": [
+        {
+          "id": "block-65",
+          "order": 0,
+          "type": "text",
+          "markdown": "65단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "65단계를 완료했습니다.",
+      "defaultNextStepId": "step-66"
+    },
+    {
+      "id": "step-66",
+      "order": 65,
+      "title": "66단계",
+      "blocks": [
+        {
+          "id": "block-66",
+          "order": 0,
+          "type": "text",
+          "markdown": "66단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "66단계를 완료했습니다.",
+      "defaultNextStepId": "step-67"
+    },
+    {
+      "id": "step-67",
+      "order": 66,
+      "title": "67단계",
+      "blocks": [
+        {
+          "id": "block-67",
+          "order": 0,
+          "type": "text",
+          "markdown": "67단계 본문입니다."
+        },
+        {
+          "id": "decide-67",
+          "order": 1,
+          "type": "decision",
+          "question": "67단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-67-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-67-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-67-b",
+          "sourceBlockId": "decide-67",
+          "operator": "equals",
+          "value": "opt-67-b",
+          "targetStepId": "step-69",
+          "priority": 30
+        },
+        {
+          "id": "rule-67-a",
+          "sourceBlockId": "decide-67",
+          "operator": "equals",
+          "value": "opt-67-a",
+          "targetStepId": "step-68",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "67단계를 완료했습니다.",
+      "defaultNextStepId": "step-68"
+    },
+    {
+      "id": "step-68",
+      "order": 67,
+      "title": "68단계",
+      "blocks": [
+        {
+          "id": "block-68",
+          "order": 0,
+          "type": "text",
+          "markdown": "68단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "68단계를 완료했습니다.",
+      "defaultNextStepId": "step-69"
+    },
+    {
+      "id": "step-69",
+      "order": 68,
+      "title": "69단계",
+      "blocks": [
+        {
+          "id": "block-69",
+          "order": 0,
+          "type": "text",
+          "markdown": "69단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "69단계를 완료했습니다.",
+      "defaultNextStepId": "step-70"
+    },
+    {
+      "id": "step-70",
+      "order": 69,
+      "title": "70단계",
+      "blocks": [
+        {
+          "id": "block-70",
+          "order": 0,
+          "type": "text",
+          "markdown": "70단계 본문입니다."
+        },
+        {
+          "id": "decide-70",
+          "order": 1,
+          "type": "decision",
+          "question": "70단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-70-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-70-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-70-b",
+          "sourceBlockId": "decide-70",
+          "operator": "equals",
+          "value": "opt-70-b",
+          "targetStepId": "step-72",
+          "priority": 30
+        },
+        {
+          "id": "rule-70-a",
+          "sourceBlockId": "decide-70",
+          "operator": "equals",
+          "value": "opt-70-a",
+          "targetStepId": "step-71",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "70단계를 완료했습니다.",
+      "defaultNextStepId": "step-71"
+    },
+    {
+      "id": "step-71",
+      "order": 70,
+      "title": "71단계",
+      "blocks": [
+        {
+          "id": "block-71",
+          "order": 0,
+          "type": "text",
+          "markdown": "71단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "71단계를 완료했습니다.",
+      "defaultNextStepId": "step-72"
+    },
+    {
+      "id": "step-72",
+      "order": 71,
+      "title": "72단계",
+      "blocks": [
+        {
+          "id": "block-72",
+          "order": 0,
+          "type": "text",
+          "markdown": "72단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "72단계를 완료했습니다.",
+      "defaultNextStepId": "step-73"
+    },
+    {
+      "id": "step-73",
+      "order": 72,
+      "title": "73단계",
+      "blocks": [
+        {
+          "id": "block-73",
+          "order": 0,
+          "type": "text",
+          "markdown": "73단계 본문입니다."
+        },
+        {
+          "id": "decide-73",
+          "order": 1,
+          "type": "decision",
+          "question": "73단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-73-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-73-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-73-b",
+          "sourceBlockId": "decide-73",
+          "operator": "equals",
+          "value": "opt-73-b",
+          "targetStepId": "step-75",
+          "priority": 30
+        },
+        {
+          "id": "rule-73-a",
+          "sourceBlockId": "decide-73",
+          "operator": "equals",
+          "value": "opt-73-a",
+          "targetStepId": "step-74",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "73단계를 완료했습니다.",
+      "defaultNextStepId": "step-74"
+    },
+    {
+      "id": "step-74",
+      "order": 73,
+      "title": "74단계",
+      "blocks": [
+        {
+          "id": "block-74",
+          "order": 0,
+          "type": "text",
+          "markdown": "74단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "74단계를 완료했습니다.",
+      "defaultNextStepId": "step-75"
+    },
+    {
+      "id": "step-75",
+      "order": 74,
+      "title": "75단계",
+      "blocks": [
+        {
+          "id": "block-75",
+          "order": 0,
+          "type": "text",
+          "markdown": "75단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "75단계를 완료했습니다.",
+      "defaultNextStepId": "step-76"
+    },
+    {
+      "id": "step-76",
+      "order": 75,
+      "title": "76단계",
+      "blocks": [
+        {
+          "id": "block-76",
+          "order": 0,
+          "type": "text",
+          "markdown": "76단계 본문입니다."
+        },
+        {
+          "id": "decide-76",
+          "order": 1,
+          "type": "decision",
+          "question": "76단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-76-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-76-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-76-b",
+          "sourceBlockId": "decide-76",
+          "operator": "equals",
+          "value": "opt-76-b",
+          "targetStepId": "step-78",
+          "priority": 30
+        },
+        {
+          "id": "rule-76-a",
+          "sourceBlockId": "decide-76",
+          "operator": "equals",
+          "value": "opt-76-a",
+          "targetStepId": "step-77",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "76단계를 완료했습니다.",
+      "defaultNextStepId": "step-77"
+    },
+    {
+      "id": "step-77",
+      "order": 76,
+      "title": "77단계",
+      "blocks": [
+        {
+          "id": "block-77",
+          "order": 0,
+          "type": "text",
+          "markdown": "77단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "77단계를 완료했습니다.",
+      "defaultNextStepId": "step-78"
+    },
+    {
+      "id": "step-78",
+      "order": 77,
+      "title": "78단계",
+      "blocks": [
+        {
+          "id": "block-78",
+          "order": 0,
+          "type": "text",
+          "markdown": "78단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "78단계를 완료했습니다.",
+      "defaultNextStepId": "step-79"
+    },
+    {
+      "id": "step-79",
+      "order": 78,
+      "title": "79단계",
+      "blocks": [
+        {
+          "id": "block-79",
+          "order": 0,
+          "type": "text",
+          "markdown": "79단계 본문입니다."
+        },
+        {
+          "id": "decide-79",
+          "order": 1,
+          "type": "decision",
+          "question": "79단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-79-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-79-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-79-b",
+          "sourceBlockId": "decide-79",
+          "operator": "equals",
+          "value": "opt-79-b",
+          "targetStepId": "step-81",
+          "priority": 30
+        },
+        {
+          "id": "rule-79-a",
+          "sourceBlockId": "decide-79",
+          "operator": "equals",
+          "value": "opt-79-a",
+          "targetStepId": "step-80",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "79단계를 완료했습니다.",
+      "defaultNextStepId": "step-80"
+    },
+    {
+      "id": "step-80",
+      "order": 79,
+      "title": "80단계",
+      "blocks": [
+        {
+          "id": "block-80",
+          "order": 0,
+          "type": "text",
+          "markdown": "80단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "80단계를 완료했습니다.",
+      "defaultNextStepId": "step-81"
+    },
+    {
+      "id": "step-81",
+      "order": 80,
+      "title": "81단계",
+      "blocks": [
+        {
+          "id": "block-81",
+          "order": 0,
+          "type": "text",
+          "markdown": "81단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "81단계를 완료했습니다.",
+      "defaultNextStepId": "step-82"
+    },
+    {
+      "id": "step-82",
+      "order": 81,
+      "title": "82단계",
+      "blocks": [
+        {
+          "id": "block-82",
+          "order": 0,
+          "type": "text",
+          "markdown": "82단계 본문입니다."
+        },
+        {
+          "id": "decide-82",
+          "order": 1,
+          "type": "decision",
+          "question": "82단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-82-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-82-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-82-b",
+          "sourceBlockId": "decide-82",
+          "operator": "equals",
+          "value": "opt-82-b",
+          "targetStepId": "step-84",
+          "priority": 30
+        },
+        {
+          "id": "rule-82-a",
+          "sourceBlockId": "decide-82",
+          "operator": "equals",
+          "value": "opt-82-a",
+          "targetStepId": "step-83",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "82단계를 완료했습니다.",
+      "defaultNextStepId": "step-83"
+    },
+    {
+      "id": "step-83",
+      "order": 82,
+      "title": "83단계",
+      "blocks": [
+        {
+          "id": "block-83",
+          "order": 0,
+          "type": "text",
+          "markdown": "83단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "83단계를 완료했습니다.",
+      "defaultNextStepId": "step-84"
+    },
+    {
+      "id": "step-84",
+      "order": 83,
+      "title": "84단계",
+      "blocks": [
+        {
+          "id": "block-84",
+          "order": 0,
+          "type": "text",
+          "markdown": "84단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "84단계를 완료했습니다.",
+      "defaultNextStepId": "step-85"
+    },
+    {
+      "id": "step-85",
+      "order": 84,
+      "title": "85단계",
+      "blocks": [
+        {
+          "id": "block-85",
+          "order": 0,
+          "type": "text",
+          "markdown": "85단계 본문입니다."
+        },
+        {
+          "id": "decide-85",
+          "order": 1,
+          "type": "decision",
+          "question": "85단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-85-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-85-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-85-b",
+          "sourceBlockId": "decide-85",
+          "operator": "equals",
+          "value": "opt-85-b",
+          "targetStepId": "step-87",
+          "priority": 30
+        },
+        {
+          "id": "rule-85-a",
+          "sourceBlockId": "decide-85",
+          "operator": "equals",
+          "value": "opt-85-a",
+          "targetStepId": "step-86",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "85단계를 완료했습니다.",
+      "defaultNextStepId": "step-86"
+    },
+    {
+      "id": "step-86",
+      "order": 85,
+      "title": "86단계",
+      "blocks": [
+        {
+          "id": "block-86",
+          "order": 0,
+          "type": "text",
+          "markdown": "86단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "86단계를 완료했습니다.",
+      "defaultNextStepId": "step-87"
+    },
+    {
+      "id": "step-87",
+      "order": 86,
+      "title": "87단계",
+      "blocks": [
+        {
+          "id": "block-87",
+          "order": 0,
+          "type": "text",
+          "markdown": "87단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "87단계를 완료했습니다.",
+      "defaultNextStepId": "step-88"
+    },
+    {
+      "id": "step-88",
+      "order": 87,
+      "title": "88단계",
+      "blocks": [
+        {
+          "id": "block-88",
+          "order": 0,
+          "type": "text",
+          "markdown": "88단계 본문입니다."
+        },
+        {
+          "id": "decide-88",
+          "order": 1,
+          "type": "decision",
+          "question": "88단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-88-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-88-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-88-b",
+          "sourceBlockId": "decide-88",
+          "operator": "equals",
+          "value": "opt-88-b",
+          "targetStepId": "step-90",
+          "priority": 30
+        },
+        {
+          "id": "rule-88-a",
+          "sourceBlockId": "decide-88",
+          "operator": "equals",
+          "value": "opt-88-a",
+          "targetStepId": "step-89",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "88단계를 완료했습니다.",
+      "defaultNextStepId": "step-89"
+    },
+    {
+      "id": "step-89",
+      "order": 88,
+      "title": "89단계",
+      "blocks": [
+        {
+          "id": "block-89",
+          "order": 0,
+          "type": "text",
+          "markdown": "89단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "89단계를 완료했습니다.",
+      "defaultNextStepId": "step-90"
+    },
+    {
+      "id": "step-90",
+      "order": 89,
+      "title": "90단계",
+      "blocks": [
+        {
+          "id": "block-90",
+          "order": 0,
+          "type": "text",
+          "markdown": "90단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "90단계를 완료했습니다.",
+      "defaultNextStepId": "step-91"
+    },
+    {
+      "id": "step-91",
+      "order": 90,
+      "title": "91단계",
+      "blocks": [
+        {
+          "id": "block-91",
+          "order": 0,
+          "type": "text",
+          "markdown": "91단계 본문입니다."
+        },
+        {
+          "id": "decide-91",
+          "order": 1,
+          "type": "decision",
+          "question": "91단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-91-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-91-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-91-b",
+          "sourceBlockId": "decide-91",
+          "operator": "equals",
+          "value": "opt-91-b",
+          "targetStepId": "step-93",
+          "priority": 30
+        },
+        {
+          "id": "rule-91-a",
+          "sourceBlockId": "decide-91",
+          "operator": "equals",
+          "value": "opt-91-a",
+          "targetStepId": "step-92",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "91단계를 완료했습니다.",
+      "defaultNextStepId": "step-92"
+    },
+    {
+      "id": "step-92",
+      "order": 91,
+      "title": "92단계",
+      "blocks": [
+        {
+          "id": "block-92",
+          "order": 0,
+          "type": "text",
+          "markdown": "92단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "92단계를 완료했습니다.",
+      "defaultNextStepId": "step-93"
+    },
+    {
+      "id": "step-93",
+      "order": 92,
+      "title": "93단계",
+      "blocks": [
+        {
+          "id": "block-93",
+          "order": 0,
+          "type": "text",
+          "markdown": "93단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "93단계를 완료했습니다.",
+      "defaultNextStepId": "step-94"
+    },
+    {
+      "id": "step-94",
+      "order": 93,
+      "title": "94단계",
+      "blocks": [
+        {
+          "id": "block-94",
+          "order": 0,
+          "type": "text",
+          "markdown": "94단계 본문입니다."
+        },
+        {
+          "id": "decide-94",
+          "order": 1,
+          "type": "decision",
+          "question": "94단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-94-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-94-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-94-b",
+          "sourceBlockId": "decide-94",
+          "operator": "equals",
+          "value": "opt-94-b",
+          "targetStepId": "step-96",
+          "priority": 30
+        },
+        {
+          "id": "rule-94-a",
+          "sourceBlockId": "decide-94",
+          "operator": "equals",
+          "value": "opt-94-a",
+          "targetStepId": "step-95",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "94단계를 완료했습니다.",
+      "defaultNextStepId": "step-95"
+    },
+    {
+      "id": "step-95",
+      "order": 94,
+      "title": "95단계",
+      "blocks": [
+        {
+          "id": "block-95",
+          "order": 0,
+          "type": "text",
+          "markdown": "95단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "95단계를 완료했습니다.",
+      "defaultNextStepId": "step-96"
+    },
+    {
+      "id": "step-96",
+      "order": 95,
+      "title": "96단계",
+      "blocks": [
+        {
+          "id": "block-96",
+          "order": 0,
+          "type": "text",
+          "markdown": "96단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "96단계를 완료했습니다.",
+      "defaultNextStepId": "step-97"
+    },
+    {
+      "id": "step-97",
+      "order": 96,
+      "title": "97단계",
+      "blocks": [
+        {
+          "id": "block-97",
+          "order": 0,
+          "type": "text",
+          "markdown": "97단계 본문입니다."
+        },
+        {
+          "id": "decide-97",
+          "order": 1,
+          "type": "decision",
+          "question": "97단계에서 어느 쪽인가요?",
+          "options": [
+            {
+              "id": "opt-97-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-97-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-97-b",
+          "sourceBlockId": "decide-97",
+          "operator": "equals",
+          "value": "opt-97-b",
+          "targetStepId": "step-99",
+          "priority": 30
+        },
+        {
+          "id": "rule-97-a",
+          "sourceBlockId": "decide-97",
+          "operator": "equals",
+          "value": "opt-97-a",
+          "targetStepId": "step-98",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "97단계를 완료했습니다.",
+      "defaultNextStepId": "step-98"
+    },
+    {
+      "id": "step-98",
+      "order": 97,
+      "title": "98단계",
+      "blocks": [
+        {
+          "id": "block-98",
+          "order": 0,
+          "type": "text",
+          "markdown": "98단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "98단계를 완료했습니다.",
+      "defaultNextStepId": "step-99"
+    },
+    {
+      "id": "step-99",
+      "order": 98,
+      "title": "99단계",
+      "blocks": [
+        {
+          "id": "block-99",
+          "order": 0,
+          "type": "text",
+          "markdown": "99단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "99단계를 완료했습니다.",
+      "defaultNextStepId": "step-100"
+    },
+    {
+      "id": "step-100",
+      "order": 99,
+      "title": "100단계",
+      "blocks": [
+        {
+          "id": "block-100",
+          "order": 0,
+          "type": "text",
+          "markdown": "100단계 본문입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "100단계를 완료했습니다."
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

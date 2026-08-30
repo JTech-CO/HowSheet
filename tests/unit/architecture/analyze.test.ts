@@ -317,25 +317,58 @@ describe('파서', () => {
     expect(parseModule('const document = 1;\nexport default 2;', 'probe.ts').globals).toEqual([]);
   });
 
-  // 스코프 분석은 하지 않는다. 브라우저 전역 이름을 가리는 지역 식별자는
-  // 참조 시점에 전역 사용으로 보고된다. 경계 검사에서는 놓치는 것보다
-  // 과하게 잡는 쪽이 안전하고, domain에서 전역 이름을 가리는 것 자체가 나쁜 신호다.
-  it('전역 이름을 가리는 지역 식별자는 보수적으로 사용으로 본다', () => {
+  // 스코프 분석은 하지 않는다. 파일 단위 섀도잉 집합으로 완화했더니 파라미터
+  // 하나가 파일 전체의 탐지를 무력화해 M1 DoD 5가 실제로 뚫렸다.
+  it('전역 이름을 가리는 지역 식별자도 보수적으로 사용으로 본다', () => {
     expect(parseModule('function f(document) { return document; }', 'probe.ts').globals).toContain(
       'document',
     );
   });
 
-  it('감시하는 전역은 7종이다', () => {
-    expect(DOM_GLOBALS).toEqual([
+  it('한 함수에서 가려도 다른 함수의 실제 전역 접근을 놓치지 않는다', () => {
+    const source = [
+      'function touch(document) { return document.id; }',
+      "export function leak() { document.body.innerHTML = 'x'; }",
+    ].join('\n');
+    expect(parseModule(source, 'probe.ts').globals).toContain('document');
+  });
+
+  it('globalThis 구조분해 우회를 잡는다', () => {
+    const source = ['const { document: d } = globalThis;', 'export const x = d.title;'].join('\n');
+    expect(parseModule(source, 'probe.ts').globals).toContain('document');
+  });
+
+  it('crypto 등 확장된 감시 목록도 잡는다', () => {
+    expect(parseModule('export const id = crypto.randomUUID();', 'probe.ts').globals).toContain(
+      'crypto',
+    );
+    expect(parseModule('export const h = location.href;', 'probe.ts').globals).toContain(
+      'location',
+    );
+  });
+
+  it('선언이 없으면 전역 사용으로 잡는다', () => {
+    expect(parseModule('export const t = document.title;', 'probe.ts').globals).toContain(
+      'document',
+    );
+    expect(parseModule('export const w = window;', 'probe.ts').globals).toContain('window');
+    expect(parseModule('export const r = fetch(url);', 'probe.ts').globals).toContain('fetch');
+  });
+
+  it('감시 목록에 도메인이 피해야 할 API가 모두 들어 있다', () => {
+    for (const name of [
       'window',
       'document',
       'navigator',
+      'location',
       'fetch',
       'localStorage',
       'sessionStorage',
       'indexedDB',
-    ]);
+      'crypto',
+    ]) {
+      expect(DOM_GLOBALS).toContain(name);
+    }
   });
 });
 

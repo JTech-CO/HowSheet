@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-unreachable",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "도달 불가 단계",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "시작",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-2"
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "끝",
+      "blocks": [
+        {
+          "id": "block-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    },
+    {
+      "id": "step-orphan",
+      "order": 2,
+      "title": "아무도 가리키지 않는 단계",
+      "blocks": [
+        {
+          "id": "block-3",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

@@ -82,15 +82,29 @@ export const READER_RUNTIME_ALLOWED_PREFIXES = [
  */
 export const READER_RUNTIME_ALLOWED_PACKAGES = [];
 
-/** M1 DoD 5 — domain은 브라우저 API에 의존하지 않는다. */
+/**
+ * M1 DoD 5 — domain은 브라우저 API에 의존하지 않는다.
+ * eslint.config.js가 이 목록을 가져다 쓰므로 두 곳이 어긋날 수 없다.
+ */
 export const DOM_GLOBALS = [
   'window',
   'document',
   'navigator',
+  'location',
+  'history',
   'fetch',
+  'XMLHttpRequest',
+  'WebSocket',
   'localStorage',
   'sessionStorage',
   'indexedDB',
+  'caches',
+  'crypto',
+  'matchMedia',
+  'requestAnimationFrame',
+  'FileReader',
+  'atob',
+  'btoa',
 ];
 
 /** 전역 객체를 통한 우회. `globalThis.document` 같은 형태를 잡는다. */
@@ -199,6 +213,10 @@ export function parseModule(source, filePath = 'probe.tsx') {
     }
 
     // 브라우저 전역
+    // 스코프 분석은 하지 않는다. 지역 선언이 전역 이름을 가려도 참조는 전역
+    // 사용으로 본다. 파일 단위 섀도잉 집합으로 완화했더니 파라미터 하나가 파일
+    // 전체의 탐지를 무력화해 M1 DoD 5가 뚫렸다. 경계 검사에서는 놓치는 것보다
+    // 과하게 잡는 쪽이 안전하다. 도메인 코드는 전역과 겹치는 이름을 피한다.
     if (
       ts.isIdentifier(node) &&
       DOM_GLOBALS.includes(node.text) &&
@@ -363,6 +381,65 @@ export function analyze(input) {
         'SANITIZE_BOUNDARY',
         file.path,
         `dangerouslySetInnerHTML은 ${SANITIZE_BOUNDARY} 안에서만 사용한다. (INV-07, 기술 §7.1-2)`,
+      );
+    }
+  }
+
+  // INV-11 (전이) — reader-runtime이 직접 허용된 모듈을 통해 편집기 전용
+  // 패키지를 끌어오는 경우. `@/domain/guide.schema`는 허용 경로에 있지만 zod를
+  // import하므로, 리더가 그것을 쓰면 zod가 리더 번들에 들어간다. M9의
+  // verify:bundle까지 가서야 드러나는 것을 여기서 막는다.
+  const byPath = new Map(files.map((file) => [file.path, file]));
+
+  const resolveToFile = (fromFile, specifier) => {
+    const target = resolveSpecifier(fromFile, specifier);
+    if (target === null) return null;
+    if (byPath.has(target)) return target;
+    for (const suffix of ['.ts', '.tsx', '/index.ts', '.js', '.mjs']) {
+      if (byPath.has(`${target}${suffix}`)) return `${target}${suffix}`;
+    }
+    return null;
+  };
+
+  /** entry에서 도달하는 내부 모듈이 쓰는 외부 패키지를 모은다. */
+  const reachablePackages = (entry) => {
+    const found = new Map();
+    const seen = new Set();
+    const queue = [entry];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (seen.has(current)) continue;
+      seen.add(current);
+
+      const file = byPath.get(current);
+      if (file === undefined) continue;
+
+      for (const specifier of file.imports ?? []) {
+        const pkg = packageRoot(specifier);
+        if (pkg !== null) {
+          if (!found.has(pkg)) found.set(pkg, current);
+          continue;
+        }
+        const next = resolveToFile(current, specifier);
+        if (next !== null) queue.push(next);
+      }
+    }
+
+    return found;
+  };
+
+  for (const file of files) {
+    if (!file.path.startsWith('src/reader-runtime/')) continue;
+
+    for (const [pkg, via] of reachablePackages(file.path)) {
+      if (READER_RUNTIME_ALLOWED_PACKAGES.includes(pkg)) continue;
+      if (via === file.path) continue; // 직접 import는 위에서 이미 보고했다
+      add(
+        'READER_RUNTIME_BOUNDARY',
+        file.path,
+        `reader-runtime이 '${via}'를 거쳐 외부 패키지 '${pkg}'를 끌어온다. ` +
+          '리더 번들에 편집기 전용 의존성이 들어간다. (INV-11, M9 번들 예산)',
       );
     }
   }

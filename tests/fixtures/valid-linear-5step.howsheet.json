@@ -1,0 +1,279 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-linear-5",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "선형 5단계 기준 가이드",
+    "language": "ko-KR"
+  },
+  "preparation": [
+    {
+      "id": "prep-1",
+      "label": "관리자 권한 계정",
+      "required": true,
+      "order": 0,
+      "link": {
+        "label": "권한 확인 방법",
+        "url": "https://example.com/admin"
+      }
+    },
+    {
+      "id": "prep-2",
+      "label": "여유 시간 10분",
+      "required": false,
+      "order": 1
+    }
+  ],
+  "warnings": [
+    {
+      "id": "warn-danger",
+      "severity": "danger",
+      "title": "설정이 초기화됩니다",
+      "body": "이 절차는 네트워크 설정을 초기화합니다.",
+      "requiresAcknowledgement": true,
+      "acknowledgementLabel": "초기화된다는 점을 이해했습니다",
+      "order": 0
+    },
+    {
+      "id": "warn-warning",
+      "severity": "warning",
+      "title": "연결이 잠시 끊깁니다",
+      "body": "재시작 동안 인터넷이 끊길 수 있습니다.",
+      "requiresAcknowledgement": false,
+      "order": 1
+    },
+    {
+      "id": "warn-info",
+      "severity": "info",
+      "title": "소요 시간",
+      "body": "보통 10분 이내에 끝납니다.",
+      "requiresAcknowledgement": false,
+      "order": 2
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "1단계 작업",
+      "blocks": [
+        {
+          "id": "block-1-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "1번째 단계 설명입니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": ["ts-global"],
+      "optional": false,
+      "successCriteria": "1단계 결과를 확인했습니다.",
+      "defaultNextStepId": "step-2"
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "2단계 작업",
+      "blocks": [
+        {
+          "id": "block-2-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "2번째 단계 설명입니다."
+        },
+        {
+          "id": "block-2-2",
+          "order": 1,
+          "type": "code",
+          "language": "bash",
+          "code": "sudo systemctl restart networking",
+          "copyLabel": "명령어 복사"
+        },
+        {
+          "id": "block-2-3",
+          "order": 2,
+          "type": "image",
+          "assetId": "asset-diagram",
+          "alt": "네트워크 설정 화면",
+          "caption": "설정 > 네트워크 화면"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "2단계 결과를 확인했습니다.",
+      "defaultNextStepId": "step-3"
+    },
+    {
+      "id": "step-3",
+      "order": 2,
+      "title": "3단계 작업",
+      "blocks": [
+        {
+          "id": "block-3-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "3번째 단계 설명입니다."
+        },
+        {
+          "id": "block-3-2",
+          "order": 1,
+          "type": "link",
+          "label": "공식 문서",
+          "url": "https://example.com/docs",
+          "description": "설정 값 참고"
+        },
+        {
+          "id": "block-3-3",
+          "order": 2,
+          "type": "image",
+          "assetId": "asset-diagram",
+          "alt": ""
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": ["ts-step3"],
+      "optional": false,
+      "successCriteria": "3단계 결과를 확인했습니다.",
+      "defaultNextStepId": "step-4"
+    },
+    {
+      "id": "step-4",
+      "order": 3,
+      "title": "4단계 작업",
+      "blocks": [
+        {
+          "id": "block-4-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "4번째 단계 설명입니다."
+        },
+        {
+          "id": "block-4-2",
+          "order": 1,
+          "type": "checklist",
+          "items": [
+            {
+              "id": "chk-1",
+              "label": "케이블이 연결되어 있다",
+              "required": true
+            },
+            {
+              "id": "chk-2",
+              "label": "전원 표시등이 켜져 있다",
+              "required": false
+            }
+          ]
+        },
+        {
+          "id": "block-4-3",
+          "order": 2,
+          "type": "decision",
+          "question": "표시등 색이 무엇인가요?",
+          "options": [
+            {
+              "id": "opt-green",
+              "label": "초록"
+            },
+            {
+              "id": "opt-red",
+              "label": "빨강",
+              "description": "오류 상태"
+            }
+          ],
+          "required": false
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "4단계 결과를 확인했습니다.",
+      "defaultNextStepId": "step-5"
+    },
+    {
+      "id": "step-5",
+      "order": 4,
+      "title": "5단계 작업",
+      "blocks": [
+        {
+          "id": "block-5-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "5번째 단계 설명입니다."
+        },
+        {
+          "id": "block-5-2",
+          "order": 1,
+          "type": "divider"
+        }
+      ],
+      "completionMode": "automatic",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "successCriteria": "5단계 결과를 확인했습니다."
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [
+    {
+      "id": "ts-global",
+      "scope": "global",
+      "symptom": "명령어가 실행되지 않습니다",
+      "likelyCause": "관리자 권한이 없습니다",
+      "resolution": [
+        {
+          "id": "ts-b-1",
+          "order": 0,
+          "type": "text",
+          "markdown": "관리자 권한으로 터미널을 다시 엽니다."
+        }
+      ],
+      "order": 0
+    },
+    {
+      "id": "ts-step3",
+      "scope": "step",
+      "stepId": "step-3",
+      "symptom": "문서 링크가 열리지 않습니다",
+      "resolution": [
+        {
+          "id": "ts-b-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "브라우저를 바꿔 다시 시도합니다."
+        }
+      ],
+      "order": 1
+    }
+  ],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [
+    {
+      "id": "asset-diagram",
+      "fileName": "diagram.png",
+      "mimeType": "image/png",
+      "byteSize": 20480,
+      "width": 800,
+      "height": 450,
+      "checksum": "sha256-0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0"
+    }
+  ],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

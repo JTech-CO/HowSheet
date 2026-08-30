@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-branched",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "분기 기준 가이드",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-start",
+      "order": 0,
+      "title": "사용 중인 기기 확인",
+      "blocks": [
+        {
+          "id": "block-decide",
+          "order": 0,
+          "type": "decision",
+          "question": "어떤 기기를 쓰고 있나요?",
+          "options": [
+            {
+              "id": "opt-pc",
+              "label": "PC"
+            },
+            {
+              "id": "opt-mobile",
+              "label": "모바일",
+              "description": "안드로이드 또는 iOS"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-mobile",
+          "sourceBlockId": "block-decide",
+          "operator": "equals",
+          "value": "opt-mobile",
+          "targetStepId": "step-mobile",
+          "priority": 20
+        },
+        {
+          "id": "rule-pc",
+          "sourceBlockId": "block-decide",
+          "operator": "notEquals",
+          "value": "opt-mobile",
+          "targetStepId": "step-pc",
+          "priority": 10
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false
+    },
+    {
+      "id": "step-pc",
+      "order": 1,
+      "title": "PC에서 설정 열기",
+      "blocks": [
+        {
+          "id": "block-pc",
+          "order": 0,
+          "type": "text",
+          "markdown": "설정 앱을 엽니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-finish"
+    },
+    {
+      "id": "step-mobile",
+      "order": 2,
+      "title": "모바일에서 설정 열기",
+      "blocks": [
+        {
+          "id": "block-mobile",
+          "order": 0,
+          "type": "text",
+          "markdown": "설정 앱을 엽니다."
+        },
+        {
+          "id": "block-mobile-chk",
+          "order": 1,
+          "type": "checklist",
+          "items": [
+            {
+              "id": "chk-m1",
+              "label": "설정을 열었다",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [
+        {
+          "id": "rule-mobile-done",
+          "sourceBlockId": "block-mobile-chk",
+          "operator": "checked",
+          "targetStepId": "step-finish",
+          "priority": 0
+        },
+        {
+          "id": "rule-mobile-stuck",
+          "sourceBlockId": "block-mobile-chk",
+          "operator": "notChecked",
+          "targetStepId": "step-finish",
+          "priority": 1
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false
+    },
+    {
+      "id": "step-finish",
+      "order": 3,
+      "title": "결과 확인",
+      "blocks": [
+        {
+          "id": "block-finish",
+          "order": 0,
+          "type": "text",
+          "markdown": "정상 동작을 확인합니다."
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    }
+  ],
+  "startStepId": "step-start",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

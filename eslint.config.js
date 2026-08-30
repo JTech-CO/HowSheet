@@ -4,7 +4,10 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-import { EDITOR_ONLY_PACKAGES } from './scripts/verify-architecture.mjs';
+import {
+  DOM_GLOBALS as WATCHED_GLOBALS,
+  EDITOR_ONLY_PACKAGES,
+} from './scripts/verify-architecture.mjs';
 
 // 권위 있는 판정은 scripts/verify-architecture.mjs가 한다. 목록을 그 모듈에서
 // 가져와 두 곳이 어긋나지 않게 한다. 서브경로(`react-dom/client`)까지 막아야 하므로
@@ -19,13 +22,11 @@ const STORAGE_GLOBALS = [
 ];
 
 // domain은 React·브라우저 API에 의존하지 않는다. (하네스 M1 DoD 5)
-const DOM_GLOBALS = [
-  { name: 'window', message: 'domain은 브라우저 API에 의존하지 않는다.' },
-  { name: 'document', message: 'domain은 브라우저 API에 의존하지 않는다.' },
-  { name: 'navigator', message: 'domain은 브라우저 API에 의존하지 않는다.' },
-  { name: 'fetch', message: 'domain은 브라우저 API에 의존하지 않는다.' },
-  ...STORAGE_GLOBALS,
-];
+// 감시 목록은 verify-architecture.mjs가 단독으로 소유한다.
+const DOM_GLOBALS = WATCHED_GLOBALS.map((name) => {
+  const storage = STORAGE_GLOBALS.find((entry) => entry.name === name);
+  return storage ?? { name, message: 'domain은 브라우저 API에 의존하지 않는다.' };
+});
 
 export default tseslint.config(
   {

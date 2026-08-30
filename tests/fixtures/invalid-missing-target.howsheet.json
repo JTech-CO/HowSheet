@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-missing-target",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "존재하지 않는 분기 대상",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "시작",
+      "blocks": [
+        {
+          "id": "block-1",
+          "order": 0,
+          "type": "checklist",
+          "items": [
+            {
+              "id": "chk-1",
+              "label": "확인했다",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [
+        {
+          "id": "rule-1",
+          "sourceBlockId": "block-1",
+          "operator": "checked",
+          "targetStepId": "step-does-not-exist",
+          "priority": 0
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false,
+      "defaultNextStepId": "step-2"
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "끝",
+      "blocks": [
+        {
+          "id": "block-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}

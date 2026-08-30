@@ -19,12 +19,14 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --project unit",
-    "verify:architecture": "node scripts/verify-architecture.mjs"
+    "verify:architecture": "node scripts/verify-architecture.mjs",
+    "verify:fixtures": "node scripts/verify-fixtures.mjs"
   },
   "dependencies": {
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-router-dom": "7.18.3"
+    "react-router-dom": "7.18.3",
+    "zod": "4.5.2"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

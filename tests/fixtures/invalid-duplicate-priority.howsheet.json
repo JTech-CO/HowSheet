@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.0",
+  "id": "guide-duplicate-priority",
+  "revision": 1,
+  "createdAt": "2026-08-29T12:00:00.000Z",
+  "updatedAt": "2026-08-29T12:00:00.000Z",
+  "meta": {
+    "title": "분기 우선순위 중복",
+    "language": "ko-KR"
+  },
+  "preparation": [],
+  "warnings": [],
+  "steps": [
+    {
+      "id": "step-1",
+      "order": 0,
+      "title": "선택",
+      "blocks": [
+        {
+          "id": "block-decide",
+          "order": 0,
+          "type": "decision",
+          "question": "무엇을 선택하나요?",
+          "options": [
+            {
+              "id": "opt-a",
+              "label": "A"
+            },
+            {
+              "id": "opt-b",
+              "label": "B"
+            }
+          ],
+          "required": true
+        }
+      ],
+      "completionMode": "choice",
+      "branchRules": [
+        {
+          "id": "rule-a",
+          "sourceBlockId": "block-decide",
+          "operator": "equals",
+          "value": "opt-a",
+          "targetStepId": "step-2",
+          "priority": 0
+        },
+        {
+          "id": "rule-b",
+          "sourceBlockId": "block-decide",
+          "operator": "equals",
+          "value": "opt-b",
+          "targetStepId": "step-2",
+          "priority": 0
+        },
+        {
+          "id": "rule-a-again",
+          "sourceBlockId": "block-decide",
+          "operator": "equals",
+          "value": "opt-a",
+          "targetStepId": "step-2",
+          "priority": 5
+        }
+      ],
+      "troubleshootingIds": [],
+      "optional": false
+    },
+    {
+      "id": "step-2",
+      "order": 1,
+      "title": "끝",
+      "blocks": [
+        {
+          "id": "block-2",
+          "order": 0,
+          "type": "text",
+          "markdown": "설명"
+        }
+      ],
+      "completionMode": "checkbox",
+      "branchRules": [],
+      "troubleshootingIds": [],
+      "optional": false
+    }
+  ],
+  "startStepId": "step-1",
+  "troubleshooting": [],
+  "completion": {
+    "title": "완료했습니다",
+    "message": "결과가 예상과 같은지 확인하세요.",
+    "showSummary": true
+  },
+  "assets": [],
+  "settings": {
+    "defaultTheme": "system",
+    "allowThemeSwitch": true,
+    "allowProgressReset": true,
+    "showOverallOutline": true,
+    "printMode": "active-path"
+  }
+}
