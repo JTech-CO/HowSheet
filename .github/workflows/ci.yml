@@ -1,0 +1,95 @@
+name: CI
+
+# 로컬과 동일한 Node·pnpm 버전 및 핵심 명령을 사용한다. (하네스 M1 DoD 7)
+#   Node : .nvmrc
+#   pnpm : package.json 의 packageManager 필드
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+
+jobs:
+  verify:
+    name: 정적 검사 · 단위 테스트 · 빌드
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: format:check
+        run: pnpm format:check
+
+      - name: lint
+        run: pnpm lint
+
+      - name: typecheck
+        run: pnpm typecheck
+
+      - name: test:unit
+        run: pnpm test:unit
+
+      - name: verify:architecture
+        run: pnpm verify:architecture
+
+      - name: build
+        run: pnpm build
+
+      - name: 빌드 산출물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  e2e:
+    name: E2E (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: 브라우저 설치
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: 빌드
+        run: pnpm build
+
+      # M7에서 pnpm test:e2e(chromium·firefox·webkit)로 확장한다. (하네스 §0.9)
+      - name: 스모크 테스트
+        run: pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium
+
+      - name: 실패 리포트 업로드
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

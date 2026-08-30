@@ -1,0 +1,27 @@
+/* body, link, selection. 전역 스타일은 이 파일과 reset/typography/utilities로 제한한다. */
+
+@import './reset.css';
+@import './tokens.css';
+@import './themes.css';
+@import './typography.css';
+@import './utilities.css';
+@import './print.css';
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+a {
+  color: var(--color-brand-700);
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+::selection {
+  background-color: var(--color-brand-600);
+  color: #ffffff;
+}

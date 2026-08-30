@@ -1,0 +1,44 @@
+/*
+ * 인쇄 레이아웃. 여기서 겨냥하는 클래스명은 각 컴포넌트가 *.module.css의
+ * :global()로 노출한다. (File_Structure.md §4 D-06, 기술 §5.5)
+ * INV-14: 단계 번호·경고·코드·링크·오류 해결은 보존하고 인터랙션 UI는 제거한다.
+ */
+
+@media print {
+  /* 다크 모드에서 인쇄해도 흰 배경·검정 텍스트를 강제한다. (기술 §7.5-7) */
+  :root,
+  [data-theme='dark'] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-subtle: #ffffff;
+    --color-text: #000000;
+    --color-text-muted: #333333;
+    --color-border: #999999;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .editor-only,
+  .reader-actions,
+  .theme-toggle,
+  .copy-button,
+  .toast-region {
+    display: none !important;
+  }
+
+  .step-card,
+  .warning-card,
+  pre,
+  figure {
+    break-inside: avoid;
+  }
+
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+  }
+}

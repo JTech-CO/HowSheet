@@ -1,0 +1,26 @@
+/*
+ * Light / Dark / System. 실제 적용 값은 data-theme 속성이 결정하고,
+ * 속성 자체는 index.html의 선행 스니펫과 store/ui.store.ts가 설정한다.
+ * (File_Structure.md §2.3)
+ */
+
+[data-theme='dark'] {
+  --color-brand-600: #60a5fa;
+  --color-brand-700: #93c5fd;
+  --color-bg: #0b1120;
+  --color-surface: #111827;
+  --color-surface-subtle: #172033;
+  --color-text: #f8fafc;
+  --color-text-muted: #cbd5e1;
+  --color-border: #334155;
+  --color-border-strong: #64748b;
+  --color-success: #4ade80;
+  --color-warning: #fb923c;
+  --color-danger: #f87171;
+  --color-info: #38bdf8;
+  --color-focus: #93c5fd;
+
+  /* 다크 모드에서는 그림자보다 밝은 테두리와 표면 차이를 우선한다. (디자인 §5.4) */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 45%);
+}

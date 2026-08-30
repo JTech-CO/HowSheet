@@ -1,0 +1,45 @@
+import { fileURLToPath, URL } from 'node:url';
+
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
+
+const alias = {
+  '@': fileURLToPath(new URL('./src', import.meta.url)),
+};
+
+// 테스트 배치는 File_Structure.md §5.1(D-07)이 고정한다.
+//   - unit        : 순수 함수·도메인. node 환경.
+//   - dom         : 통합 테스트와 컴포넌트 병치 렌더링 테스트. jsdom 환경.
+// 커버리지 측정 대상은 src/** 이며 테스트 파일 자신은 제외한다.
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        resolve: { alias },
+        test: {
+          name: 'unit',
+          environment: 'node',
+          // 확장자를 좁히면 tests/unit의 .test.tsx가 어느 프로젝트에도 잡히지 않아
+          // 조용히 건너뛴다. DOM이 필요한 테스트는 여기서 시끄럽게 실패해야 한다.
+          include: ['tests/unit/**/*.test.{ts,tsx}'],
+        },
+      },
+      {
+        plugins: [react()],
+        resolve: { alias },
+        test: {
+          name: 'dom',
+          environment: 'jsdom',
+          include: ['tests/integration/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
+        },
+      },
+    ],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**'],
+      // D-07은 대상을 src/**로 두고 테스트 파일 자신만 제외한다.
+      exclude: ['src/**/*.test.{ts,tsx}'],
+      reporter: ['text', 'json-summary'],
+    },
+  },
+});

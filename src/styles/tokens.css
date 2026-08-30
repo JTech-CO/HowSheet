@@ -1,0 +1,77 @@
+/*
+ * 디자인 토큰. 값은 기술 백서 §5.1과 디자인 백서 §5를 따른다.
+ * 변수명은 reader-runtime/reader.css와 동일해야 하며 번들만 분리한다.
+ * (File_Structure.md §3.4)
+ */
+
+:root {
+  /* 색상 — Light */
+  --color-brand-50: #eff6ff;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f1f5f9;
+  --color-text: #111827;
+  --color-text-muted: #4b5563;
+  --color-border: #d1d5db;
+  --color-border-strong: #9ca3af;
+  --color-success: #15803d;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #9a3412;
+  --color-warning-bg: #fff7ed;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-info: #0369a1;
+  --color-info-bg: #f0f9ff;
+  --color-focus: #2563eb;
+
+  /* 타이포 */
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  --font-size-base: 16px;
+  --line-height-body: 1.65;
+
+  /* 간격 — 4px 스케일 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* 모서리 — 디자인 §5.4. 기술 §5.1.3은 8/12/16을 적었으나 하네스 §0.1에 따라
+     표현 계약은 디자인 백서를 따른다. PROGRESS.md 결정 로그 참조. */
+  --radius-input: 8px;
+  --radius-card: 10px;
+  --radius-panel: 16px;
+  --radius-pill: 999px;
+
+  /* 터치 대상 — INV-13 */
+  --touch-target-min: 44px;
+
+  /* 레이아웃 폭 */
+  --width-reader-max: 760px;
+  --width-editor-column: 800px;
+
+  /* 그림자 — 계층을 만들 때만 사용한다 (디자인 §5.4) */
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 6%);
+  --shadow-md: 0 8px 24px rgb(15 23 42 / 10%);
+
+  /* 모션 — prefers-reduced-motion에서 0으로 덮어쓴다 */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+}

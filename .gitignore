@@ -1,0 +1,26 @@
+node_modules/
+dist/
+coverage/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# 검증 증거: phase-reports만 커밋한다. (File_Structure.md §1, D-09)
+artifacts/qa/screenshots/
+artifacts/qa/accessibility/
+artifacts/qa/performance/
+artifacts/qa/security/
+artifacts/qa/exports/
+
+# 로컬 환경
+.env
+.env.*
+!.env.example
+*.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

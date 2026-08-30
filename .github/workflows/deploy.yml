@@ -1,0 +1,68 @@
+name: Deploy
+
+# 정적 호스팅 배포. M1 시점에는 수동 실행만 허용한다.
+# main push 자동 배포는 M12(릴리스 게이트)에서 켠다. (하네스 M12 할 일 6)
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: '하위 경로 배포 시 Vite base (예: /howsheet/)'
+        required: false
+        default: '/'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 빌드
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 배포 전에도 전체 게이트를 통과해야 한다. 실패한 게이트를 건너뛰지 않는다.
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+      - run: pnpm verify:architecture
+
+      - name: 빌드
+        run: pnpm build
+        env:
+          VITE_BASE: ${{ inputs.base }}
+
+      # BrowserRouter를 쓰므로 정적 호스트에 SPA 폴백이 필요하다.
+      - name: SPA 폴백 생성
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: 배포
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

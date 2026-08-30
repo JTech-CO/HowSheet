@@ -1,0 +1,11 @@
+dist
+dist*
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+artifacts/qa/screenshots
+artifacts/qa/accessibility
+artifacts/qa/performance
+artifacts/qa/security
+artifacts/qa/exports

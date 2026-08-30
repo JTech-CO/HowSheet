@@ -1,0 +1,18 @@
+{
+  "name": "HowSheet",
+  "short_name": "HowSheet",
+  "description": "누구나 만드는 단일 페이지 단계별 해결 가이드",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

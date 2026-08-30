@@ -1,0 +1,159 @@
+import js from '@eslint/js';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+import { EDITOR_ONLY_PACKAGES } from './scripts/verify-architecture.mjs';
+
+// 권위 있는 판정은 scripts/verify-architecture.mjs가 한다. 목록을 그 모듈에서
+// 가져와 두 곳이 어긋나지 않게 한다. 서브경로(`react-dom/client`)까지 막아야 하므로
+// exact-match인 `paths`가 아니라 glob `patterns`를 쓴다.
+const EDITOR_ONLY_PATTERNS = EDITOR_ONLY_PACKAGES.flatMap((name) => [name, `${name}/*`]);
+
+// 브라우저 저장소 API는 storage/ 밖에서 직접 쓰지 않는다. (File_Structure.md §3.2-5)
+const STORAGE_GLOBALS = [
+  { name: 'localStorage', message: 'src/storage/local-storage.ts를 통해서만 접근한다.' },
+  { name: 'sessionStorage', message: 'src/storage/local-storage.ts를 통해서만 접근한다.' },
+  { name: 'indexedDB', message: 'src/storage/db.ts를 통해서만 접근한다.' },
+];
+
+// domain은 React·브라우저 API에 의존하지 않는다. (하네스 M1 DoD 5)
+const DOM_GLOBALS = [
+  { name: 'window', message: 'domain은 브라우저 API에 의존하지 않는다.' },
+  { name: 'document', message: 'domain은 브라우저 API에 의존하지 않는다.' },
+  { name: 'navigator', message: 'domain은 브라우저 API에 의존하지 않는다.' },
+  { name: 'fetch', message: 'domain은 브라우저 API에 의존하지 않는다.' },
+  ...STORAGE_GLOBALS,
+];
+
+export default tseslint.config(
+  {
+    ignores: [
+      'dist*/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      'artifacts/**',
+      'node_modules/**',
+    ],
+  },
+
+  js.configs.recommended,
+  tseslint.configs.recommended,
+
+  {
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.browser, ...globals.es2022 },
+    },
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+      eqeqeq: ['error', 'always'],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+
+  // React 컴포넌트
+  {
+    files: ['src/**/*.tsx', 'tests/**/*.tsx'],
+    ...jsxA11y.flatConfigs.recommended,
+  },
+  {
+    files: ['src/**/*.tsx'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: reactHooks.configs.recommended.rules,
+  },
+
+  // Node에서 실행되는 설정·검증 스크립트
+  {
+    files: ['*.config.{ts,js}', 'scripts/**/*.mjs', 'playwright.config.ts'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' },
+  },
+
+  // ── 모듈 경계 ─────────────────────────────────────────────────
+  // 권위 있는 판정은 scripts/verify-architecture.mjs가 한다. 아래는 편집 중
+  // 즉시 피드백을 주기 위한 굵은 deny-list다. (File_Structure.md §3.2)
+  {
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-globals': ['error', ...DOM_GLOBALS],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: EDITOR_ONLY_PATTERNS,
+              message: 'domain은 React·상태·저장소 라이브러리를 import하지 않는다. (M1 DoD 5)',
+            },
+            {
+              group: ['@/*', '!@/domain', '!@/domain/**'],
+              message: 'domain은 다른 계층을 import하지 않는다.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/reader-runtime/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: EDITOR_ONLY_PATTERNS,
+              message: 'reader-runtime은 편집기 전용 라이브러리를 import하지 않는다. (INV-11)',
+            },
+            {
+              group: ['@/components/**', '@/pages/**', '@/app/**', '@/store/**', '@/storage/**'],
+              message: 'reader-runtime은 편집기 계층을 import하지 않는다. (INV-11)',
+            },
+            {
+              group: ['@/features/*', '!@/features/branching', '!@/features/sanitize'],
+              message:
+                'reader-runtime이 import할 수 있는 feature는 branching과 sanitize뿐이다. (D-04)',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/domain/**'],
+              message: 'ui는 도메인 지식을 갖지 않는다. content 이상 계층에 둔다.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // domain은 위에서 더 넓은 목록으로 이미 제한한다. 여기서 다시 지정하면
+    // flat config의 뒤 블록이 앞 블록의 옵션을 통째로 덮어써 domain 규칙이 죽는다.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/storage/**', 'src/domain/**'],
+    rules: { 'no-restricted-globals': ['error', ...STORAGE_GLOBALS] },
+  },
+
+  // 테스트는 콘솔·any 제약을 완화한다.
+  {
+    files: ['tests/**/*.{ts,tsx}'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' },
+  },
+);
