@@ -46,6 +46,9 @@ jobs:
       - name: test:unit
         run: pnpm test:unit
 
+      - name: test:integration
+        run: pnpm test:integration
+
       - name: verify:architecture
         run: pnpm verify:architecture
 

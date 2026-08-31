@@ -63,6 +63,13 @@ export const EDITOR_ONLY_PACKAGES = [
 export const STORAGE_ONLY_PACKAGES = ['dexie', 'dexie-react-hooks'];
 
 /**
+ * §3.2-5 — 브라우저 저장소 전역도 storage/ 안에서만 만진다.
+ * 패키지만 막으면 `window.localStorage`를 직접 쓰는 우회가 모든 게이트를
+ * 통과한다. 그러면 §4.5.2 키 허용 목록(INV-10)이 강제되는 지점이 사라진다.
+ */
+export const STORAGE_ONLY_GLOBALS = ['localStorage', 'sessionStorage', 'indexedDB'];
+
+/**
  * D-04 — reader-runtime의 내부 import 허용 목록.
  * 디렉터리 단위가 아니라 모듈 단위로 판정한다. features 전체를 금지하면 리더가
  * 분기 엔진과 살균기를 쓸 수 없고, features 전체를 허용하면 편집기 전용 모듈이
@@ -265,6 +272,16 @@ function underAnyPrefix(target, prefixes) {
   );
 }
 
+/** 이 스크립트가 판정하는 규칙 종류. 요약 줄의 숫자는 여기서 나온다. */
+export const RULE_KINDS = [
+  'FORBIDDEN_DIRECTORY',
+  'DOMAIN_PURITY',
+  'READER_RUNTIME_BOUNDARY',
+  'UI_DOMAIN_INDEPENDENCE',
+  'STORAGE_ENCAPSULATION',
+  'SANITIZE_BOUNDARY',
+];
+
 // ────────────────────────────────────────────────────────────── 판정
 
 /**
@@ -278,7 +295,14 @@ export function analyze(input) {
   const directories = input.directories ?? [];
   const violations = [];
 
-  const add = (rule, file, detail) => violations.push({ rule, file, detail });
+  const add = (rule, file, detail) => {
+    // 요약 줄이 실제 검사 항목과 어긋나지 않게 한다. 규칙을 늘리면서 목록에
+    // 넣지 않으면 여기서 바로 드러난다.
+    if (!RULE_KINDS.includes(rule)) {
+      throw new Error(`RULE_KINDS에 없는 규칙입니다: ${rule}`);
+    }
+    violations.push({ rule, file, detail });
+  };
 
   // D-01 — 금지 디렉터리
   const presentDirs = new Set([...directories, ...files.map((f) => path.posix.dirname(f.path))]);
@@ -362,6 +386,19 @@ export function analyze(input) {
           'STORAGE_ENCAPSULATION',
           file.path,
           `'${specifier}'는 src/storage/ 안에서만 import한다. (File_Structure.md §3.2-5)`,
+        );
+      }
+    }
+
+    // §3.2-5 — 저장소 전역은 src/storage/ 안에서만
+    if (inSrc && !inStorage) {
+      const hits = globals.filter((name) => STORAGE_ONLY_GLOBALS.includes(name));
+      if (hits.length > 0) {
+        add(
+          'STORAGE_ENCAPSULATION',
+          file.path,
+          `${hits.join(', ')}은(는) src/storage/ 안에서만 만진다. ` +
+            '키 허용 목록을 우회하는 경로가 생긴다. (File_Structure.md §3.2-5, INV-10)',
         );
       }
     }
@@ -513,7 +550,8 @@ async function main() {
   }
 
   console.log(
-    `verify:architecture — 통과. 소스 ${collected.files.length}개(src ${srcCount}개), 규칙 7종을 검사했습니다.`,
+    `verify:architecture — 통과. 소스 ${collected.files.length}개(src ${srcCount}개), ` +
+      `규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
   );
 }
 

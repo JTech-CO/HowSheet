@@ -64,7 +64,9 @@ pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test:unit
+pnpm test:integration
 pnpm verify:architecture
+pnpm verify:fixtures
 ```
 
 빈 명령, 항상 성공하는 placeholder, `|| true`를 두지 않는다. 검증 스크립트는 Windows·macOS·Linux에서 동일하게 도는 Node 기반으로 작성한다.

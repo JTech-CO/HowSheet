@@ -30,6 +30,9 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'jsdom',
+          // Dexie보다 먼저 전역 indexedDB를 채운다. 테스트 파일의 import 순서에
+          // 기대면 저장소 통합 테스트가 조용히 메모리 백엔드로 떨어진다.
+          setupFiles: ['./tests/setup/fake-indexeddb.ts'],
           include: ['tests/integration/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
         },
       },
