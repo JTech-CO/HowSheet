@@ -1,0 +1,103 @@
+.outline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.sections,
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sectionButton,
+.stepButton {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+}
+
+.sectionButton:hover,
+.stepButton:hover {
+  background: var(--color-surface-subtle);
+}
+
+.sectionButton[aria-current='true'],
+.stepButton[aria-current='true'] {
+  font-weight: 700;
+  background: var(--color-brand-50);
+  border-color: var(--color-brand-600);
+}
+
+.stepButton[data-highlight='true'] {
+  outline: 2px dashed var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+.groupTitle {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin: var(--space-3) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.count {
+  padding: 0 var(--space-2);
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.groupTitle .count {
+  margin-left: 0;
+}
+
+.stepIndex {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.stepTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.startBadge {
+  flex-shrink: 0;
+  padding: 0 var(--space-2);
+  font-size: 0.6875rem;
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border-radius: var(--radius-pill);
+}

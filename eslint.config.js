@@ -64,9 +64,20 @@ export default tseslint.config(
   {
     files: ['src/**/*.tsx', 'tests/**/*.tsx'],
     ...jsxA11y.flatConfigs.recommended,
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      // `reset.css`가 모든 목록의 마커를 지운다. Safari/VoiceOver는
+      // `list-style: none`이 붙으면 목록 역할까지 없애므로 실제 목록에는
+      // `role="list"`를 명시해야 한다. ARIA만 보면 중복이지만 그 중복이
+      // 목록 시맨틱을 되살리는 유일한 방법이다. ul·ol의 list만 예외로 둔다.
+      'jsx-a11y/no-redundant-roles': ['error', { ul: ['list'], ol: ['list'] }],
+    },
   },
   {
-    files: ['src/**/*.tsx'],
+    // .tsx만 보면 `features/autosave/useAutosave.ts`처럼 .ts에 있는 훅이
+    // 규칙 밖에 남는다. 그 파일의 eslint-disable 주석도 "rule not found"로
+    // 실패한다. 훅 규칙은 확장자가 아니라 훅에 걸어야 한다.
+    files: ['src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
   },

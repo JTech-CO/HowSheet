@@ -1,0 +1,65 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-weight: 700;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.toolbar > :nth-child(3) {
+  margin-left: auto;
+}
+
+/* 인쇄 훅. styles/print.css가 이 이름을 겨냥한다. (D-06) */
+.content,
+:global(.step-card) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-card);
+}
+
+.contentTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.otherBlocks {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.optional {
+  display: flex;
+  align-items: center;
+}
+
+.branchNote {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}

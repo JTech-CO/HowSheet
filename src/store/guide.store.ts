@@ -1,0 +1,710 @@
+/**
+ * 편집 문서 스토어.
+ *
+ * 기준: 기술 백서 §4.1.1(상태 범위), §4.1.2(스토어 예시), §4.1.3(업데이트 규칙),
+ * §4.3.2(작성 및 자동 저장). 하네스 M4 DoD 1~7, INV-04, INV-08.
+ *
+ * 여기에는 **영속 도메인 상태**만 둔다. 선택한 단계·열린 패널 같은 일시 UI
+ * 상태는 `ui.store.ts`가 갖는다. 두 가지를 한 스토어에 두면 UI 조작이 문서
+ * 변경으로 잘못 집계돼 자동 저장이 헛돈다. (기술 §4.1.1)
+ *
+ * 폼은 이 스토어를 단일 기준으로 삼는다. 폼 지역 상태에 문서를 복제해 두고
+ * 양방향 동기화하지 않는다. (하네스 M4 주의)
+ */
+
+import { create } from 'zustand';
+
+import {
+  createFirstStep,
+  createGuideDocument,
+  normalizeOrder,
+  type IdFactory,
+} from '../domain/guide.defaults.ts';
+import type {
+  ContentBlock,
+  GuideDocument,
+  GuideMeta,
+  GuideSettings,
+  GuideStep,
+  PreparationItem,
+  WarningBlock,
+} from '../domain/guide.types.ts';
+import { AssetRepository } from '../storage/asset.repository.ts';
+import { openStorage, type StorageBackend, type StorageMode } from '../storage/db.ts';
+import { GuideRepository, type GuideSummary } from '../storage/guide.repository.ts';
+import { RecoveryRepository } from '../storage/recovery.repository.ts';
+
+export type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+export type LoadStatus = 'idle' | 'loading' | 'ready' | 'missing' | 'error';
+
+/** 편집 화면이 다루는 섹션. 개요와 중앙 편집기가 같은 이름을 쓴다. */
+export type EditorSection = 'meta' | 'preparation' | 'warnings' | 'steps';
+
+export interface GuideStoreDeps {
+  guides: GuideRepository;
+  assets: AssetRepository;
+  recovery: RecoveryRepository;
+  mode: StorageMode;
+  storageUnavailableReason?: string;
+  newId: IdFactory;
+  now: () => string;
+}
+
+/** 단계 삭제가 함께 건드린 참조. 삭제 확인 대화상자가 미리 보여 준다. */
+export interface StepReferenceImpact {
+  /** `defaultNextStepId`가 이 단계를 가리키던 단계 ID. */
+  defaultNextFrom: string[];
+  /** 분기 규칙이 이 단계를 가리키던 단계 ID. */
+  branchRuleFrom: string[];
+  /** 이 단계가 시작 단계였는가. */
+  wasStartStep: boolean;
+}
+
+export interface GuideStoreState {
+  // ── 라이브러리 (대시보드)
+  library: GuideSummary[];
+  libraryStatus: LoadStatus;
+
+  // ── 저장소 상태 (M3 DoD 6 배너)
+  storageMode: StorageMode | null;
+  storageUnavailableReason?: string;
+
+  // ── 열린 문서
+  document: GuideDocument | null;
+  status: LoadStatus;
+  loadError?: string;
+
+  // ── 저장
+  dirty: boolean;
+  saveState: SaveState;
+  saveError?: string;
+  lastSavedAt?: string;
+  /**
+   * 변경마다 증가한다. 저장 응답이 최신 상태에 해당하는지 판정하는 유일한
+   * 기준이다. 오래된 응답을 `saved`로 표시하지 않기 위해 필요하다. (M4 DoD 4)
+   */
+  changeSeq: number;
+  /** 저장소에 커밋된 마지막 `changeSeq`. */
+  savedSeq: number;
+
+  // ── 액션
+  initStorage: () => Promise<void>;
+  refreshLibrary: () => Promise<void>;
+  createGuide: (options?: { title?: string }) => Promise<string>;
+  duplicateGuide: (id: string) => Promise<string>;
+  renameGuide: (id: string, title: string) => Promise<void>;
+  removeGuide: (id: string) => Promise<void>;
+
+  loadGuide: (id: string) => Promise<void>;
+  closeGuide: () => void;
+
+  updateMeta: (patch: Partial<GuideMeta>) => void;
+  updateSettings: (patch: Partial<GuideSettings>) => void;
+
+  addPreparation: () => string | null;
+  updatePreparation: (id: string, patch: Partial<PreparationItem>) => void;
+  removePreparation: (id: string) => void;
+  movePreparation: (id: string, delta: number) => boolean;
+
+  addWarning: () => string | null;
+  updateWarning: (id: string, patch: Partial<WarningBlock>) => void;
+  removeWarning: (id: string) => void;
+  moveWarning: (id: string, delta: number) => boolean;
+
+  addStep: (afterStepId?: string) => string | null;
+  updateStep: (id: string, patch: Partial<GuideStep>) => void;
+  duplicateStep: (id: string) => string | null;
+  removeStep: (id: string) => StepReferenceImpact | null;
+  moveStep: (id: string, delta: number) => boolean;
+  reorderSteps: (activeId: string, overId: string) => boolean;
+  updateBlock: (stepId: string, blockId: string, patch: Partial<ContentBlock>) => void;
+
+  save: () => Promise<void>;
+}
+
+// ────────────────────────────────────────────────────── 의존성
+
+let deps: GuideStoreDeps | null = null;
+/** 진행 중인 초기화. 여러 화면이 동시에 불러도 저장소는 한 번만 연다. */
+let initPromise: Promise<void> | null = null;
+/** 저장소를 여는 방법. 테스트가 느린 백엔드를 넣어 초기화 경합을 재현한다. */
+let backendOpener: () => Promise<StorageBackend> = () => openStorage();
+
+/** 테스트와 부트스트랩이 저장소·ID·시각을 주입한다. */
+export function configureGuideStore(next: GuideStoreDeps): void {
+  deps = next;
+  initPromise = null;
+}
+
+/** 주입한 opener로 처음부터 다시 초기화한다. `null`이면 기본 동작으로 되돌린다. */
+export function configureBackendOpener(open: (() => Promise<StorageBackend>) | null): void {
+  backendOpener = open ?? (() => openStorage());
+  deps = null;
+  initPromise = null;
+}
+
+export function guideStoreDeps(): GuideStoreDeps {
+  if (deps === null) {
+    throw new Error('guide.store가 아직 설정되지 않았습니다. configureGuideStore를 먼저 부르세요.');
+  }
+  return deps;
+}
+
+/** §4.1.3 — 식별자는 `crypto.randomUUID()`를 우선한다. */
+export function browserIdFactory(prefix: string): string {
+  const uuid =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}_${uuid}`;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+}
+
+// ────────────────────────────────────────────────────── 순수 도우미
+
+/** 배열에서 `id` 항목을 `delta`칸 옮기고 `order`를 다시 매긴다. ID는 그대로다. */
+export function moveById<T extends { id: string; order: number }>(
+  items: readonly T[],
+  id: string,
+  delta: number,
+): T[] | null {
+  const sorted = normalizeOrder(items);
+  const from = sorted.findIndex((item) => item.id === id);
+  if (from === -1) return null;
+
+  const to = from + delta;
+  if (to < 0 || to >= sorted.length) return null;
+
+  const next = [...sorted];
+  const [moved] = next.splice(from, 1);
+  if (moved === undefined) return null;
+  next.splice(to, 0, moved);
+
+  // order만 다시 매긴다. ID와 다른 필드는 건드리지 않는다. (INV-04, M4 DoD 6)
+  return next.map((item, index) => (item.order === index ? item : { ...item, order: index }));
+}
+
+/** 단계 삭제가 건드리게 될 참조를 미리 조사한다. UI가 영향 범위를 보여 줄 때 쓴다. */
+export function findStepReferences(doc: GuideDocument, stepId: string): StepReferenceImpact {
+  const defaultNextFrom: string[] = [];
+  const branchRuleFrom: string[] = [];
+
+  for (const step of doc.steps) {
+    if (step.id === stepId) continue;
+    if (step.defaultNextStepId === stepId) defaultNextFrom.push(step.id);
+    if (step.branchRules.some((rule) => rule.targetStepId === stepId)) branchRuleFrom.push(step.id);
+  }
+
+  return { defaultNextFrom, branchRuleFrom, wasStartStep: doc.startStepId === stepId };
+}
+
+function emptyPreparation(id: string, order: number): PreparationItem {
+  return { id, label: '', required: true, order };
+}
+
+function emptyWarning(id: string, order: number): WarningBlock {
+  return {
+    id,
+    severity: 'warning',
+    title: '',
+    body: '',
+    requiresAcknowledgement: false,
+    order,
+  };
+}
+
+function emptyStep(newId: IdFactory, order: number): GuideStep {
+  const blocks: ContentBlock[] = [{ id: newId('block'), order: 0, type: 'text', markdown: '' }];
+  return {
+    id: newId('step'),
+    order,
+    title: '',
+    blocks,
+    completionMode: 'checkbox',
+    branchRules: [],
+    troubleshootingIds: [],
+    optional: false,
+  };
+}
+
+// ────────────────────────────────────────────────────── 스토어
+
+export const useGuideStore = create<GuideStoreState>((set, get) => {
+  /**
+   * 문서를 바꾸고 변경 번호를 올린다. 모든 편집이 이 함수를 지난다.
+   *
+   * `saveState`는 여기서 `saved`만 지운다. `error`는 다음 저장 결과가 나올
+   * 때까지 남긴다. 실패를 타자 몇 번으로 조용히 감추면 안 된다. (M4 DoD 8)
+   */
+  const mutate = (mutator: (doc: GuideDocument) => GuideDocument): void => {
+    const current = get().document;
+    if (current === null) return;
+
+    const next = mutator(current);
+    if (next === current) return;
+
+    set((state) => ({
+      document: next,
+      dirty: true,
+      changeSeq: state.changeSeq + 1,
+      saveState: state.saveState === 'saved' ? 'idle' : state.saveState,
+    }));
+  };
+
+  /** 저장소가 열릴 때까지 기다린 뒤 의존성을 준다. */
+  const ensureDeps = async (): Promise<GuideStoreDeps> => {
+    await get().initStorage();
+    return guideStoreDeps();
+  };
+
+  return {
+    library: [],
+    libraryStatus: 'idle',
+    storageMode: null,
+    document: null,
+    status: 'idle',
+    dirty: false,
+    saveState: 'idle',
+    changeSeq: 0,
+    savedSeq: 0,
+
+    /**
+     * 저장소를 연다. 여러 번 불러도 한 번만 연다.
+     *
+     * 진행 중인 초기화를 기억해 두는 것이 중요하다. 그러지 않으면 저장소가
+     * 열리기 전에 누른 버튼이 `guideStoreDeps()`에서 던지고, 그 예외가 클릭
+     * 핸들러 안에서 조용히 사라진다. 사용자에게는 "버튼이 안 눌린다"로 보인다.
+     */
+    async initStorage() {
+      initPromise ??= (async () => {
+        if (deps === null) {
+          const backend = await backendOpener();
+          deps = {
+            guides: new GuideRepository(backend),
+            assets: new AssetRepository(backend),
+            recovery: new RecoveryRepository(backend),
+            mode: backend.mode,
+            ...(backend.unavailableReason === undefined
+              ? {}
+              : { storageUnavailableReason: backend.unavailableReason }),
+            newId: browserIdFactory,
+            now: () => new Date().toISOString(),
+          };
+        }
+
+        set({
+          storageMode: deps.mode,
+          ...(deps.storageUnavailableReason === undefined
+            ? {}
+            : { storageUnavailableReason: deps.storageUnavailableReason }),
+        });
+      })();
+
+      await initPromise;
+    },
+
+    async refreshLibrary() {
+      set({ libraryStatus: 'loading' });
+      try {
+        const { guides } = await ensureDeps();
+        set({ library: await guides.list(), libraryStatus: 'ready' });
+      } catch (error) {
+        set({ libraryStatus: 'error', loadError: describeError(error) });
+      }
+    },
+
+    async createGuide(options = {}) {
+      const { guides, newId, now } = await ensureDeps();
+      const timestamp = now();
+      const doc = createGuideDocument({
+        id: newId('guide'),
+        now: timestamp,
+        newId,
+        ...(options.title === undefined ? {} : { title: options.title }),
+      });
+
+      await guides.save(doc);
+      await get().refreshLibrary();
+      return doc.id;
+    },
+
+    async duplicateGuide(id) {
+      const { guides, newId, now } = await ensureDeps();
+      const copy = await guides.duplicate(id, {
+        newGuideId: newId('guide'),
+        newAssetId: () => newId('asset'),
+        now: now(),
+      });
+      await get().refreshLibrary();
+      return copy.id;
+    },
+
+    async renameGuide(id, title) {
+      const { guides, now } = await ensureDeps();
+      const doc = await guides.get(id);
+      if (doc === undefined) return;
+
+      const renamed: GuideDocument = {
+        ...doc,
+        updatedAt: now(),
+        meta: { ...doc.meta, title },
+      };
+      await guides.save(renamed);
+
+      // 열려 있는 문서라면 메모리도 같은 값이어야 한다.
+      if (get().document?.id === id) {
+        set((state) => ({
+          document: state.document === null ? null : { ...state.document, meta: renamed.meta },
+        }));
+      }
+      await get().refreshLibrary();
+    },
+
+    async removeGuide(id) {
+      await (await ensureDeps()).guides.remove(id);
+      if (get().document?.id === id) get().closeGuide();
+      await get().refreshLibrary();
+    },
+
+    /**
+     * 문서를 연다.
+     *
+     * 이미 같은 문서를 열어 둔 상태면 메모리 내용을 유지한다. 미리보기에
+     * 다녀오는 동안 저장 전 편집이 사라지면 안 된다. (기술 §2.2.1-7)
+     * 진짜 새로고침은 스토어 자체가 비어 있으므로 아래 경로로 내려간다.
+     */
+    async loadGuide(id) {
+      const open = get().document;
+      if (open !== null && open.id === id) {
+        set({ status: 'ready' });
+        return;
+      }
+
+      set({ status: 'loading', loadError: undefined });
+      try {
+        const doc = await (await ensureDeps()).guides.get(id);
+        if (doc === undefined) {
+          set({ document: null, status: 'missing' });
+          return;
+        }
+        set({
+          document: doc,
+          status: 'ready',
+          dirty: false,
+          saveState: 'idle',
+          saveError: undefined,
+          changeSeq: 0,
+          savedSeq: 0,
+          lastSavedAt: doc.updatedAt,
+        });
+      } catch (error) {
+        set({ status: 'error', loadError: describeError(error) });
+      }
+    },
+
+    closeGuide() {
+      set({
+        document: null,
+        status: 'idle',
+        dirty: false,
+        saveState: 'idle',
+        saveError: undefined,
+        lastSavedAt: undefined,
+        changeSeq: 0,
+        savedSeq: 0,
+      });
+    },
+
+    updateMeta(patch) {
+      mutate((doc) => ({ ...doc, meta: { ...doc.meta, ...patch } }));
+    },
+
+    updateSettings(patch) {
+      mutate((doc) => ({ ...doc, settings: { ...doc.settings, ...patch } }));
+    },
+
+    addPreparation() {
+      const doc = get().document;
+      if (doc === null) return null;
+      const id = guideStoreDeps().newId('prep');
+      mutate((current) => ({
+        ...current,
+        preparation: [...current.preparation, emptyPreparation(id, current.preparation.length)],
+      }));
+      return id;
+    },
+
+    updatePreparation(id, patch) {
+      mutate((doc) => ({
+        ...doc,
+        preparation: doc.preparation.map((item) =>
+          item.id === id ? { ...item, ...patch, id: item.id } : item,
+        ),
+      }));
+    },
+
+    removePreparation(id) {
+      mutate((doc) => ({
+        ...doc,
+        preparation: normalizeOrder(doc.preparation.filter((item) => item.id !== id)),
+      }));
+    },
+
+    movePreparation(id, delta) {
+      const doc = get().document;
+      if (doc === null) return false;
+      const moved = moveById(doc.preparation, id, delta);
+      if (moved === null) return false;
+      mutate((current) => ({ ...current, preparation: moved }));
+      return true;
+    },
+
+    addWarning() {
+      const doc = get().document;
+      if (doc === null) return null;
+      const id = guideStoreDeps().newId('warn');
+      mutate((current) => ({
+        ...current,
+        warnings: [...current.warnings, emptyWarning(id, current.warnings.length)],
+      }));
+      return id;
+    },
+
+    updateWarning(id, patch) {
+      mutate((doc) => ({
+        ...doc,
+        warnings: doc.warnings.map((item) =>
+          item.id === id ? { ...item, ...patch, id: item.id } : item,
+        ),
+      }));
+    },
+
+    removeWarning(id) {
+      mutate((doc) => ({
+        ...doc,
+        warnings: normalizeOrder(doc.warnings.filter((item) => item.id !== id)),
+      }));
+    },
+
+    moveWarning(id, delta) {
+      const doc = get().document;
+      if (doc === null) return false;
+      const moved = moveById(doc.warnings, id, delta);
+      if (moved === null) return false;
+      mutate((current) => ({ ...current, warnings: moved }));
+      return true;
+    },
+
+    addStep(afterStepId) {
+      const doc = get().document;
+      if (doc === null) return null;
+
+      const { newId } = guideStoreDeps();
+      const step = emptyStep(newId, doc.steps.length);
+
+      mutate((current) => {
+        const sorted = normalizeOrder(current.steps);
+        const at =
+          afterStepId === undefined
+            ? sorted.length
+            : sorted.findIndex((item) => item.id === afterStepId) + 1;
+        const insertAt = at === 0 ? sorted.length : at;
+
+        const next = [...sorted];
+        next.splice(insertAt, 0, step);
+        return { ...current, steps: normalizeOrder(next.map((s, i) => ({ ...s, order: i }))) };
+      });
+
+      return step.id;
+    },
+
+    updateStep(id, patch) {
+      mutate((doc) => ({
+        ...doc,
+        steps: doc.steps.map((step) =>
+          step.id === id ? { ...step, ...patch, id: step.id } : step,
+        ),
+      }));
+    },
+
+    /**
+     * 단계를 복제한다. 단계와 블록 ID를 새로 만든다.
+     *
+     * 분기 규칙은 가져오지 않는다. 같은 조건이 두 단계에서 동시에 참인 그래프가
+     * 생겨 M6 검증이 바로 막힌다. 복제본은 종료 단계로 시작한다.
+     */
+    duplicateStep(id) {
+      const doc = get().document;
+      if (doc === null) return null;
+
+      const source = doc.steps.find((step) => step.id === id);
+      if (source === undefined) return null;
+
+      const { newId } = guideStoreDeps();
+      const copy: GuideStep = {
+        ...structuredClone(source),
+        id: newId('step'),
+        title: source.title === '' ? '' : `${source.title} (사본)`,
+        blocks: source.blocks.map((block) => ({ ...structuredClone(block), id: newId('block') })),
+        branchRules: [],
+        troubleshootingIds: [...source.troubleshootingIds],
+      };
+      delete copy.defaultNextStepId;
+
+      mutate((current) => {
+        const sorted = normalizeOrder(current.steps);
+        const at = sorted.findIndex((step) => step.id === id) + 1;
+        const next = [...sorted];
+        next.splice(at, 0, copy);
+        return { ...current, steps: next.map((step, index) => ({ ...step, order: index })) };
+      });
+
+      return copy.id;
+    },
+
+    updateBlock(stepId, blockId, patch) {
+      mutate((doc) => ({
+        ...doc,
+        steps: doc.steps.map((step) =>
+          step.id === stepId
+            ? {
+                ...step,
+                blocks: step.blocks.map((block) =>
+                  block.id === blockId
+                    ? // id와 type은 바꾸지 않는다. 타입 변경은 블록 교체지 수정이 아니다.
+                      ({ ...block, ...patch, id: block.id, type: block.type } as ContentBlock)
+                    : block,
+                ),
+              }
+            : step,
+        ),
+      }));
+    },
+
+    removeStep(id) {
+      const doc = get().document;
+      if (doc === null) return null;
+      // 마지막 단계는 지우지 않는다. 단계가 0개인 문서는 스키마상 성립하지 않는다.
+      if (doc.steps.length <= 1) return null;
+      if (!doc.steps.some((step) => step.id === id)) return null;
+
+      const impact = findStepReferences(doc, id);
+
+      mutate((current) => {
+        const remaining = normalizeOrder(current.steps.filter((step) => step.id !== id));
+
+        // 끊긴 참조를 남기지 않는다. 사용자에게 보여 줄 영향 범위는 위에서
+        // 이미 조사했다. 전체 분기 영향 처리는 M6에서 완성한다. (M4 주의)
+        const repaired = remaining.map((step) => {
+          const next = { ...step };
+          if (next.defaultNextStepId === id) delete next.defaultNextStepId;
+          if (next.branchRules.some((rule) => rule.targetStepId === id)) {
+            next.branchRules = next.branchRules.filter((rule) => rule.targetStepId !== id);
+          }
+          return next;
+        });
+
+        const startStepId =
+          current.startStepId === id
+            ? (repaired[0]?.id ?? current.startStepId)
+            : current.startStepId;
+
+        return {
+          ...current,
+          steps: repaired,
+          startStepId,
+          troubleshooting: current.troubleshooting.map((item) =>
+            item.stepId === id ? { ...item, scope: 'global' as const, stepId: undefined } : item,
+          ),
+        };
+      });
+
+      return impact;
+    },
+
+    moveStep(id, delta) {
+      const doc = get().document;
+      if (doc === null) return false;
+      const moved = moveById(doc.steps, id, delta);
+      if (moved === null) return false;
+      mutate((current) => ({ ...current, steps: moved }));
+      return true;
+    },
+
+    reorderSteps(activeId, overId) {
+      const doc = get().document;
+      if (doc === null) return false;
+      const sorted = normalizeOrder(doc.steps);
+      const from = sorted.findIndex((step) => step.id === activeId);
+      const to = sorted.findIndex((step) => step.id === overId);
+      if (from === -1 || to === -1 || from === to) return false;
+      return get().moveStep(activeId, to - from);
+    },
+
+    async save() {
+      const state = get();
+      const doc = state.document;
+      if (doc === null) return;
+
+      // 저장할 변경이 없다. 빈 트랜잭션을 돌리지 않는다.
+      if (state.changeSeq === state.savedSeq) return;
+
+      const seq = state.changeSeq;
+      const snapshot: GuideDocument = { ...doc, updatedAt: guideStoreDeps().now() };
+
+      set({ saveState: 'saving', saveError: undefined });
+
+      try {
+        await guideStoreDeps().guides.save(snapshot);
+      } catch (error) {
+        // 메모리 편집 내용은 그대로 두고, 저장소의 이전 성공 스냅샷도 건드리지
+        // 않는다. 둘 다 살아 있어야 한다. (M4 DoD 5)
+        set({ saveState: 'error', saveError: describeError(error), dirty: true });
+        return;
+      }
+
+      const after = get();
+
+      // 저장하는 동안 더 새로운 변경이 들어왔다. 이 응답은 최신 상태가 아니므로
+      // `saved`로 표시하지 않고 메모리 문서도 덮어쓰지 않는다. 예약기가 최신
+      // 스냅샷으로 한 번 더 저장한다. (M4 DoD 4, 기술 §4.1.3)
+      if (after.changeSeq !== seq) {
+        set({ savedSeq: seq, dirty: true, saveState: 'saving' });
+        return;
+      }
+
+      set({
+        document: snapshot,
+        savedSeq: seq,
+        dirty: false,
+        saveState: 'saved',
+        lastSavedAt: snapshot.updatedAt,
+      });
+    },
+  };
+});
+
+/** 테스트가 상태를 초기화할 때 쓴다. 액션은 유지된다. */
+export function resetGuideStore(): void {
+  useGuideStore.setState({
+    library: [],
+    libraryStatus: 'idle',
+    storageMode: null,
+    storageUnavailableReason: undefined,
+    document: null,
+    status: 'idle',
+    loadError: undefined,
+    dirty: false,
+    saveState: 'idle',
+    saveError: undefined,
+    lastSavedAt: undefined,
+    changeSeq: 0,
+    savedSeq: 0,
+  });
+}
+
+/** 첫 단계 생성기를 스토어 밖에서도 쓸 수 있게 다시 내보낸다. */
+export { createFirstStep };

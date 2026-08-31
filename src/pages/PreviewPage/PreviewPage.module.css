@@ -1,5 +1,40 @@
 .page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
   max-width: var(--width-reader-max);
-  margin-inline: auto;
   padding: var(--space-8) var(--space-4);
+  margin: 0 auto;
+  line-height: var(--line-height-body);
+}
+
+.notice {
+  padding: var(--space-3);
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-info);
+  background: var(--color-info-bg);
+  border-radius: var(--radius-card);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.875rem;
+}
+
+.summary,
+.audience {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.back {
+  color: var(--color-brand-600);
 }

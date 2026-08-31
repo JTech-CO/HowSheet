@@ -19,6 +19,8 @@ import type { GuideDocument } from '../domain/guide.types.ts';
 export interface GuideSummary {
   id: string;
   title: string;
+  /** 대시보드 카드가 보여 주는 대상 사용자 요약. (디자인 §2.4.1) */
+  audience?: string;
   updatedAt: string;
   revision: number;
   stepCount: number;
@@ -37,6 +39,7 @@ function summarize(guide: StoredGuide): GuideSummary {
   return {
     id: guide.id,
     title: guide.meta.title,
+    ...(guide.meta.audience === undefined ? {} : { audience: guide.meta.audience }),
     updatedAt: guide.updatedAt,
     revision: guide.revision,
     stepCount: guide.steps.length,

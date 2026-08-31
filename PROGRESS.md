@@ -1,57 +1,56 @@
 # HowSheet Progress
 
-- 현재 phase: M3 — IndexedDB 저장소·복구 스냅샷·폴백 ★
+- 현재 phase: M4 — 대시보드·작성기 코어·자동 저장
 - 상태: DONE
 - 마지막 갱신: 2026-08-31 KST
 
 ## 직전에 끝낸 것
 
-**M3 — IndexedDB 저장소·복구 스냅샷·폴백**
+**M4 — 대시보드·작성기 코어·자동 저장**
 
-- `db.ts` — 백엔드 인터페이스, Dexie 구현, 메모리 구현. 두 구현의 관찰 가능한 동작을 같게 맞췄다
-- `guide.repository.ts` — CRUD·복제·트랜잭션 삭제·고아 탐지와 청소
-- `asset.repository.ts` — 자산 저장, checksum 중복 제거, 미참조 정리, 누락 보고
-- `recovery.repository.ts` — 스냅샷 생성·복원·`withSnapshot`
-- `local-storage.ts` — 키 허용 목록과 세션 폴백
-- 저장소 테스트 96개(단위 62 + 통합 46 중 저장소분), 전체 354개
+- `store/guide.store.ts` — 영속 문서와 라이브러리. 생성·복제·이름 변경·삭제, 단계·준비물·경고 CRUD와 재정렬, 시퀀스 가드가 붙은 저장
+- `store/ui.store.ts` — 섹션·선택 단계·스크린 리더 알림·편집기 테마. 문서 스토어와 분리했다
+- `features/autosave/` — 500ms debounce + 1초 하드 상한 예약기와 배선 훅. 시계를 주입받아 타이밍을 테스트로 고정한다
+- `components/ui/` 10종, `components/layout/` 2종, `components/editor/` 9종
+- `pages/` 대시보드·편집기·미리보기 실제 구현
+- 테스트 431개(단위 363, 통합 68), E2E 27개(브라우저 3종)
 
-**적대적 검토 후 수정** (4개 관점, blocker 5건 포함)
+**설계 판단**
 
-- 메모리 백엔드가 **살아 있는 참조**를 저장·반환해 제자리 수정이 롤백을 통과했다. DoD 3과 INV-08이 IndexedDB에서만 성립하고 정작 폴백 모드에서 깨져 있었다. 저장 경계에서 값을 복사한다
-- `withSnapshot`이 아직 없는 가이드를 보호하지 못했다. 스냅샷에 `existed` 상태를 넣고 "없던 가이드"는 지우기로 되돌린다
-- `withSnapshot`이 문서만 되돌려 실패한 가져오기가 이미지 바이트를 영구히 지울 수 있었다. 작업 전체를 트랜잭션으로 감쌌다
-- 트랜잭션 조기 커밋 대비로 `tx.waitFor()`를 노출하고 스코프 이탈을 `TransactionEscapedError`로 즉시 실패시킨다
-- 성공한 작업의 스냅샷을 같은 커밋에서 폐기하고 `restore()`를 1회성으로 만들었다. 오래된 스냅샷이 새 작업을 덮어쓰지 않는다
-- 중첩 트랜잭션과 `close()` 의미를 두 백엔드에서 동일하게 맞췄다
-- `openStorage`에 시간 제한을 뒀고, `PreferenceStore.set`이 허용 목록 위반 외에는 던지지 않도록 고쳤다
-- `verify:architecture`에 저장소 **전역** 검사를 추가했다. `window.localStorage` 직접 사용이 모든 게이트를 통과하고 있었다
+- 문서의 단일 기준은 스토어 하나다. React Hook Form은 **비제어**로 blur 검증과 오류 메시지만 맡고, 컬렉션(준비물·경고·단계)은 스토어 액션이 다룬다. 폼이 문서 사본을 갖고 양방향으로 맞추면 자동 저장과 경합한다 (하네스 M4 주의)
+- 오래된 저장 응답 판정은 `changeSeq`/`savedSeq` 하나로만 한다. 저장이 끝났을 때 변경 번호가 달라져 있으면 `saved`로 표시하지도, 메모리 문서를 덮지도 않는다
 
-**검토가 닿지 못한 결함 — 통합 테스트가 IndexedDB를 쓰고 있지 않았다**
+**E2E가 잡아낸 제품 결함**
 
-- `fake-indexeddb/auto`가 Dexie보다 늦게 평가돼 `openStorage`가 설계대로 조용히 메모리로 떨어졌다. 46개 중 34개가 IndexedDB를 한 번도 건드리지 않았다. setupFile로 옮기고, 테스트 도우미가 `mode !== 'indexeddb'`면 실패하게 했다
-- 그 직후 드러난 것: jsdom `Blob`은 구조화 복제를 지나면 **빈 객체**가 된다. 자산 본문 표현을 `ArrayBuffer`로 바꿨다
+- Firefox E2E가 3번에 1번꼴로 "새 가이드 버튼을 눌렀는데 아무 일도 안 남"으로 실패했다. IndexedDB가 열리기 전에 누르면 `guideStoreDeps()`가 던지고 그 예외가 클릭 핸들러 안에서 사라진다. 느린 기기에서는 어느 브라우저에서든 재현된다. `initStorage()`가 진행 중인 초기화를 기억하고 저장소가 필요한 액션이 그것을 기다리게 고쳤다
+
+**함께 고친 것**
+
+- ESLint의 react-hooks 규칙이 `.tsx`에만 걸려 있어 `.ts`에 있는 훅(`useAutosave.ts`)이 규칙 밖이었다. `src/**/*.{ts,tsx}`로 넓혔다
+- E2E가 3개 → 27개로 늘면서 Firefox 인스턴스 경합으로 컨텍스트 생성이 타임아웃했다. 로컬 워커를 4로 제한했다. 제품 결함은 아니지만 흔들리는 게이트는 진짜 실패를 가린다
+- 편집 화면 언마운트에서 `closeGuide()`를 부르는 바람에 미리보기로 넘어가면 저장 전 초안이 사라졌다. 기술 §2.2.1-7대로 메모리 초안을 유지하게 고쳤다
+- `reset.css`의 목록 마커 제거가 Safari/VoiceOver에서 목록 역할을 지우던 M3 이월 항목을 정리했다. 실제 목록에 `role="list"`를 명시한다
 
 ## 다음 할 일
 
-1. M4 진입 — 대시보드·작성기 코어·자동 저장
-2. 앱이 처음으로 `src/storage/`를 import한다. `pnpm build`의 번들 증가를 M4 보고서에 기록한다 (M2·M3는 아직 import되지 않아 74.33 kB 그대로)
-3. 메모리 모드 배너와 JSON 백업 경로를 UI로 노출한다. 상태(`mode`/`unavailableReason`)와 `snapshotToJson()`은 이미 있다
-4. 앱 시작 시 `removeOrphans()`를 한 번 돌릴지 결정한다 (지금은 호출자가 없다)
+1. M5 진입 — 콘텐츠 블록 렌더러·Markdown 안전화·이미지 자산
+2. `components/content/`가 생기면 `StepEditor`의 임시 텍스트 블록 편집을 `BlockEditor`/`BlockTypePicker`로 교체한다
+3. 자산 파이프라인이 붙으면 `AssetRepository.toBlob()` 소비처가 생긴다. `URL.revokeObjectURL` 해제 규칙(기술 §9-9)을 그때 함께 건다
+4. 앱 시작 시 `removeOrphans()`를 한 번 돌릴지 결정한다 (M3 이월, 아직 호출자 없음)
 
 ## 미결 질문 / 차단 요소
 
 - **모르는 필드가 버려진다**: Zod 기본 동작이 strip이라 1.0 문서에 담긴 모르는 키가 파싱 시 사라진다. 우리가 내보낸 문서에는 그런 키가 없어 왕복은 성립하지만(픽스처 10종 모두 `파싱 == 원본` 확인), 상위 minor 문서를 열었다가 다시 내보내면 그 필드가 사라진다. 보존 정책은 M8에서 정한다. 지금은 동작을 테스트로 고정해 두었다.
 - **`tests/fixtures/assets/`와 `markdown-samples/`가 비어 있다**: 하네스 §0.10은 M2부터 유지하라고 하지만 각각 M5·M10의 입력이다. 자산 5종은 §0.10이 허용한 결정론적 생성 스크립트로 M5에서, Markdown 5종은 M10에서 채운다. 그전까지 `IMAGE_MIME_NOT_ALLOWED`·`IMAGE_TOO_LARGE`는 단위 테스트의 합성 입력으로만 검증된다.
-- **`ImageBlock`에 장식용 플래그가 없다**: 기술 §2.2.4는 "장식 이미지가 아닌 경우 alt 필수"라고 하지만 §2.3.2 타입에 구분 필드가 없다. 지금은 `alt: ''`를 장식용 선언으로 해석한다. M4에서 `decorative` 필드를 추가하려면 minor 스키마 변경이 필요하다.
+- **`ImageBlock`에 장식용 플래그가 없다**: 기술 §2.2.4는 "장식 이미지가 아닌 경우 alt 필수"라고 하지만 §2.3.2 타입에 구분 필드가 없다. 지금은 `alt: ''`를 장식용 선언으로 해석한다. 이미지 블록 편집기가 생기는 M5에서 `decorative` 필드를 추가하려면 minor 스키마 변경이 필요하다.
 - **타이포 스케일 미완**: `typography.css`가 디자인 §4.1.1 계약보다 작고 `word-break: keep-all`이 없다. M11의 "styles/ 전체 확정"에서 맞춘다.
-- **리스트 시맨틱**: `reset.css`가 모든 `ul/ol`에 `list-style: none`을 적용해 Safari/VoiceOver에서 목록 역할이 사라진다. M4에서 첫 목록 컴포넌트를 만들 때 정한다.
 - **하위 경로 배포 E2E 부재**: `basename` 수정 후 수동 확인만 했다. M12에서 게이트로 만든다.
 - **ESLint 9 / TypeScript 5 고정**: 각각 `eslint-plugin-jsx-a11y`, `typescript-eslint`의 peer 범위 때문이다. 상류가 지원을 추가하면 함께 올린다.
 
 ## 현재 실패 중인 게이트
 
 - 명령: 없음
-- 결과: M3 검증 명령 4개와 전체 회귀 6개 전부 종료 코드 0
+- 결과: M4 검증 명령 5개와 전체 회귀 7개 전부 종료 코드 0
 - 재현: 해당 없음
 
 ## 결정 로그
@@ -83,28 +82,42 @@
 | 2026-08-31 | 자산 본문을 `Blob`이 아니라 `ArrayBuffer`로 저장                                                    | jsdom+fake-indexeddb에서 `Blob`은 구조화 복제를 지나면 빈 객체가 돼 이미지 바이트 왕복(DoD 1)을 확인할 방법이 없었다. Safari의 IndexedDB Blob 문제도 함께 피한다. `AssetRepository.toBlob()`이 동기 변환을 제공하므로 트랜잭션 안에서 `await`가 필요 없다                                                                                                     | `src/storage/db.ts`, `src/storage/asset.repository.ts`, M5·M9                               | 에이전트 (M3)                     |
 | 2026-08-31 | 통합 테스트가 IndexedDB로 열리지 않으면 **실패**시킨다                                              | `openStorage`의 조용한 폴백은 제품에서 옳지만 테스트에서는 게이트가 사라지는 것과 같다. 실제로 46개 중 34개가 메모리에서 돌고 있었다                                                                                                                                                                                                                          | `tests/setup/fake-indexeddb.ts`, `tests/integration/storage/helpers.ts`, `vitest.config.ts` | 에이전트 (M3)                     |
 | 2026-08-31 | 메모리 백엔드도 저장 경계에서 값을 복사한다                                                         | 살아 있는 참조를 돌려주면 호출자의 제자리 수정이 스냅샷 롤백을 통과한다. IndexedDB는 구조화 복제로 이미 그렇게 동작하므로 폴백만 무결성이 약했다 (INV-08)                                                                                                                                                                                                     | `src/storage/db.ts`                                                                         | 에이전트 (M3)                     |
+| 2026-08-31 | `zustand` 5.0.15와 `react-hook-form` 7.87.0을 정확한 버전으로 추가                                  | 기술 §3.2가 둘 다 필수로 지정. 상태는 Zustand, 폼 검증은 RHF                                                                                                                                                                                                                                                                                                  | `package.json`, `src/store/`, `src/components/editor/GuideMetaForm/`                        | 에이전트 (M4)                     |
+| 2026-08-31 | React Hook Form을 **비제어**로만 쓰고 컬렉션은 스토어 액션이 다룬다                                 | 기술 §3.2는 RHF를 필수로 두고 하네스 M4 주의는 폼 지역 상태와 영속 문서의 중복을 금지한다. RHF는 값을 DOM에 두므로 blur 검증만 맡기면 둘을 동시에 만족한다. `useFieldArray`로 배열을 복제하면 바로 중복 상태가 된다                                                                                                                                           | `src/components/editor/GuideMetaForm/`, M6·M11                                              | 에이전트 (M4)                     |
+| 2026-08-31 | 오래된 저장 응답 판정을 `changeSeq`/`savedSeq` 하나로 통일                                          | 타임스탬프나 `dirty` 플래그로 판정하면 같은 밀리초의 두 변경을 구분하지 못한다. 단조 증가 번호는 그 경계가 없다 (M4 DoD 4, 기술 §4.1.3)                                                                                                                                                                                                                       | `src/store/guide.store.ts`                                                                  | 에이전트 (M4)                     |
+| 2026-08-31 | 편집 화면을 떠나도 메모리 문서를 버리지 않는다                                                      | 언마운트에서 `closeGuide()`를 부르면 미리보기로 이동하는 순간 저장 전 편집이 사라진다. 기술 §2.2.1-7은 미리보기가 저장 완료를 기다리지 않고 메모리 초안을 쓰라고 한다                                                                                                                                                                                         | `src/pages/EditorPage/`, `src/store/guide.store.ts`                                         | 에이전트 (M4)                     |
+| 2026-08-31 | ESLint react-hooks 규칙 범위를 `src/**/*.{ts,tsx}`로 확대                                           | `.tsx`만 보면 `useAutosave.ts`처럼 `.ts`에 있는 훅이 검사 밖에 남는다                                                                                                                                                                                                                                                                                         | `eslint.config.js`                                                                          | 에이전트 (M4)                     |
+| 2026-08-31 | Playwright 로컬 워커를 4로 제한                                                                     | E2E가 27개로 늘자 Firefox 컨텍스트 생성이 자원 경합으로 타임아웃했다. 흔들리는 게이트는 진짜 실패를 가린다                                                                                                                                                                                                                                                    | `playwright.config.ts`                                                                      | 에이전트 (M4)                     |
+| 2026-08-31 | 목록 마커 제거는 유지하고 실제 목록에 `role="list"`를 명시                                          | `reset.css`의 `list-style: none`이 Safari/VoiceOver에서 목록 역할을 지운다. 마커를 되살리면 시각 계약이 깨지고, 역할을 잃으면 "3개 중 2번째" 안내가 사라진다. ARIA상 중복이지만 그 중복만이 두 가지를 동시에 만족한다. `jsx-a11y/no-redundant-roles`에 ul·ol의 list만 예외로 등록했다                                                                         | `src/styles/reset.css`, `eslint.config.js`, 목록을 쓰는 컴포넌트 6곳                        | 에이전트 (M4)                     |
+| 2026-08-31 | `initStorage()`를 멱등·공유 Promise로 만들고 저장소가 필요한 액션이 대기                            | 저장소가 열리기 전 클릭이 `guideStoreDeps()`에서 던지고 그 예외가 핸들러 안에서 사라졌다. 버튼을 비활성으로 두는 대신 기다리게 했다. 빠른 환경에서는 차이가 없고 느린 환경에서만 지연으로 드러난다                                                                                                                                                            | `src/store/guide.store.ts`                                                                  | 에이전트 (M4)                     |
 
 ## 검증 로그
 
-| 날짜       | 명령                                                                   | 결과                                                            | 증거 경로                          |
-| ---------- | ---------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------- |
-| 2026-08-30 | `pnpm install --frozen-lockfile`                                       | 성공                                                            | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm format:check`                                                    | 성공 — All matched files use Prettier code style                | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm lint`                                                            | 성공 — 0 problems                                               | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm typecheck`                                                       | 성공 — `tsc --noEmit` 종료 코드 0                               | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm test:unit`                                                       | 성공 — 46 passed (1 file)                                       | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm verify:architecture`                                             | 성공 — 소스 8개, 규칙 6종                                       | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm verify:architecture` (위반 3건 주입)                             | 의도대로 실패 — 위반 5건 보고, 종료 코드 1                      | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm build`                                                           | 성공 — JS 231.44 kB (gzip 74.32 kB), CSS 4.15 kB (gzip 1.61 kB) | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium` | 성공 — 3 passed                                                 | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/unit/domain`                               | 성공 — 171 passed                                               | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:fixtures`                                                 | 성공 — 가이드 10개                                              | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:fixtures` (픽스처·페이로드 변형)                          | 의도대로 실패 — 종료 코드 1                                     | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm typecheck`                                                       | 성공. 타입·스키마 드리프트 주입 시 의도대로 실패                | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:architecture`                                             | 성공. DOM 우회 2종·전이 zod 유입 모두 탐지 확인                 | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | 전체 회귀 (format/lint/test:unit/build/e2e)                            | 성공 — 단위 테스트 258 passed                                   | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/unit/storage tests/integration/storage`    | 성공 — 96 passed                                                | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `pnpm test:integration`                                                | 성공 — 46 passed (두 백엔드 동등성 포함)                        | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `pnpm verify:architecture` (저장소 전역 위반 주입)                     | 의도대로 실패 — STORAGE_ENCAPSULATION, 종료 코드 1              | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `index.html` 테마 키 변형                                              | 의도대로 실패 — 단위 테스트 2건                                 | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/verify\*/build/e2e)         | 성공 — 단위 308, 전체 354 passed, e2e 9 passed                  | `artifacts/qa/phase-reports/M3.md` |
+| 날짜       | 명령                                                                   | 결과                                                               | 증거 경로                          |
+| ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------- |
+| 2026-08-30 | `pnpm install --frozen-lockfile`                                       | 성공                                                               | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm format:check`                                                    | 성공 — All matched files use Prettier code style                   | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm lint`                                                            | 성공 — 0 problems                                                  | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm typecheck`                                                       | 성공 — `tsc --noEmit` 종료 코드 0                                  | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm test:unit`                                                       | 성공 — 46 passed (1 file)                                          | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm verify:architecture`                                             | 성공 — 소스 8개, 규칙 6종                                          | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm verify:architecture` (위반 3건 주입)                             | 의도대로 실패 — 위반 5건 보고, 종료 코드 1                         | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm build`                                                           | 성공 — JS 231.44 kB (gzip 74.32 kB), CSS 4.15 kB (gzip 1.61 kB)    | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium` | 성공 — 3 passed                                                    | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/domain`                               | 성공 — 171 passed                                                  | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:fixtures`                                                 | 성공 — 가이드 10개                                                 | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:fixtures` (픽스처·페이로드 변형)                          | 의도대로 실패 — 종료 코드 1                                        | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm typecheck`                                                       | 성공. 타입·스키마 드리프트 주입 시 의도대로 실패                   | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:architecture`                                             | 성공. DOM 우회 2종·전이 zod 유입 모두 탐지 확인                    | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/test:unit/build/e2e)                            | 성공 — 단위 테스트 258 passed                                      | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/storage tests/integration/storage`    | 성공 — 96 passed                                                   | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm test:integration`                                                | 성공 — 46 passed (두 백엔드 동등성 포함)                           | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm verify:architecture` (저장소 전역 위반 주입)                     | 의도대로 실패 — STORAGE_ENCAPSULATION, 종료 코드 1                 | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `index.html` 테마 키 변형                                              | 의도대로 실패 — 단위 테스트 2건                                    | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/verify\*/build/e2e)         | 성공 — 단위 308, 전체 354 passed, e2e 9 passed                     | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/store tests/unit/autosave`            | 성공 — 53 passed                                                   | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/integration/editor-core`                   | 성공 — 22 passed                                                   | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm exec playwright test`                                            | 성공 — 27 passed (chromium/firefox/webkit)                         | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | 시퀀스 가드·자동 저장 상한 무력화 주입                                 | 의도대로 실패 — 각각 단위 1건 + 통합 1건                           | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm build`                                                           | 성공 — JS 414.00 kB (gzip 134.15 kB). 기술 §2.4.2 목표 300 kB 이하 | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/verify\*)  | 성공 — 단위 361, 통합 68                                           | `artifacts/qa/phase-reports/M4.md` |

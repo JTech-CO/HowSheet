@@ -54,6 +54,11 @@ h6 {
   overflow-wrap: break-word;
 }
 
+/*
+ * 목록 마커를 지운다. 다만 Safari/VoiceOver는 `list-style: none`이 붙으면
+ * 목록 역할 자체를 지운다. 실제 목록인 곳은 `role="list"`를 명시한다.
+ * (디자인 §1.4 원칙 5, PROGRESS.md 결정 로그)
+ */
 ul,
 ol {
   padding: 0;

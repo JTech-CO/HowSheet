@@ -1,0 +1,84 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.itemHeader {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* 인쇄 훅. styles/print.css가 이 이름을 겨냥한다. (D-06) */
+.preview,
+:global(.warning-card) {
+  padding: var(--space-3);
+  border-left: 4px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+}
+
+.preview {
+  background: var(--color-surface-subtle);
+}
+
+.preview[data-severity='info'] {
+  background: var(--color-info-bg);
+  border-left-color: var(--color-info);
+}
+
+.preview[data-severity='warning'] {
+  background: var(--color-warning-bg);
+  border-left-color: var(--color-warning);
+}
+
+.preview[data-severity='danger'] {
+  background: var(--color-danger-bg);
+  border-left-color: var(--color-danger);
+}
+
+.previewSeverity {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.previewTitle {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+}
+
+.previewBody {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9375rem;
+  line-height: var(--line-height-body);
+  white-space: pre-wrap;
+}

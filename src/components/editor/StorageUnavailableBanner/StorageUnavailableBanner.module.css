@@ -1,0 +1,35 @@
+.banner {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-card);
+}
+
+.body {
+  margin: var(--space-1) 0 0;
+  font-size: 0.875rem;
+  line-height: var(--line-height-body);
+  color: var(--color-text);
+}
+
+.reason {
+  color: var(--color-text-muted);
+}
+
+.action {
+  flex-shrink: 0;
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-warning);
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-input);
+}

@@ -1,0 +1,46 @@
+.shell {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+  width: 100%;
+  max-width: 1400px;
+  padding: var(--space-6) var(--space-4);
+  margin: 0 auto;
+}
+
+.outline {
+  position: sticky;
+  top: calc(64px + var(--space-4));
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--width-editor-column);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+}
+
+/* 디자인 §2.1.3·§2.1.4 — 1024px 미만에서는 단일 열로 접는다. */
+@media (width < 1024px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .outline {
+    position: static;
+  }
+
+  .main {
+    padding: var(--space-4);
+  }
+}

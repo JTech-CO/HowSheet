@@ -1,0 +1,26 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
+  min-height: var(--touch-target-min);
+}
+
+.input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-brand-600);
+}
+
+.label {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.hint {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}

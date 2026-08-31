@@ -9,7 +9,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
-  workers: process.env['CI'] ? 1 : undefined,
+  // 기본값(CPU 절반)으로 두면 Firefox 인스턴스가 한꺼번에 뜨면서 컨텍스트
+  // 생성이 30초 타임아웃에 걸린다. 제품 결함이 아니라 자원 경합인데, 게이트가
+  // 흔들리면 진짜 실패와 구분할 수 없다. 로컬도 상한을 둔다. (하네스 §0.9)
+  workers: process.env['CI'] ? 1 : 4,
   reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${PORT}`,
