@@ -462,7 +462,7 @@ describe('테스트 격리 (M3 DoD 8)', () => {
  * IndexedDB에서만 성립하면 정작 폴백 모드(DoD 5·6이 요구하는 바로 그 모드)에서
  * 데이터가 깨진다. 아래 단언은 두 백엔드를 같은 코드로 통과한다.
  */
-describe.each(BACKENDS)('백엔드 동등성 — $name', ({ make }) => {
+describe.each(BACKENDS)('백엔드 동등성 - $name', ({ make }) => {
   async function freshOn(): Promise<TestContext> {
     const backend = await make();
     context = await createContext(backend === undefined ? {} : { backend });
@@ -573,7 +573,7 @@ describe.each(BACKENDS)('백엔드 동등성 — $name', ({ make }) => {
     expect((await ctx.guides.get(guide.id))?.revision).toBe(9);
   });
 
-  it('복원은 한 번만 적용된다 — 남은 스냅샷이 새 작업을 덮지 않는다', async () => {
+  it('복원은 한 번만 적용된다 - 남은 스냅샷이 새 작업을 덮지 않는다', async () => {
     const ctx = await freshOn();
     const guide = { ...makeGuide(), revision: 1 };
     await ctx.guides.save(guide);
@@ -615,8 +615,8 @@ describe.each(BACKENDS)('백엔드 동등성 — $name', ({ make }) => {
  * 실제 브라우저의 IndexedDB 트랜잭션은 유휴 상태가 되면 스스로 커밋한다.
  * 콜백이 저장소 밖 Promise를 그냥 await하면 그 사이에 커밋이 일어나 앞부분이
  * 남는다. fake-indexeddb는 그 자동 커밋을 그만큼 엄격히 흉내 내지 않으므로
- * 실패 모드 자체는 여기서 재현되지 않는다. 재현 가능한 두 가지 —— 이탈 확인과
- * `waitFor` 경로 —— 를 고정한다. (INV-08)
+ * 실패 모드 자체는 여기서 재현되지 않는다. 재현 가능한 두 가지(이탈 확인과
+ * `waitFor` 경로)를 고정한다. (INV-08)
  */
 describe('트랜잭션 스코프 이탈 (INV-08)', () => {
   it('트랜잭션이 끝난 뒤 스코프를 쓰면 던진다', async () => {

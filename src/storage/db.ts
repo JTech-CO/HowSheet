@@ -97,8 +97,8 @@ export interface StorageCollection<T> {
  * Dexie는 뒤늦게 `PrematureCommitError`로 거부한다. 즉 **작업이 실패로 끝나는데
  * 앞부분은 이미 커밋돼 있다.** 그래서 두 가지를 둔다.
  *
- *   - `waitFor` — 트랜잭션을 살려 둔 채 기다리는 정식 경로.
- *   - 스코프 이탈 확인 — 트랜잭션이 끝난 뒤 이 스코프를 쓰면
+ *   - `waitFor` - 트랜잭션을 살려 둔 채 기다리는 정식 경로.
+ *   - 스코프 이탈 확인 - 트랜잭션이 끝난 뒤 이 스코프를 쓰면
  *     `TransactionEscapedError`로 즉시 실패시킨다. 롤백되지 않을 쓰기를 조용히
  *     통과시키지 않는다.
  *
@@ -351,7 +351,7 @@ export function createMemoryBackend(reason: string): StorageBackend {
       guard('transaction');
 
       // 중첩은 부모에 합류한다. 부모가 스냅샷을 쥐고 있으므로 여기서 또 잡지
-      // 않는다. 다만 안쪽 실패는 부모를 오염시킨다 — 바깥에서 예외를 삼켜도
+      // 않는다. 다만 안쪽 실패는 부모를 오염시킨다 - 바깥에서 예외를 삼켜도
       // 커밋되지 않는다. Dexie가 하위 트랜잭션 실패 시 부모를 abort하는 것과
       // 같은 의미다.
       if (depth > 0) {

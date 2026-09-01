@@ -16,7 +16,7 @@ describe('진행 저장 키 (INV-10)', () => {
     expect(PROGRESS_KEY_PREFIX).toBe('howsheet:progress');
   });
 
-  it('revision이 다르면 키가 달라진다 — 자동 덮어쓰기가 불가능하다', () => {
+  it('revision이 다르면 키가 달라진다 - 자동 덮어쓰기가 불가능하다', () => {
     expect(readerProgressKey('g', 1)).not.toBe(readerProgressKey('g', 2));
   });
 

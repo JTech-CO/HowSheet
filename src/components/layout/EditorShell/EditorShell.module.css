@@ -29,7 +29,7 @@
   border-radius: var(--radius-panel);
 }
 
-/* 디자인 §2.1.3·§2.1.4 — 1024px 미만에서는 단일 열로 접는다. */
+/* 디자인 §2.1.3·§2.1.4 - 1024px 미만에서는 단일 열로 접는다. */
 @media (width < 1024px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);

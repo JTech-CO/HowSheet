@@ -217,7 +217,7 @@ describe('픽스처가 맡은 역할을 실제로 담고 있다', () => {
     const priorities = rules.map((r) => r.priority);
     expect(new Set(priorities).size).toBeLessThan(priorities.length);
 
-    // 기술 백서 §4.4.1 6단계 — 조건이 완전히 같은 중복 규칙
+    // 기술 백서 §4.4.1 6단계 - 조건이 완전히 같은 중복 규칙
     const conditions = rules.map((r) => `${r.sourceBlockId}|${r.operator}|${String(r.value)}`);
     expect(new Set(conditions).size).toBeLessThan(conditions.length);
   });

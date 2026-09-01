@@ -4,7 +4,7 @@
  * 기준: FR-004, 디자인 백서 §2.4.4, §4.3.2(Warning Card).
  *
  * 위험(danger)을 고르면 도움말을 띄운다. 빨간색을 남발하면 진짜 위험이 묻힌다.
- * (디자인 §1.4 원칙 2 — 위험은 숨기지 않고 과장하지 않는다)
+ * (디자인 §1.4 원칙 2 - 위험은 숨기지 않고 과장하지 않는다)
  */
 
 import type { Severity, WarningBlock } from '../../../domain/guide.types.ts';
@@ -131,7 +131,7 @@ export function WarningEditor({ items, onAdd, onUpdate, onRemove, onMove }: Warn
                 </Field>
               ) : null}
 
-              {/* 디자인 §2.4.4 — 미리보기 카드 */}
+              {/* 디자인 §2.4.4 - 미리보기 카드 */}
               <div className={styles.preview} data-severity={item.severity}>
                 <p className={styles.previewSeverity}>{SEVERITY_LABELS[item.severity]}</p>
                 <p className={styles.previewTitle}>

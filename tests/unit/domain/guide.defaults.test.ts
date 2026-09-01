@@ -49,7 +49,7 @@ describe('createGuideDocument', () => {
     expect(isTerminalStep(doc.steps[0]!)).toBe(true);
   });
 
-  it('빈 제목으로 만들면 스키마가 거부한다 — 임시 상태를 숨기지 않는다', () => {
+  it('빈 제목으로 만들면 스키마가 거부한다 - 임시 상태를 숨기지 않는다', () => {
     const doc = make({ title: '' });
     expect(parseGuideDocument(doc).ok).toBe(false);
   });

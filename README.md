@@ -6,7 +6,7 @@ _A step-by-step guide to creating a single-page walkthrough that anyone can foll
 
 문제 해결 절차를 조건 분기가 있는 단계 카드로 작성하고, 외부 요청이 하나도 없는 **독립 실행형 HTML 한 개**로 내보낸다. 계정도 서버도 필요 없다. 작성한 내용은 브라우저를 벗어나지 않는다.
 
-> 현재 상태: **M1 — 기반·도구 체인** 완료. 작성·리더·내보내기 기능은 아직 없다. 진행 상황은 [PROGRESS.md](PROGRESS.md)를 본다.
+> 현재 상태: **M1 - 기반·도구 체인** 완료. 작성·리더·내보내기 기능은 아직 없다. 진행 상황은 [PROGRESS.md](PROGRESS.md)를 본다.
 
 ## 요구 사항
 

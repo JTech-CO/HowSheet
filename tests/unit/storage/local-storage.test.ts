@@ -45,7 +45,7 @@ describe('키 허용 목록 (M3 DoD 7)', () => {
     expect(isAllowedKey(key)).toBe(true);
   });
 
-  // 기술 백서 §7.2 — 비밀번호·복구 코드·원문 파일 경로는 저장하지 않는다.
+  // 기술 백서 §7.2 - 비밀번호·복구 코드·원문 파일 경로는 저장하지 않는다.
   it.each([
     'howsheet:editor:password',
     'howsheet:editor:recoveryCode',

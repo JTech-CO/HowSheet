@@ -51,7 +51,7 @@ export function useAutosave(options: UseAutosaveOptions = {}): AutosaveHandle {
 
     return () => {
       // 화면을 떠날 때 남은 변경을 흘려보내지 않는다. 예약 중이던 것을 마지막에
-      // 한 번 저장한다. (M4 DoD 5 — 편집 내용을 잃지 않는다)
+      // 한 번 저장한다. (M4 DoD 5 - 편집 내용을 잃지 않는다)
       if (scheduler.pending()) void scheduler.flush();
       scheduler.dispose();
       schedulerRef.current = null;

@@ -93,7 +93,7 @@ describe('입력과 복원 (M4 DoD 2)', () => {
     await store().save();
     await waitFor(() => expect(store().saveState).toBe('saved'));
 
-    // "새로고침" — 화면과 메모리 상태를 모두 버리고 저장소에서 다시 읽는다.
+    // "새로고침" - 화면과 메모리 상태를 모두 버리고 저장소에서 다시 읽는다.
     cleanup();
     resetStore();
     renderApp(`/guide/${id}/edit`);

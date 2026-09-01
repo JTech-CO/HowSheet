@@ -2,7 +2,7 @@
 
 **버전**: 1.0
 **작성일**: 2026년 8월 30일
-**프로젝트**: HowSheet — 누구나 만드는 단일 페이지 단계별 해결 가이드
+**프로젝트**: HowSheet - 누구나 만드는 단일 페이지 단계별 해결 가이드
 **관계 문서**:
 
 - `docs/HowSheet_기술_백서.md`: 기능, 데이터 모델, 아키텍처, 성능, 보안, 테스트 기준
@@ -30,9 +30,9 @@ howsheet/
 │       │   └── release-candidate.md     # 하네스 §0.11 최종 요약
 │       ├── screenshots/                 # .gitignore, CI 아티팩트로 업로드
 │       ├── accessibility/               # .gitignore
-│       ├── performance/                 # .gitignore — 수치는 보고서 본문에 기록
+│       ├── performance/                 # .gitignore - 수치는 보고서 본문에 기록
 │       ├── security/                    # .gitignore
-│       └── exports/                     # .gitignore — 체크섬은 보고서 본문에 기록
+│       └── exports/                     # .gitignore - 체크섬은 보고서 본문에 기록
 ├── docs/
 │   ├── HowSheet_기술_백서.md
 │   ├── HowSheet_디자인_백서.md
@@ -46,7 +46,7 @@ howsheet/
 ├── src/
 ├── tests/
 ├── .gitignore                           # 하네스 §0.6 커밋 금지 대상 강제
-├── .npmrc                               # save-exact=true — M1 DoD 2 버전 고정 강제
+├── .npmrc                               # save-exact=true - M1 DoD 2 버전 고정 강제
 ├── .nvmrc                               # M1 DoD 7 CI–로컬 Node 버전 일치
 ├── .prettierignore
 ├── .prettierrc
@@ -139,7 +139,7 @@ src/
 │   │   ├── PreparationEditor/
 │   │   ├── WarningEditor/
 │   │   ├── StepEditor/
-│   │   ├── BlockEditor/                 # 블록별 폼 (기술 §5.3 `BlockToolbar`와 동일 — 별도 폴더 금지, D-03)
+│   │   ├── BlockEditor/                 # 블록별 폼 (기술 §5.3 `BlockToolbar`와 동일 - 별도 폴더 금지, D-03)
 │   │   ├── BlockTypePicker/             # 고정 순서 블록 추가 목록
 │   │   ├── ReorderControls/             # FR-018 키보드 재정렬
 │   │   ├── BranchRuleEditor/
@@ -439,9 +439,9 @@ tests/
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `vitest.config.ts` include     | `tests/unit/**`, `tests/integration/**`, `src/**/*.test.tsx`                                                                                                |
 | 커버리지 측정 대상             | `src/**` (테스트 파일 자신 제외)                                                                                                                            |
-| M6 DoD 11 — 핵심 모듈 90%      | `src/features/branching/**`                                                                                                                                 |
-| M12 DoD 3 — 핵심 순수 함수 90% | `src/features/branching/**`, `src/features/import-json/**`, `src/features/import-markdown/**`, `src/features/export-json/**`, `src/features/export-html/**` |
-| M12 DoD 4 — 전체 80%           | `src/**`                                                                                                                                                    |
+| M6 DoD 11 - 핵심 모듈 90%      | `src/features/branching/**`                                                                                                                                 |
+| M12 DoD 3 - 핵심 순수 함수 90% | `src/features/branching/**`, `src/features/import-json/**`, `src/features/import-markdown/**`, `src/features/export-json/**`, `src/features/export-html/**` |
+| M12 DoD 4 - 전체 80%           | `src/**`                                                                                                                                                    |
 
 ---
 
@@ -460,7 +460,7 @@ scripts/
 ├── verify-print.mjs                     # M11 print media DOM·스타일
 ├── verify-release.mjs                   # M12 전체 게이트 순서 고정
 ├── benchmark-graph-validation.mjs       # M6  100단계 30회 median
-└── generate-fixture-assets.mjs          # 선택 — 대용량 자산 결정론적 생성
+└── generate-fixture-assets.mjs          # 선택 - 대용량 자산 결정론적 생성
 ```
 
 - `verify-fixtures.mjs`는 `tests/fixtures/*.howsheet.json`과 `src/assets/samples/*`를 **모두** 검증한다. 기술 백서 §6의 `validate-sample-guides.ts`가 담당하던 샘플 템플릿 검증(FR-020)이 여기에 포함된다.
@@ -484,19 +484,19 @@ M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴�
 
 아래에서 인용하는 "기술 §6"·"디자인 §6"·"§6.1"은 **통합 전** 두 백서의 원래 §6 내용을 가리킨다. 현재 두 백서의 §6은 이 문서를 가리키는 포인터다.
 
-### D-01. 공통 컴포넌트 그룹 이름 — `components/ui/` 확정
+### D-01. 공통 컴포넌트 그룹 이름 - `components/ui/` 확정
 
 - **결정**: `components/ui/`를 쓴다. 기술 백서 §6의 `components/common/`은 사용하지 않는다.
 - **근거**: 디자인 §6의 목록(15개)이 기술 §6(5개)의 상위 집합이고, 하네스 §0.1이 표현 계약을 디자인 백서 우선으로 둔다.
 - **후속**: 기술 백서만 읽는 에이전트가 `components/common`을 만들 수 있다. `verify:architecture`에 해당 경로 존재 시 실패하는 규칙을 둔다.
 
-### D-02. `components/content/` 그룹 신설 — 확정
+### D-02. `components/content/` 그룹 신설 - 확정
 
 - **결정**: 작성기 미리보기와 리더가 공유하는 콘텐츠 표현 계층으로 `components/content/`를 신설한다.
 - **근거**: 기술 §6에는 없지만 기술 §5.2가 "콘텐츠 렌더러는 공유"를 요구한다. 이 그룹이 없으면 미리보기와 리더가 렌더러를 복제하게 되고 INV-09 정합성을 수동 유지해야 한다.
 - **후속**: 새 모듈 경계이므로 §3.2-7(도메인 타입 import 방향)을 `verify:architecture`가 함께 검증한다.
 
-### D-03. 컴포넌트 이름 충돌 5건 — 기술 백서 이름 확정
+### D-03. 컴포넌트 이름 충돌 5건 - 기술 백서 이름 확정
 
 | 개념      | 기술 백서                  | 디자인 백서            | 확정                           |
 | --------- | -------------------------- | ---------------------- | ------------------------------ |
@@ -509,25 +509,25 @@ M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴�
 - **근거**: 하네스 M6·M7의 할 일 목록이 기술 백서 이름을 그대로 호출한다. 하네스는 §0.1 우선순위 2로 두 백서보다 앞선다.
 - **주의**: `BlockToolbar`(기술 §5.3 본문)는 `BlockEditor`(기술 §6 폴더)와 **같은 항목**이다. §5.3의 10개 목록과 §6의 10개 폴더가 순서까지 1:1로 대응한다. 별도 컴포넌트로 만들지 않는다. 디자인 §2.2.1·§2.4.5가 요구하는 고정 순서 블록 추가 목록은 별개 근거로 `BlockTypePicker/`에 둔다.
 
-### D-04. `features/sanitize/` 신설과 리더 import 허용 — 확정
+### D-04. `features/sanitize/` 신설과 리더 import 허용 - 확정
 
 - **결정**: `features/sanitize/`를 신설하고, `reader-runtime`의 import 허용 목록을 §3.2-3의 4개 모듈로 한정한다. `verify:architecture`는 이 목록을 **모듈 단위로** 판정한다.
 - **근거**: 신설하지 않으면 리더 런타임이 살균기를 복제해야 해 기술 §7.1-2의 "경계 한 곳" 규칙이 깨진다. 신설하되 디렉터리 단위로 `features` import를 금지하면 리더가 살균기에 닿을 수 없어 INV-07을 만족할 수 없다. 모듈 단위 허용 목록만이 INV-07과 INV-11을 동시에 만족한다.
 - **후속**: `verify:architecture`를 디렉터리 allowlist로 구현하면 M1은 통과하고 M9에서 막힌다. M1에서 처음 작성할 때부터 모듈 단위로 구현한다.
 
-### D-05. `Field` / `Input` / `Textarea` — 세 컴포넌트 유지, 책임 분리 확정
+### D-05. `Field` / `Input` / `Textarea` - 세 컴포넌트 유지, 책임 분리 확정
 
 - **결정**: 셋 다 유지하고 책임을 나눈다. `Field/`가 라벨·도움말·글자 수·오류 메시지·`aria-describedby` 연결을 소유하며 M11 DoD 8의 책임 주체다. `Input/`·`Textarea/`는 컨트롤 박스 규격(디자인 §5.6.2)만 소유하고 **항상 `Field` 안에서 렌더링**한다.
 - **근거**: 기술 §5.2의 제목은 `Input / Textarea`지만 그 내용(라벨 `id` 연결, 도움말·글자 수·오류 고정 순서, `aria-describedby`)은 §6 폴더명 `Field/`의 계약이다. 하네스 M11 할 일 2도 `Field`를 이름으로 호출한다. 디자인 §5.6.2의 박스 규격은 별개 계약이므로 흡수하지 않는다.
-- **버린 대안**: `Field/`만 두고 `Input`·`Textarea`를 variant로 흡수 — 디자인 §6의 폴더 두 개가 사라져 디자인 QA 기준이 흐려진다.
+- **버린 대안**: `Field/`만 두고 `Input`·`Textarea`를 variant로 흡수 - 디자인 §6의 폴더 두 개가 사라져 디자인 QA 기준이 흐려진다.
 
-### D-06. 인쇄용 전역 클래스 7개 — `:global()` 방식 확정
+### D-06. 인쇄용 전역 클래스 7개 - `:global()` 방식 확정
 
 - **결정**: `styles/utilities.css`는 디자인 §3.3이 허용한 `sr-only`, `focus-ring`, `print-only` 세 개만 유지한다. 기술 §5.5가 겨냥하는 `.editor-only`, `.reader-actions`, `.theme-toggle`, `.copy-button`, `.toast-region`, `.step-card`, `.warning-card`는 각 컴포넌트의 `*.module.css`에서 `:global()`로 노출하고, `styles/print.css`가 그 이름들을 겨냥한다.
 - **근거**: 전역 유틸리티를 7개 늘리면 디자인 §3.3의 스타일링 계약이 깨진다. 인쇄 훅은 소유 컴포넌트가 자기 이름을 내보내는 형태가 되어야 소유권이 분명해진다.
 - **버린 대안**: 7개를 전역 예외로 승인해 `utilities.css`에 두기.
 
-### D-07. 테스트 파일 배치 — 하이브리드 확정
+### D-07. 테스트 파일 배치 - 하이브리드 확정
 
 - **결정**: 컴포넌트 렌더링 테스트만 컴포넌트 폴더에 병치(`Component.test.tsx`)하고, 하네스가 경로로 호출하는 `tests/unit|integration|e2e`는 그대로 유지한다.
 - **근거**: 기술 §6은 모든 테스트를 `tests/`에 두고 디자인 §6.1은 병치를 요구한다. 하네스 M1~M11 검증 블록이 `tests/` 경로를 직접 호출하므로 `tests/`를 없앨 수 없고, 디자인 QA는 컴포넌트 옆의 렌더링 테스트를 전제로 한다.
@@ -538,20 +538,20 @@ M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴�
   - M12 DoD 3의 핵심 순수 함수 90% 대상은 `src/features/branching/**`, `src/features/import-json/**`, `src/features/import-markdown/**`, `src/features/export-json/**`, `src/features/export-html/**`다.
   - M12 DoD 4의 전체 80% 대상은 `src/**`다.
 
-### D-08. `scripts/build-reader-runtime` — `.mjs` 확정
+### D-08. `scripts/build-reader-runtime` - `.mjs` 확정
 
 - **결정**: `scripts/build-reader-runtime.mjs`로 둔다. 기술 §6의 `.ts` 표기는 채택하지 않는다.
 - **근거**: 기술 §3.2 라이브러리 표에 TypeScript 실행기가 없고, M1 DoD 2가 직접 의존성의 정확한 버전 고정을 요구하므로 `tsx`·`ts-node`를 즉흥 추가할 수 없다. 하네스 §0.9는 이미 모든 검증 스크립트를 Node 기반으로 요구하므로 확장자를 통일하면 도구 표면이 하나 줄어든다.
 - **버린 대안**: 실행기를 명시적으로 고정해 의존성에 추가하기.
 - **후속**: 리더 번들 정의 파일을 루트에 따로 두지 않는다(`vite.reader.config.ts` 등). 이 스크립트가 유일한 진입점이며 `verify:bundle`이 그 산출물을 측정한다.
 
-### D-09. `artifacts/` 커밋 정책 — `phase-reports/`만 커밋 확정
+### D-09. `artifacts/` 커밋 정책 - `phase-reports/`만 커밋 확정
 
 - **결정**: `artifacts/qa/phase-reports/`만 커밋한다. `screenshots/`, `accessibility/`, `performance/`, `security/`, `exports/`는 `.gitignore`에 넣고 CI 아티팩트로 업로드한다.
 - **근거**: 하네스 §0.11은 증거를 `artifacts/qa/`에 두게 하지만 §0.6은 대용량 HTML·비디오·임시 이미지 커밋을 금지한다. phase 보고서와 릴리스 후보 요약은 텍스트이고 세션 인계에 필요하므로 커밋 대상이다.
 - **후속**: M6 벤치마크 수치, M9 export 측정치, M12 체크섬처럼 **판정 근거가 되는 수치는 보고서 본문에 적는다.** `performance/`나 `exports/`의 원본 파일이 커밋되지 않으므로, 파일만 남기고 수치를 적지 않으면 다음 세션이 재현할 수 없다.
 
-### D-10. URL 프로토콜 허용 목록의 소유자 — `domain` 확정
+### D-10. URL 프로토콜 허용 목록의 소유자 - `domain` 확정
 
 - **결정**: `ALLOWED_URL_PROTOCOLS`와 판정 함수 `isAllowedUrl`을 `domain/guide.types.ts`·`domain/guide.schema.ts`가 소유한다. `utils/url.ts`는 이 상수를 가져다 쓰는 브라우저측 헬퍼만 담는다.
 - **근거**: 링크 프로토콜 제한은 기술 §2.2.4의 **필드 검증 규칙**이라 Zod 스키마가 파싱 시점에 판정해야 한다. 그런데 §3.2-1이 domain의 외부 계층 import를 금지하므로 domain이 `utils/`를 참조할 수 없다. 원래 §3.3에 적었던 "`utils/url.ts`가 단독 소유"는 이 제약과 양립할 수 없었다.

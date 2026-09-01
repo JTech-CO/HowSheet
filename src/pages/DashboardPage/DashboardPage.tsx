@@ -155,7 +155,7 @@ export function DashboardPage() {
         </Field>
       </Dialog>
 
-      {/* 디자인 §2.2.1 — 주요 버튼은 위험 색상, 초기 포커스는 취소 버튼에 둔다. */}
+      {/* 디자인 §2.2.1 - 주요 버튼은 위험 색상, 초기 포커스는 취소 버튼에 둔다. */}
       <Dialog
         open={removeTarget !== null}
         title="가이드를 삭제할까요?"

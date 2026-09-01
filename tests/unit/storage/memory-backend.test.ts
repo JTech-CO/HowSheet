@@ -179,7 +179,7 @@ describe('메모리 모드 상태 노출 (M3 DoD 6)', () => {
 
   // Dexie의 close()는 데이터를 지우지 않는다. 메모리 백엔드가 지워 버리면
   // 방어적으로 close를 부르는 호출자가 그대로 사용자 데이터를 날린다.
-  it('close는 내용을 지우지 않고 이후 사용을 막는다 — Dexie와 같은 의미', async () => {
+  it('close는 내용을 지우지 않고 이후 사용을 막는다 - Dexie와 같은 의미', async () => {
     const backend = createMemoryBackend('테스트');
     const g = guide();
     await backend.guides.put(g);
@@ -247,7 +247,7 @@ describe('저장 경계 복제 (M3 DoD 3, INV-08)', () => {
     expect(new TextDecoder().decode(read?.bytes)).toBe('bytes');
   });
 
-  it('cloneStored는 Blob 참조를 그대로 넘긴다 — Blob은 불변이다', () => {
+  it('cloneStored는 Blob 참조를 그대로 넘긴다 - Blob은 불변이다', () => {
     const blob = new Blob(['x'], { type: 'image/png' });
     const copy = cloneStored({ blob });
     expect(copy.blob).toBe(blob);

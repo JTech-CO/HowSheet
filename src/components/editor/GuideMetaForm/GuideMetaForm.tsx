@@ -95,7 +95,7 @@ export function GuideMetaForm({ documentId, meta, onChange }: GuideMetaFormProps
         )}
       </Field>
 
-      {/* 디자인 §2.4.2 — 제목 아래에 실제 리더의 제목을 작게 보여 준다. */}
+      {/* 디자인 §2.4.2 - 제목 아래에 실제 리더의 제목을 작게 보여 준다. */}
       <p className={styles.preview}>
         <span className={styles.previewLabel}>리더에서 보이는 제목</span>
         <span className={styles.previewTitle} data-testid="title-preview">

@@ -114,7 +114,7 @@ describe('reader-runtime 경계 (하네스 M1 DoD 6·10, INV-11)', () => {
     expect(rulesOf(v)).toContain('READER_RUNTIME_BOUNDARY');
   });
 
-  it('허용 목록은 디렉터리가 아니라 모듈 단위로 판정한다 — features/autosave는 거부', () => {
+  it('허용 목록은 디렉터리가 아니라 모듈 단위로 판정한다 - features/autosave는 거부', () => {
     const v = analyze({
       files: [file('src/reader-runtime/reader-state.ts', ['@/features/autosave/autosave.service'])],
     }) as Violation[];

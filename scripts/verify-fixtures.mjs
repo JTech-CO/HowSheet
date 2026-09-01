@@ -153,7 +153,7 @@ async function checkGuideFile(absolutePath, label, expectation) {
   try {
     raw = await readFile(absolutePath, 'utf8');
   } catch (error) {
-    fail(label, `읽을 수 없습니다 — ${error.message}`);
+    fail(label, `읽을 수 없습니다 - ${error.message}`);
     return;
   }
 
@@ -161,7 +161,7 @@ async function checkGuideFile(absolutePath, label, expectation) {
   try {
     parsedJson = JSON.parse(raw);
   } catch (error) {
-    fail(label, `JSON 파싱 실패 — ${error.message}`);
+    fail(label, `JSON 파싱 실패 - ${error.message}`);
     return;
   }
 
@@ -183,7 +183,7 @@ async function checkGuideFile(absolutePath, label, expectation) {
     return;
   }
 
-  // 결정론 — 같은 입력은 같은 결과를 낸다. (M2 DoD 8)
+  // 결정론 - 같은 입력은 같은 결과를 낸다. (M2 DoD 8)
   const again = parseGuideDocument(JSON.parse(raw));
   if (!sameSet(codesOf(again.result), actualCodes)) {
     fail(label, '같은 입력에 대해 두 번의 검증 결과가 다릅니다.');
@@ -201,7 +201,7 @@ async function checkGuideFile(absolutePath, label, expectation) {
 
   if (expectation.pendingGraph !== undefined) {
     notes.push(
-      `${label}: 스키마 통과. 그래프 판정은 ${expectation.pendingPhase} — ` +
+      `${label}: 스키마 통과. 그래프 판정은 ${expectation.pendingPhase} - ` +
         `기대 코드 ${expectation.pendingGraph.join(', ')}`,
     );
   } else if (expectation.pendingPhase !== undefined) {
@@ -233,7 +233,7 @@ async function listJson(dir) {
 async function main() {
   const fixtureFiles = await listJson(FIXTURE_DIR);
   if (fixtureFiles === null || fixtureFiles.length === 0) {
-    console.error('verify:fixtures — tests/fixtures에서 픽스처를 찾지 못했습니다.');
+    console.error('verify:fixtures - tests/fixtures에서 픽스처를 찾지 못했습니다.');
     process.exitCode = 1;
     return;
   }
@@ -270,14 +270,14 @@ async function main() {
   }
 
   if (failures.length > 0) {
-    console.error(`verify:fixtures — 불일치 ${failures.length}건\n`);
+    console.error(`verify:fixtures - 불일치 ${failures.length}건\n`);
     for (const message of failures) console.error(`  ${message}`);
     console.error('\n기대 표: scripts/verify-fixtures.mjs의 EXPECTATIONS');
     process.exitCode = 1;
     return;
   }
 
-  console.log(`verify:fixtures — 통과. 가이드 ${fixtureFiles.length}개를 검증했습니다.`);
+  console.log(`verify:fixtures - 통과. 가이드 ${fixtureFiles.length}개를 검증했습니다.`);
   for (const note of notes) console.log(`  · ${note}`);
 }
 

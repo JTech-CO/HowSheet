@@ -39,7 +39,7 @@ const SKIP_DIRECTORIES = new Set([
   'fixtures',
 ]);
 
-/** D-01 — 통합 전 두 백서에 있던 대체 경로. 존재 자체가 위반이다. */
+/** D-01 - 통합 전 두 백서에 있던 대체 경로. 존재 자체가 위반이다. */
 export const FORBIDDEN_DIRECTORIES = [
   { dir: 'src/components/common', use: 'src/components/ui' },
   { dir: 'src/lib', use: 'src/features/*' },
@@ -59,18 +59,18 @@ export const EDITOR_ONLY_PACKAGES = [
   '@testing-library/react',
 ];
 
-/** §3.2-5 — IndexedDB 구현은 storage/가 캡슐화한다. */
+/** §3.2-5 - IndexedDB 구현은 storage/가 캡슐화한다. */
 export const STORAGE_ONLY_PACKAGES = ['dexie', 'dexie-react-hooks'];
 
 /**
- * §3.2-5 — 브라우저 저장소 전역도 storage/ 안에서만 만진다.
+ * §3.2-5 - 브라우저 저장소 전역도 storage/ 안에서만 만진다.
  * 패키지만 막으면 `window.localStorage`를 직접 쓰는 우회가 모든 게이트를
  * 통과한다. 그러면 §4.5.2 키 허용 목록(INV-10)이 강제되는 지점이 사라진다.
  */
 export const STORAGE_ONLY_GLOBALS = ['localStorage', 'sessionStorage', 'indexedDB'];
 
 /**
- * D-04 — reader-runtime의 내부 import 허용 목록.
+ * D-04 - reader-runtime의 내부 import 허용 목록.
  * 디렉터리 단위가 아니라 모듈 단위로 판정한다. features 전체를 금지하면 리더가
  * 분기 엔진과 살균기를 쓸 수 없고, features 전체를 허용하면 편집기 전용 모듈이
  * 리더 번들에 들어온다.
@@ -90,7 +90,7 @@ export const READER_RUNTIME_ALLOWED_PREFIXES = [
 export const READER_RUNTIME_ALLOWED_PACKAGES = [];
 
 /**
- * M1 DoD 5 — domain은 브라우저 API에 의존하지 않는다.
+ * M1 DoD 5 - domain은 브라우저 API에 의존하지 않는다.
  * eslint.config.js가 이 목록을 가져다 쓰므로 두 곳이 어긋날 수 없다.
  */
 export const DOM_GLOBALS = [
@@ -117,7 +117,7 @@ export const DOM_GLOBALS = [
 /** 전역 객체를 통한 우회. `globalThis.document` 같은 형태를 잡는다. */
 const GLOBAL_CARRIERS = new Set(['globalThis', 'window', 'self']);
 
-/** §3.3 — 살균된 Markdown 렌더링 경계는 프로젝트 전체에서 한 곳뿐이다. */
+/** §3.3 - 살균된 Markdown 렌더링 경계는 프로젝트 전체에서 한 곳뿐이다. */
 export const SANITIZE_BOUNDARY = 'src/components/content/MarkdownText/';
 
 const DANGEROUS_PROP = 'dangerouslySetInnerHTML';
@@ -202,7 +202,7 @@ export function parseModule(source, filePath = 'probe.tsx') {
       }
     }
 
-    // dangerouslySetInnerHTML — JSX 속성과 prop 객체 키 양쪽을 본다.
+    // dangerouslySetInnerHTML - JSX 속성과 prop 객체 키 양쪽을 본다.
     if (
       ts.isJsxAttribute(node) &&
       ts.isIdentifier(node.name) &&
@@ -304,7 +304,7 @@ export function analyze(input) {
     violations.push({ rule, file, detail });
   };
 
-  // D-01 — 금지 디렉터리
+  // D-01 - 금지 디렉터리
   const presentDirs = new Set([...directories, ...files.map((f) => path.posix.dirname(f.path))]);
   for (const { dir, use } of FORBIDDEN_DIRECTORIES) {
     const hit = [...presentDirs].some((d) => d === dir || d.startsWith(`${dir}/`));
@@ -322,7 +322,7 @@ export function analyze(input) {
     const inStorage = file.path.startsWith('src/storage/');
     const inSrc = file.path.startsWith('src/');
 
-    // INV-11 — reader-runtime은 프레임워크 비의존이다. JSX 파일은 React 런타임을
+    // INV-11 - reader-runtime은 프레임워크 비의존이다. JSX 파일은 React 런타임을
     // 자동 주입하므로 import 문 없이도 React가 리더 번들에 들어간다.
     if (inReaderRuntime && /\.(tsx|jsx)$/.test(file.path)) {
       add(
@@ -336,7 +336,7 @@ export function analyze(input) {
       const target = resolveSpecifier(file.path, specifier);
       const pkg = packageRoot(specifier);
 
-      // M1 DoD 5 — domain 순수성
+      // M1 DoD 5 - domain 순수성
       if (inDomain) {
         if (pkg && EDITOR_ONLY_PACKAGES.includes(pkg)) {
           add('DOMAIN_PURITY', file.path, `domain이 '${specifier}'를 import한다. (M1 DoD 5)`);
@@ -350,7 +350,7 @@ export function analyze(input) {
         }
       }
 
-      // M1 DoD 6·10, INV-11 — reader-runtime 경계
+      // M1 DoD 6·10, INV-11 - reader-runtime 경계
       if (inReaderRuntime) {
         if (pkg && !READER_RUNTIME_ALLOWED_PACKAGES.includes(pkg)) {
           add(
@@ -371,7 +371,7 @@ export function analyze(input) {
         }
       }
 
-      // §3.2-7 — ui는 도메인을 모른다
+      // §3.2-7 - ui는 도메인을 모른다
       if (inUi && target && target.startsWith('src/domain/')) {
         add(
           'UI_DOMAIN_INDEPENDENCE',
@@ -380,7 +380,7 @@ export function analyze(input) {
         );
       }
 
-      // §3.2-5 — 저장소 캡슐화
+      // §3.2-5 - 저장소 캡슐화
       if (inSrc && !inStorage && pkg && STORAGE_ONLY_PACKAGES.includes(pkg)) {
         add(
           'STORAGE_ENCAPSULATION',
@@ -390,7 +390,7 @@ export function analyze(input) {
       }
     }
 
-    // §3.2-5 — 저장소 전역은 src/storage/ 안에서만
+    // §3.2-5 - 저장소 전역은 src/storage/ 안에서만
     if (inSrc && !inStorage) {
       const hits = globals.filter((name) => STORAGE_ONLY_GLOBALS.includes(name));
       if (hits.length > 0) {
@@ -403,7 +403,7 @@ export function analyze(input) {
       }
     }
 
-    // M1 DoD 5 — domain의 브라우저 전역 사용
+    // M1 DoD 5 - domain의 브라우저 전역 사용
     if (inDomain && globals.length > 0) {
       add(
         'DOMAIN_PURITY',
@@ -412,7 +412,7 @@ export function analyze(input) {
       );
     }
 
-    // §3.3 / INV-07 — 살균 경계
+    // §3.3 / INV-07 - 살균 경계
     if (file.usesDangerouslySetInnerHTML && !file.path.startsWith(SANITIZE_BOUNDARY)) {
       add(
         'SANITIZE_BOUNDARY',
@@ -422,7 +422,7 @@ export function analyze(input) {
     }
   }
 
-  // INV-11 (전이) — reader-runtime이 직접 허용된 모듈을 통해 편집기 전용
+  // INV-11 (전이) - reader-runtime이 직접 허용된 모듈을 통해 편집기 전용
   // 패키지를 끌어오는 경우. `@/domain/guide.schema`는 허용 경로에 있지만 zod를
   // import하므로, 리더가 그것을 쓰면 zod가 리더 번들에 들어간다. M9의
   // verify:bundle까지 가서야 드러나는 것을 여기서 막는다.
@@ -531,7 +531,7 @@ async function main() {
 
   const srcCount = collected.files.filter((f) => f.path.startsWith('src/')).length;
   if (srcCount === 0) {
-    console.error('verify:architecture — src/ 아래에서 검사할 소스를 찾지 못했습니다.');
+    console.error('verify:architecture - src/ 아래에서 검사할 소스를 찾지 못했습니다.');
     process.exitCode = 1;
     return;
   }
@@ -539,7 +539,7 @@ async function main() {
   const violations = analyze(collected);
 
   if (violations.length > 0) {
-    console.error(`verify:architecture — 위반 ${violations.length}건\n`);
+    console.error(`verify:architecture - 위반 ${violations.length}건\n`);
     for (const v of violations) {
       console.error(`  [${v.rule}] ${v.file}`);
       console.error(`      ${v.detail}`);
@@ -550,7 +550,7 @@ async function main() {
   }
 
   console.log(
-    `verify:architecture — 통과. 소스 ${collected.files.length}개(src ${srcCount}개), ` +
+    `verify:architecture - 통과. 소스 ${collected.files.length}개(src ${srcCount}개), ` +
       `규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
   );
 }

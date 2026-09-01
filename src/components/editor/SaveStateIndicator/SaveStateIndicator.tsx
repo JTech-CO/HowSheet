@@ -44,7 +44,7 @@ export function SaveStateIndicator({ state, dirty, error }: SaveStateIndicatorPr
       <span className={styles.dot} aria-hidden="true" />
       {label}
       {state === 'error' && error !== undefined ? (
-        <span className={styles.detail}> — {error}</span>
+        <span className={styles.detail}> - {error}</span>
       ) : null}
     </p>
   );

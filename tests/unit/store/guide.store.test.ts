@@ -384,7 +384,7 @@ describe('저장 (M4 DoD 2·4·5)', () => {
     expect(store().saveState).toBe('saved');
     expect(store().dirty).toBe(false);
 
-    // "새로고침" — 스토어를 비우고 저장소에서 다시 읽는다.
+    // "새로고침" - 스토어를 비우고 저장소에서 다시 읽는다.
     resetGuideStore();
     await store().loadGuide(id);
 

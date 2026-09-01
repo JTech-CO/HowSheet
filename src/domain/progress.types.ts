@@ -28,7 +28,7 @@ export interface ReaderProgress {
   completed: boolean;
 }
 
-/** INV-10 — 진행 키 형식. */
+/** INV-10 - 진행 키 형식. */
 export const PROGRESS_KEY_PREFIX = 'howsheet:progress';
 
 /**

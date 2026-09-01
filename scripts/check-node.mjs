@@ -7,7 +7,7 @@
  * 크래시를 만나는 것보다 설치 단계에서 이유와 함께 멈추는 편이 낫다.
  *
  * 차단 대상:
- *   - Node 25.2.0 — `fs.rm(recursive)`가 비ASCII 경로에서 프로세스를 하드 크래시
+ *   - Node 25.2.0 - `fs.rm(recursive)`가 비ASCII 경로에서 프로세스를 하드 크래시
  *     시킨다(Windows, STATUS_STACK_BUFFER_OVERRUN / 0xC0000409). `vite build`의
  *     출력 디렉터리 정리가 이 호출을 쓰므로 `pnpm build`가 죽는다.
  *     PROGRESS.md 결정 로그 2026-08-30 참조.

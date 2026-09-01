@@ -5,7 +5,7 @@
  */
 
 :root {
-  /* 색상 — Light */
+  /* 색상 - Light */
   --color-brand-50: #eff6ff;
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
@@ -34,7 +34,7 @@
   --font-size-base: 16px;
   --line-height-body: 1.65;
 
-  /* 간격 — 4px 스케일 */
+  /* 간격 - 4px 스케일 */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -46,25 +46,25 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* 모서리 — 디자인 §5.4. 기술 §5.1.3은 8/12/16을 적었으나 하네스 §0.1에 따라
+  /* 모서리 - 디자인 §5.4. 기술 §5.1.3은 8/12/16을 적었으나 하네스 §0.1에 따라
      표현 계약은 디자인 백서를 따른다. PROGRESS.md 결정 로그 참조. */
   --radius-input: 8px;
   --radius-card: 10px;
   --radius-panel: 16px;
   --radius-pill: 999px;
 
-  /* 터치 대상 — INV-13 */
+  /* 터치 대상 - INV-13 */
   --touch-target-min: 44px;
 
   /* 레이아웃 폭 */
   --width-reader-max: 760px;
   --width-editor-column: 800px;
 
-  /* 그림자 — 계층을 만들 때만 사용한다 (디자인 §5.4) */
+  /* 그림자 - 계층을 만들 때만 사용한다 (디자인 §5.4) */
   --shadow-sm: 0 1px 2px rgb(15 23 42 / 6%);
   --shadow-md: 0 8px 24px rgb(15 23 42 / 10%);
 
-  /* 모션 — prefers-reduced-motion에서 0으로 덮어쓴다 */
+  /* 모션 - prefers-reduced-motion에서 0으로 덮어쓴다 */
   --duration-fast: 120ms;
   --duration-base: 180ms;
 }

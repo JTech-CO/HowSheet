@@ -18,7 +18,7 @@ export interface ReorderControlsProps {
   onMove: (delta: number) => void;
 }
 
-/** "4단계 중 2번째로 이동됨" — 이동 후 라이브 영역에 알릴 문장. (디자인 §2.2.1) */
+/** "4단계 중 2번째로 이동됨" - 이동 후 라이브 영역에 알릴 문장. (디자인 §2.2.1) */
 export function reorderAnnouncement(itemLabel: string, position: number, total: number): string {
   return `${itemLabel}이(가) ${total}개 중 ${position}번째로 이동됨`;
 }
