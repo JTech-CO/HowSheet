@@ -15,13 +15,16 @@
 import { create } from 'zustand';
 
 import {
+  createBlock,
   createFirstStep,
   createGuideDocument,
   normalizeOrder,
   type IdFactory,
 } from '../domain/guide.defaults.ts';
+import { ISSUE_CODES } from '../domain/validation.types.ts';
 import type {
   ContentBlock,
+  ContentBlockType,
   GuideDocument,
   GuideMeta,
   GuideSettings,
@@ -29,8 +32,20 @@ import type {
   PreparationItem,
   WarningBlock,
 } from '../domain/guide.types.ts';
-import { AssetRepository } from '../storage/asset.repository.ts';
-import { openStorage, type StorageBackend, type StorageMode } from '../storage/db.ts';
+import { checksumOf } from '../features/assets/checksum.ts';
+import {
+  createBrowserImageCodec,
+  optimizeImage,
+  type ImageCodec,
+  type ImageIssue,
+} from '../features/assets/image-optimizer.ts';
+import { AssetRepository, toManifestItem } from '../storage/asset.repository.ts';
+import {
+  openStorage,
+  type StorageBackend,
+  type StorageMode,
+  type StoredAsset,
+} from '../storage/db.ts';
 import { GuideRepository, type GuideSummary } from '../storage/guide.repository.ts';
 import { RecoveryRepository } from '../storage/recovery.repository.ts';
 
@@ -71,6 +86,11 @@ export interface GuideStoreState {
 
   // ── 열린 문서
   document: GuideDocument | null;
+  /**
+   * 열린 문서의 자산 본문. 이미지 미리보기가 쓴다.
+   * 문서의 `assets`는 manifest(메타)이고 이쪽이 실제 바이트다. (기술 §4.5.1)
+   */
+  loadedAssets: Record<string, StoredAsset>;
   status: LoadStatus;
   loadError?: string;
 
@@ -96,6 +116,7 @@ export interface GuideStoreState {
   removeGuide: (id: string) => Promise<void>;
 
   loadGuide: (id: string) => Promise<void>;
+  refreshAssets: () => Promise<void>;
   closeGuide: () => void;
 
   updateMeta: (patch: Partial<GuideMeta>) => void;
@@ -118,6 +139,19 @@ export interface GuideStoreState {
   moveStep: (id: string, delta: number) => boolean;
   reorderSteps: (activeId: string, overId: string) => boolean;
   updateBlock: (stepId: string, blockId: string, patch: Partial<ContentBlock>) => void;
+  addBlock: (stepId: string, type: ContentBlockType, afterBlockId?: string) => string | null;
+  removeBlock: (stepId: string, blockId: string) => void;
+  moveBlock: (stepId: string, blockId: string, delta: number) => boolean;
+  /**
+   * 이미지 파일을 검증·최적화해 자산으로 저장하고 블록에 연결한다.
+   * 이슈가 있으면 저장하지 않고 그대로 돌려준다. (M5 DoD 5·6)
+   */
+  attachImage: (
+    stepId: string,
+    blockId: string,
+    file: File,
+    codec?: ImageCodec,
+  ) => Promise<ImageIssue[]>;
 
   save: () => Promise<void>;
 }
@@ -150,7 +184,7 @@ export function guideStoreDeps(): GuideStoreDeps {
   return deps;
 }
 
-/** §4.1.3 — 식별자는 `crypto.randomUUID()`를 우선한다. */
+/** §4.1.3 - 식별자는 `crypto.randomUUID()`를 우선한다. */
 export function browserIdFactory(prefix: string): string {
   const uuid =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -265,6 +299,7 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
     libraryStatus: 'idle',
     storageMode: null,
     document: null,
+    loadedAssets: {},
     status: 'idle',
     dirty: false,
     saveState: 'idle',
@@ -400,14 +435,28 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
           savedSeq: 0,
           lastSavedAt: doc.updatedAt,
         });
+        await get().refreshAssets();
       } catch (error) {
         set({ status: 'error', loadError: describeError(error) });
       }
     },
 
+    /** 열린 문서의 자산 본문을 다시 읽는다. */
+    async refreshAssets() {
+      const doc = get().document;
+      if (doc === null) {
+        set({ loadedAssets: {} });
+        return;
+      }
+
+      const list = await (await ensureDeps()).assets.listByGuide(doc.id);
+      set({ loadedAssets: Object.fromEntries(list.map((asset) => [asset.id, asset])) });
+    },
+
     closeGuide() {
       set({
         document: null,
+        loadedAssets: {},
         status: 'idle',
         dirty: false,
         saveState: 'idle',
@@ -584,6 +633,131 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
       }));
     },
 
+    /** 블록을 추가한다. 지정한 블록 바로 뒤, 없으면 맨 끝에 넣는다. */
+    addBlock(stepId, type, afterBlockId) {
+      const doc = get().document;
+      if (doc === null) return null;
+
+      const step = doc.steps.find((item) => item.id === stepId);
+      if (step === undefined) return null;
+
+      const block = createBlock(type, guideStoreDeps().newId, step.blocks.length);
+
+      mutate((current) => ({
+        ...current,
+        steps: current.steps.map((item) => {
+          if (item.id !== stepId) return item;
+
+          const sorted = normalizeOrder(item.blocks);
+          const at =
+            afterBlockId === undefined
+              ? sorted.length
+              : sorted.findIndex((entry) => entry.id === afterBlockId) + 1;
+          const insertAt = at === 0 ? sorted.length : at;
+
+          const next = [...sorted];
+          next.splice(insertAt, 0, block);
+          return { ...item, blocks: next.map((entry, index) => ({ ...entry, order: index })) };
+        }),
+      }));
+
+      return block.id;
+    },
+
+    removeBlock(stepId, blockId) {
+      mutate((doc) => ({
+        ...doc,
+        steps: doc.steps.map((step) =>
+          step.id === stepId
+            ? { ...step, blocks: normalizeOrder(step.blocks.filter((b) => b.id !== blockId)) }
+            : step,
+        ),
+      }));
+    },
+
+    moveBlock(stepId, blockId, delta) {
+      const doc = get().document;
+      if (doc === null) return false;
+
+      const step = doc.steps.find((item) => item.id === stepId);
+      if (step === undefined) return false;
+
+      const moved = moveById(step.blocks, blockId, delta);
+      if (moved === null) return false;
+
+      mutate((current) => ({
+        ...current,
+        steps: current.steps.map((item) =>
+          item.id === stepId ? { ...item, blocks: moved } : item,
+        ),
+      }));
+      return true;
+    },
+
+    async attachImage(stepId, blockId, file, codec) {
+      const doc = get().document;
+      if (doc === null) return [];
+
+      const { assets, newId, now } = await ensureDeps();
+
+      // 코덱은 브라우저마다 다르게 실패한다(OffscreenCanvas 부재, 디코딩 거부).
+      // 그 실패가 예외로 새어 나가면 클릭 핸들러 안에서 사라져 "아무 일도 안
+      // 일어남"이 된다. 사용자가 볼 수 있는 이슈로 바꾼다.
+      let optimized;
+      try {
+        optimized = await optimizeImage(file, codec ?? createBrowserImageCodec());
+      } catch (error) {
+        return [
+          {
+            code: ISSUE_CODES.IMAGE_PROCESSING_FAILED,
+            message: `이미지를 처리하지 못했습니다: ${describeError(error)}`,
+          },
+        ];
+      }
+      if (optimized.issues.length > 0) return optimized.issues;
+
+      const bytes = await optimized.blob.arrayBuffer();
+      const checksum = await checksumOf(bytes);
+
+      // 같은 checksum이면 저장소가 기존 자산을 돌려준다. Blob이 두 벌 생기지
+      // 않는다. (M5 DoD 8)
+      const stored = await assets.put({
+        id: newId('asset'),
+        guideId: doc.id,
+        fileName: file.name,
+        mimeType: optimized.mimeType,
+        checksum,
+        blob: optimized.blob,
+        createdAt: now(),
+        ...(optimized.width > 0 ? { width: optimized.width } : {}),
+        ...(optimized.height > 0 ? { height: optimized.height } : {}),
+      });
+
+      const manifest = toManifestItem(stored.asset);
+
+      mutate((current) => ({
+        ...current,
+        assets: current.assets.some((item) => item.id === manifest.id)
+          ? current.assets.map((item) => (item.id === manifest.id ? manifest : item))
+          : [...current.assets, manifest],
+        steps: current.steps.map((step) =>
+          step.id === stepId
+            ? {
+                ...step,
+                blocks: step.blocks.map((block) =>
+                  block.id === blockId && block.type === 'image'
+                    ? { ...block, assetId: stored.asset.id }
+                    : block,
+                ),
+              }
+            : step,
+        ),
+      }));
+
+      await get().refreshAssets();
+      return [];
+    },
+
     removeStep(id) {
       const doc = get().document;
       if (doc === null) return null;
@@ -695,6 +869,7 @@ export function resetGuideStore(): void {
     storageMode: null,
     storageUnavailableReason: undefined,
     document: null,
+    loadedAssets: {},
     status: 'idle',
     loadError: undefined,
     dirty: false,

@@ -40,10 +40,12 @@ export const ISSUE_CODES = {
   IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
   /** 장식용이 아닌 이미지의 대체 텍스트가 비어 있다. */
   IMAGE_ALT_REQUIRED: 'IMAGE_ALT_REQUIRED',
+  /** 브라우저가 이미지를 디코딩·인코딩하지 못했다. (M5) */
+  IMAGE_PROCESSING_FAILED: 'IMAGE_PROCESSING_FAILED',
   /** 식별자가 비어 있다. */
   EMPTY_ID: 'EMPTY_ID',
 
-  // ── 문서 검증 — M2가 판정 ─────────────────────────────────────
+  // ── 문서 검증 - M2가 판정 ─────────────────────────────────────
   /** 같은 컬렉션 안에 ID가 중복된다. (M2 DoD 4) */
   DUPLICATE_ID: 'DUPLICATE_ID',
   /** 단계가 하나도 없다. */
@@ -61,7 +63,7 @@ export const ISSUE_CODES = {
   /** 분기 규칙이 참조하는 블록이 같은 단계에 없다. */
   BRANCH_SOURCE_BLOCK_NOT_FOUND: 'BRANCH_SOURCE_BLOCK_NOT_FOUND',
 
-  // ── 문서 검증 — M6이 판정 (그래프) ────────────────────────────
+  // ── 문서 검증 - M6이 판정 (그래프) ────────────────────────────
   /** 분기 대상 단계가 존재하지 않는다. */
   BRANCH_TARGET_NOT_FOUND: 'BRANCH_TARGET_NOT_FOUND',
   /** 한 단계 안에서 분기 우선순위가 중복된다. */
@@ -81,7 +83,7 @@ export const ISSUE_CODES = {
   /** 현재보다 낮은 버전이라 마이그레이션이 필요하다. */
   MIGRATION_REQUIRED: 'MIGRATION_REQUIRED',
 
-  // ── 내보내기 검증 — M9가 판정 ─────────────────────────────────
+  // ── 내보내기 검증 - M9가 판정 ─────────────────────────────────
   /** 자산을 Data URL로 변환할 수 없다. */
   ASSET_NOT_INLINABLE: 'ASSET_NOT_INLINABLE',
   /** 예상 크기 20MB 초과. */

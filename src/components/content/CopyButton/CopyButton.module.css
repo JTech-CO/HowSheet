@@ -1,0 +1,29 @@
+/* 인쇄 훅. styles/print.css가 이 이름을 겨냥한다. (D-06) */
+.wrapper,
+:global(.copy-button) {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.button {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-input);
+}
+
+.button:hover {
+  background: var(--color-surface-subtle);
+}
+
+.message {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

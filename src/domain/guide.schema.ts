@@ -18,6 +18,7 @@ import {
   ALLOWED_URL_PROTOCOLS,
   FIELD_LIMITS,
   SCHEMA_VERSION,
+  isAllowedUrl,
   type GuideDocument,
 } from './guide.types.ts';
 import {
@@ -32,18 +33,9 @@ import {
 
 // ────────────────────────────────────────────────────── URL 판정 (§2.2.4)
 
-/**
- * 링크 프로토콜 허용 판정. 목록과 판정을 domain이 단독으로 소유한다. (§3.3)
- * `new URL`은 브라우저 API가 아니라 ECMAScript 표준이라 domain에서 쓸 수 있다.
- */
-export function isAllowedUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value);
-    return (ALLOWED_URL_PROTOCOLS as readonly string[]).includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
+// 판정 함수는 `guide.types.ts`가 소유한다. 여기서 다시 내보내 기존 호출부와
+// 스키마가 같은 함수를 쓰게 한다.
+export { isAllowedUrl };
 
 function isParsableUrl(value: string): boolean {
   try {
@@ -295,7 +287,7 @@ export const warningBlockSchema = z
   })
   .superRefine((warning, ctx) => {
     checkId(ctx, warning.id, ['id']);
-    // §2.2.4 — 필수 경고에 확인 문구가 비어 있으면 오류다.
+    // §2.2.4 - 필수 경고에 확인 문구가 비어 있으면 오류다.
     if (
       warning.requiresAcknowledgement &&
       (warning.acknowledgementLabel === undefined || warning.acknowledgementLabel.trim() === '')
@@ -557,7 +549,7 @@ type Exact<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : never;
 
 /**
- * INV-03 — 타입과 스키마가 어긋나면 여기서 컴파일이 깨진다.
+ * INV-03 - 타입과 스키마가 어긋나면 여기서 컴파일이 깨진다.
  *
  * 어느 쪽에 필드가 생기거나 사라져도 `Exact`가 `never`로 좁혀지고
  * `true as never`가 오류가 된다. 이 장치가 없으면 `as GuideDocument` 같은

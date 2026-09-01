@@ -32,7 +32,41 @@
 .steps {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  counter-increment: step;
+}
+
+.stepTitle {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.stepTitle::before {
+  content: counter(step) '. ';
+  color: var(--color-text-muted);
+}
+
+.stepSummary {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.criteria {
+  padding: var(--space-3);
+  margin: var(--space-3) 0 0;
+  background: var(--color-success-bg);
+  border-radius: var(--radius-card);
 }
 
 .back {

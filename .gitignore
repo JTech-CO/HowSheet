@@ -24,3 +24,7 @@ artifacts/qa/exports/
 Thumbs.db
 .vscode/
 .idea/
+
+# 하네스 §0.10 - 대용량 자산 픽스처는 커밋하지 않고 결정론적으로 생성한다.
+# `pnpm generate:fixture-assets`로 언제든 같은 바이트를 다시 만든다.
+tests/fixtures/assets/photo-large.png

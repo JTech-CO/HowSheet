@@ -1,0 +1,22 @@
+.divider {
+  margin: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.unsupported {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  margin: var(--space-3) 0;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-card);
+}
+
+.unsupportedHint {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}

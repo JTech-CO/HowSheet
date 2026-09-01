@@ -11,6 +11,7 @@ import {
   SCHEMA_VERSION,
   type CompletionConfig,
   type ContentBlock,
+  type ContentBlockType,
   type GuideDocument,
   type GuideSettings,
   type GuideStep,
@@ -65,9 +66,54 @@ export function createFirstStep(newId: IdFactory): GuideStep {
 }
 
 /**
+ * 타입별 빈 블록.
+ *
+ * 기본값을 domain이 소유한다. 편집기가 각자 만들면 새 블록의 모양이 화면마다
+ * 갈리고, 스키마가 요구하는 필드를 빠뜨린 채 저장되는 경로가 생긴다.
+ *
+ * `image`는 `assetId`가 빈 문자열로 시작한다. 파일을 고르기 전까지는 가리킬
+ * 자산이 없다. 그 상태를 내보내기 검증이 오류로 잡는다. (M5 DoD 6)
+ */
+export function createBlock(type: ContentBlockType, newId: IdFactory, order: number): ContentBlock {
+  const id = newId('block');
+
+  switch (type) {
+    case 'text':
+      return { id, order, type: 'text', markdown: '' };
+    case 'code':
+      return { id, order, type: 'code', code: '' };
+    case 'link':
+      return { id, order, type: 'link', label: '', url: '' };
+    case 'image':
+      return { id, order, type: 'image', assetId: '', alt: '' };
+    case 'checklist':
+      return {
+        id,
+        order,
+        type: 'checklist',
+        items: [{ id: newId('item'), label: '', required: true }],
+      };
+    case 'decision':
+      return {
+        id,
+        order,
+        type: 'decision',
+        question: '',
+        required: true,
+        options: [
+          { id: newId('opt'), label: '' },
+          { id: newId('opt'), label: '' },
+        ],
+      };
+    case 'divider':
+      return { id, order, type: 'divider' };
+  }
+}
+
+/**
  * 새 가이드 문서.
  *
- * M2 DoD 1 — 제목 입력 전 임시 상태를 빼면 시작 단계 하나와 최소 하나의
+ * M2 DoD 1 - 제목 입력 전 임시 상태를 빼면 시작 단계 하나와 최소 하나의
  * 종료 가능 경로를 갖는다. 첫 단계에 분기와 `defaultNextStepId`가 없으므로
  * 그 단계가 곧 종료 지점이다.
  */
@@ -104,7 +150,7 @@ interface Ordered {
 /**
  * 표시 순서를 0..n-1로 다시 매긴다.
  *
- * M2 DoD 5 / INV-04 — `order`만 바꾸고 ID와 참조는 건드리지 않는다.
+ * M2 DoD 5 / INV-04 - `order`만 바꾸고 ID와 참조는 건드리지 않는다.
  * 원본 배열을 변경하지 않고 새 배열을 돌려준다.
  */
 export function normalizeOrder<T extends Ordered>(items: readonly T[]): T[] {

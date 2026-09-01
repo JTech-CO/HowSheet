@@ -35,6 +35,7 @@ export function EditorPage() {
   const navigate = useNavigate();
 
   const document = useGuideStore((state) => state.document);
+  const loadedAssets = useGuideStore((state) => state.loadedAssets);
   const status = useGuideStore((state) => state.status);
   const dirty = useGuideStore((state) => state.dirty);
   const saveState = useGuideStore((state) => state.saveState);
@@ -255,6 +256,25 @@ export function EditorPage() {
               canRemove={steps.length > 1}
               onUpdate={(patch) => store().updateStep(activeStep.id, patch)}
               onUpdateBlock={(blockId, patch) => store().updateBlock(activeStep.id, blockId, patch)}
+              assets={loadedAssets}
+              onAddBlock={(type, afterBlockId) => {
+                store().addBlock(activeStep.id, type, afterBlockId);
+                announce('블록이 추가되었습니다.');
+              }}
+              onRemoveBlock={(blockId) => {
+                store().removeBlock(activeStep.id, blockId);
+                announce('블록이 삭제되었습니다.');
+              }}
+              onMoveBlock={(blockId, delta) => {
+                if (!store().moveBlock(activeStep.id, blockId, delta)) return;
+                const ordered = [...(store().document?.steps ?? [])]
+                  .find((step) => step.id === activeStep.id)
+                  ?.blocks.slice()
+                  .sort((a, b) => a.order - b.order);
+                const position = (ordered ?? []).findIndex((block) => block.id === blockId) + 1;
+                announce(reorderAnnouncement('블록', position, ordered?.length ?? 0));
+              }}
+              onPickImage={(blockId, file) => store().attachImage(activeStep.id, blockId, file)}
               onMove={(delta) => {
                 if (!store().moveStep(activeStep.id, delta)) return;
                 const ordered = [...store().document!.steps].sort((a, b) => a.order - b.order);
@@ -273,7 +293,7 @@ export function EditorPage() {
         ) : null}
       </EditorShell>
 
-      {/* 디자인 §2.2.1 — 분기에서 참조되는 단계는 삭제 전 영향 범위를 보여준다. */}
+      {/* 디자인 §2.2.1 - 분기에서 참조되는 단계는 삭제 전 영향 범위를 보여준다. */}
       <Dialog
         open={removeTarget !== null}
         title="단계를 삭제할까요?"

@@ -49,6 +49,12 @@ jobs:
       - name: test:integration
         run: pnpm test:integration
 
+      - name: test:security
+        run: pnpm test:security
+
+      - name: verify:dependencies
+        run: pnpm verify:dependencies
+
       - name: verify:architecture
         run: pnpm verify:architecture
 

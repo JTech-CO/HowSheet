@@ -71,6 +71,13 @@ export default tseslint.config(
       // `role="list"`를 명시해야 한다. ARIA만 보면 중복이지만 그 중복이
       // 목록 시맨틱을 되살리는 유일한 방법이다. ul·ol의 list만 예외로 둔다.
       'jsx-a11y/no-redundant-roles': ['error', { ul: ['list'], ol: ['list'] }],
+      // 가로 스크롤되는 코드 블록은 키보드로 스크롤할 수 있어야 한다(WCAG 2.1.1).
+      // 그 방법은 `tabindex=0`뿐이다. 스크롤 가능한 영역에 이름을 붙이려고
+      // `role="group"`을 함께 쓰므로 그 조합만 허용한다.
+      'jsx-a11y/no-noninteractive-tabindex': [
+        'error',
+        { tags: [], roles: ['group', 'tabpanel'], allowExpressionValues: true },
+      ],
     },
   },
   {

@@ -1,4 +1,4 @@
-# AGENTS.md — HowSheet 전역 규칙
+# AGENTS.md - HowSheet 전역 규칙
 
 이 파일은 저장소에서 작업하는 모든 코딩 에이전트의 전역 규칙이다. 상세 절차는 `docs/HowSheet_Harness_KR.md`에 있다.
 
@@ -13,11 +13,11 @@
 
 1. 사용자가 현재 대화에서 명시적으로 승인한 결정
 2. 하네스의 하드 불변식(INV-01~15)과 STOP 규칙
-3. `docs/HowSheet_기술_백서.md` — 기능·데이터·아키텍처·보안·성능·테스트
-4. `docs/HowSheet_디자인_백서.md` — 레이아웃·시각 계층·반응형·접근성·UI 상태
-5. `docs/File_Structure.md` — 파일 배치·디렉터리 책임·모듈 경계·명명 규칙 (구조 판단은 두 백서보다 우선)
+3. `docs/HowSheet_기술_백서.md` - 기능·데이터·아키텍처·보안·성능·테스트
+4. `docs/HowSheet_디자인_백서.md` - 레이아웃·시각 계층·반응형·접근성·UI 상태
+5. `docs/File_Structure.md` - 파일 배치·디렉터리 책임·모듈 경계·명명 규칙 (구조 판단은 두 백서보다 우선)
 6. `PROGRESS.md` 결정 로그
-7. 현재 코드 — 문서와 다르면 코드가 드리프트 후보다
+7. 현재 코드 - 문서와 다르면 코드가 드리프트 후보다
 
 충돌을 발견하면 임의로 한쪽을 고르지 않는다. `PROGRESS.md`에 기록하고 하네스 §3 STOP 절차를 따른다.
 
@@ -65,7 +65,9 @@ pnpm lint
 pnpm typecheck
 pnpm test:unit
 pnpm test:integration
+pnpm test:security
 pnpm verify:architecture
+pnpm verify:dependencies
 pnpm verify:fixtures
 ```
 
@@ -74,7 +76,7 @@ pnpm verify:fixtures
 ## 6. 커밋 규칙
 
 - 한 커밋은 하나의 목적만 갖는다.
-- 형식: `type(mN): summary` — 예: `feat(m6): add deterministic branch graph validator`
+- 형식: `type(mN): summary` - 예: `feat(m6): add deterministic branch graph validator`
 - 의존성을 추가·교체하면 이유·번들 영향·라이선스·대안 검토를 `PROGRESS.md` 결정 로그에 남긴다.
 - lockfile은 의존성 변경과 함께 커밋한다.
 - `dist/`, 테스트 비디오, 대용량 HTML, 임시 이미지, `.env`는 커밋하지 않는다.

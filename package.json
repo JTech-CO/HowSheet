@@ -20,17 +20,26 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project dom",
+    "test:security": "node scripts/verify-security.mjs",
     "verify:architecture": "node scripts/verify-architecture.mjs",
-    "verify:fixtures": "node scripts/verify-fixtures.mjs"
+    "verify:dependencies": "node scripts/verify-dependencies.mjs",
+    "verify:fixtures": "node scripts/verify-fixtures.mjs",
+    "generate:fixture-assets": "node scripts/generate-fixture-assets.mjs"
   },
   "dependencies": {
     "dexie": "4.4.5",
+    "dompurify": "3.4.14",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-hook-form": "^7.87.0",
+    "react-hook-form": "7.87.0",
     "react-router-dom": "7.18.3",
+    "rehype-stringify": "10.0.1",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "unified": "11.0.5",
     "zod": "4.5.2",
-    "zustand": "^5.0.15"
+    "zustand": "5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

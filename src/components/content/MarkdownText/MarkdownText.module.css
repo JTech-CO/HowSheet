@@ -1,0 +1,84 @@
+.markdown {
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote,
+.markdown table {
+  margin: var(--space-3) 0;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: var(--space-6);
+  list-style: revert;
+}
+
+.markdown blockquote {
+  padding-left: var(--space-4);
+  color: var(--color-text-muted);
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.markdown code {
+  padding: 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-input);
+}
+
+.markdown pre {
+  padding: var(--space-3);
+  overflow-x: auto;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-card);
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--space-2);
+  text-align: left;
+  border: 1px solid var(--color-border);
+}
+
+.markdown a {
+  color: var(--color-brand-600);
+}
+
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* src가 제거된 원격 이미지. 대체 텍스트가 보이도록 최소 높이를 준다. */
+.markdown img:not([src]) {
+  display: inline-block;
+  min-height: 1.5em;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-input);
+}

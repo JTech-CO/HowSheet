@@ -220,6 +220,25 @@ export const FIELD_LIMITS = {
 /** 허용 링크 프로토콜. 목록과 판정은 domain이 단독으로 소유한다. (§3.3) */
 export const ALLOWED_URL_PROTOCOLS = ['http:', 'https:'] as const;
 
+/**
+ * 링크 프로토콜 허용 판정.
+ *
+ * 목록 옆에 둔다. `guide.schema.ts`에 두면 이 함수를 쓰려는 살균기·링크
+ * 렌더러가 zod를 함께 끌어오고, 그 의존이 리더 번들까지 따라간다. (D-11)
+ * `new URL`은 브라우저 API가 아니라 ECMAScript 표준이라 domain에서 쓸 수 있다.
+ *
+ * 이 판정을 여기 말고 다른 곳에서 다시 구현하지 않는다. 링크 렌더러와
+ * Markdown 매퍼가 각자 판정하면 규칙이 갈린다. (File_Structure.md §3.3)
+ */
+export function isAllowedUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return (ALLOWED_URL_PROTOCOLS as readonly string[]).includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 /** 허용 이미지 MIME. SVG는 MVP에서 차단한다. (기술 §7.1-8) */
 export const ALLOWED_IMAGE_MIME_TYPES = [
   'image/png',

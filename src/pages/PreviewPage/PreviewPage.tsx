@@ -6,16 +6,21 @@
  * 저장 완료를 기다리지 않는다. 편집 중인 메모리 문서가 있으면 그것을 그대로
  * 쓰고, 없으면 저장소에서 읽는다. 이 화면은 문서를 **바꾸지 않는다**.
  *
- * 실제 리더 렌더링(분기 실행·진행 상태·완료 화면)은 M7에서 붙는다. 여기서는
- * 초안 구조를 읽기 전용으로 확인한다. 그때도 별도 미리보기 렌더러를 만들지
- * 않고 리더 컴포넌트를 그대로 쓴다. (File_Structure.md §4)
+ * 콘텐츠는 `components/content`의 `BlockRenderer`가 그린다. 별도 미리보기
+ * 렌더러를 만들지 않는다. 리더도 같은 컴포넌트를 쓴다. (File_Structure.md §4)
+ *
+ * 분기 실행·진행 상태·완료 화면은 M7에서 붙는다. 지금은 모든 단계를 순서대로
+ * 보여 준다.
  */
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import type { GuideDocument } from '../../domain/guide.types.ts';
+import { BlockRenderer } from '../../components/content/BlockRenderer/BlockRenderer.tsx';
 import { AppHeader } from '../../components/layout/AppHeader/AppHeader.tsx';
+import { useAssetUrls } from '../../features/assets/useAssetUrl.ts';
+import type { StoredAsset } from '../../storage/db.ts';
 import { guideStoreDeps, useGuideStore } from '../../store/guide.store.ts';
 import styles from './PreviewPage.module.css';
 
@@ -25,9 +30,11 @@ export function PreviewPage() {
   const initStorage = useGuideStore((state) => state.initStorage);
 
   const [loaded, setLoaded] = useState<GuideDocument | null>(null);
+  const [assets, setAssets] = useState<StoredAsset[]>([]);
   const [notFound, setNotFound] = useState(false);
 
   const draft = openDocument?.id === id ? openDocument : loaded;
+  const assetUrls = useAssetUrls(assets);
 
   useEffect(() => {
     if (id === undefined) return;
@@ -41,6 +48,16 @@ export function PreviewPage() {
         return;
       }
       setLoaded(found);
+      setAssets(await guideStoreDeps().assets.listByGuide(id));
+    })();
+  }, [id, openDocument, initStorage]);
+
+  // 편집 중인 문서를 미리 볼 때는 스토어가 이미 읽어 둔 자산을 쓴다.
+  useEffect(() => {
+    if (id === undefined || openDocument?.id !== id) return;
+    void (async () => {
+      await initStorage();
+      setAssets(await guideStoreDeps().assets.listByGuide(id));
     })();
   }, [id, openDocument, initStorage]);
 
@@ -118,7 +135,7 @@ export function PreviewPage() {
                 .sort((a, b) => a.order - b.order)
                 .map((item) => (
                   <li key={item.id} data-severity={item.severity}>
-                    <strong>{item.title === '' ? '(제목 없음)' : item.title}</strong> — {item.body}
+                    <strong>{item.title === '' ? '(제목 없음)' : item.title}</strong> - {item.body}
                   </li>
                 ))}
             </ul>
@@ -129,9 +146,29 @@ export function PreviewPage() {
           <h2 id="preview-steps">단계 {steps.length}개</h2>
           <ol className={styles.steps} role="list">
             {steps.map((step) => (
-              <li key={step.id}>
-                <strong>{step.title === '' ? '(제목 없는 단계)' : step.title}</strong>
-                {step.summary === undefined ? null : <p>{step.summary}</p>}
+              <li className={styles.step} key={step.id} data-testid="preview-step">
+                <h3 className={styles.stepTitle}>
+                  {step.title === '' ? '(제목 없는 단계)' : step.title}
+                </h3>
+                {step.summary === undefined ? null : (
+                  <p className={styles.stepSummary}>{step.summary}</p>
+                )}
+
+                {[...step.blocks]
+                  .sort((a, b) => a.order - b.order)
+                  .map((block) => (
+                    <BlockRenderer
+                      key={block.id}
+                      block={block}
+                      resolveAssetUrl={(assetId) => assetUrls[assetId] ?? null}
+                    />
+                  ))}
+
+                {step.successCriteria === undefined ? null : (
+                  <p className={styles.criteria}>
+                    <strong>성공 기준</strong> {step.successCriteria}
+                  </p>
+                )}
               </li>
             ))}
           </ol>
