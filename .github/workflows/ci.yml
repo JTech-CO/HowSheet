@@ -61,6 +61,20 @@ jobs:
       - name: verify:fixtures
         run: pnpm verify:fixtures
 
+      - name: test:coverage
+        run: pnpm test:coverage
+
+      - name: benchmark:graph
+        run: pnpm benchmark:graph
+
+      - name: 성능 보고서 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance
+          path: artifacts/qa/performance/
+          retention-days: 7
+
       - name: build
         run: pnpm build
 

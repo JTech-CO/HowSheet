@@ -43,6 +43,25 @@ export default defineConfig({
       // D-07은 대상을 src/**로 두고 테스트 파일 자신만 제외한다.
       exclude: ['src/**/*.test.{ts,tsx}'],
       reporter: ['text', 'json-summary'],
+      // 임계는 하네스가 phase별로 지정한 대상에만 건다. glob 키는 저장소 루트
+      // 기준 상대 경로에 맞춰지고 경로 정규화가 pathe라 Windows에서도 같다.
+      //
+      // vitest 4의 glob 임계는 전역 임계의 **면제가 아니라 추가**다. 전역을 함께
+      // 걸면 glob에 걸린 파일까지 전역 계산에 들어간다. 그래서 M12에서 전체
+      // 임계를 더해도 이 90%가 무뎌지지 않는다.
+      //
+      // 전역 임계를 지금 정의하지 않는 이유: M6 DoD 11이 요구하지 않고, 아직
+      // 측정한 적 없는 수치에 맞춰 임계를 정하면 게이트가 아니라 스냅샷이 된다.
+      // 전체 80%는 M12 DoD 4가 같은 객체 최상위에 더한다.
+      thresholds: {
+        // M6 DoD 11 - 분기·그래프·진행률 핵심 모듈.
+        'src/features/branching/**': {
+          statements: 90,
+          branches: 90,
+          functions: 90,
+          lines: 90,
+        },
+      },
     },
   },
 });
