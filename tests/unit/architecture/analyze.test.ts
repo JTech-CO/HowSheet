@@ -178,8 +178,9 @@ describe('reader-runtime 경계 (하네스 M1 DoD 6·10, INV-11)', () => {
     ]);
   });
 
-  it('외부 패키지 허용 목록은 기본이 비어 있다', () => {
-    expect(READER_RUNTIME_ALLOWED_PACKAGES).toEqual([]);
+  // 정확 동등이다. `toContain`으로 완화하면 허용 목록이 조용히 자란다. (D-12)
+  it('외부 패키지 허용 목록은 dompurify 하나뿐이다', () => {
+    expect(READER_RUNTIME_ALLOWED_PACKAGES).toEqual(['dompurify']);
   });
 });
 
@@ -225,8 +226,8 @@ describe('reader-runtime 전이 의존 (D-11, INV-11)', () => {
       ],
     }) as Violation[];
 
+    // dompurify는 D-12로 허용됐으므로 여기 없다. remark 계열 5종이 남는다.
     expect(packagesFlagged(v)).toEqual([
-      'dompurify',
       'rehype-stringify',
       'remark-gfm',
       'remark-parse',
@@ -237,7 +238,8 @@ describe('reader-runtime 전이 의존 (D-11, INV-11)', () => {
     expect(v.some((entry) => entry.detail.includes('markdown-to-html.ts'))).toBe(true);
   });
 
-  it('sanitize-html만 거치면 dompurify 하나뿐이고 remark는 나오지 않는다', () => {
+  // D-12의 핵심 주장. `markdown-to-html.ts`는 막히고 `sanitize-html.ts`는 통과한다.
+  it('sanitize-html만 거치면 위반이 없고 remark가 따라오지 않는다', () => {
     const v = analyze({
       files: [
         file('src/reader-runtime/reader-renderer.ts', ['../features/sanitize/sanitize-html.ts']),
@@ -247,7 +249,8 @@ describe('reader-runtime 전이 의존 (D-11, INV-11)', () => {
       ],
     }) as Violation[];
 
-    expect(packagesFlagged(v)).toEqual(['dompurify']);
+    expect(v).toEqual([]);
+    expect(packagesFlagged(v)).toEqual([]);
   });
 
   it('D-11의 원래 사례 - guide.schema를 거친 zod 유입을 잡는다', () => {

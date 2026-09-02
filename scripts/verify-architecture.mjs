@@ -86,8 +86,13 @@ export const READER_RUNTIME_ALLOWED_PREFIXES = [
  * reader-runtime이 쓸 수 있는 외부 패키지. **기본 거부**다.
  * 금지 목록으로 두면 M2의 zod, M10의 unified/remark처럼 나중에 추가되는
  * 편집기 전용 의존성이 목록에 추가되지 않아 조용히 리더 번들에 들어간다.
+ *
+ * `dompurify` 하나만 허용한다. (D-12, 2026-09-02 사용자 승인)
+ * `reader-renderer.ts`가 `features/sanitize/sanitize-html.ts`를 쓰기 때문이고,
+ * 그 파일의 패키지 폐포가 `{dompurify}` 하나임을 실측으로 확인했다.
+ * `markdown-to-html.ts`를 쓰면 unified·remark 4종이 함께 들어와 위반 6건이 된다.
  */
-export const READER_RUNTIME_ALLOWED_PACKAGES = [];
+export const READER_RUNTIME_ALLOWED_PACKAGES = ['dompurify'];
 
 /**
  * M1 DoD 5 - domain은 브라우저 API에 의존하지 않는다.
@@ -547,6 +552,22 @@ async function main() {
     return;
   }
 
+  // reader-runtime 규칙 4종이 빈 집합 위에서 돌지 않게 한다.
+  //
+  // M5·M6 감사에서 이 디렉터리가 비어 있어 D-11 전이 검사가 공회전했다.
+  // 통과 요약줄만 고치면 게이트가 아니라 안내문이므로 실패로 만든다. (M7 DoD 10)
+  const readerCount = collected.files.filter((f) =>
+    f.path.startsWith('src/reader-runtime/'),
+  ).length;
+  if (readerCount === 0) {
+    console.error(
+      'verify:architecture - src/reader-runtime/ 아래에 소스가 없습니다.\n' +
+        '  경계 규칙 4종이 검사할 대상이 없으면 이 게이트는 아무것도 보장하지 않습니다. (M7 DoD 10)',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const violations = analyze(collected);
 
   if (violations.length > 0) {
@@ -561,8 +582,8 @@ async function main() {
   }
 
   console.log(
-    `verify:architecture - 통과. 소스 ${collected.files.length}개(src ${srcCount}개), ` +
-      `규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
+    `verify:architecture - 통과. 소스 ${collected.files.length}개(src ${srcCount}개, ` +
+      `reader-runtime ${readerCount}개), 규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
   );
 }
 
