@@ -32,6 +32,10 @@ export interface BlockEditorProps {
   onChange: (patch: Partial<ContentBlock>) => void;
   onRemove: () => void;
   onMove: (delta: number) => void;
+  /** 체크리스트 항목 추가. ID는 스토어가 만든다. */
+  onAddItem?: () => void;
+  onRemoveItem?: (itemId: string) => void;
+  onMoveItem?: (itemId: string, delta: number) => void;
   /** 이미지 파일을 붙인다. 검증·최적화·저장은 스토어가 한다. */
   onPickImage?: (file: File) => Promise<ImageIssue[]>;
   /** 이미지 블록이 가리키는 자산. 미리보기 URL은 이 컴포넌트가 만들고 해제한다. */
@@ -68,7 +72,7 @@ export function BlockEditor(props: BlockEditorProps) {
 }
 
 function BlockFields(props: BlockEditorProps) {
-  const { block, onChange } = props;
+  const { block, onChange, onAddItem, onRemoveItem, onMoveItem } = props;
 
   switch (block.type) {
     case 'text':
@@ -169,15 +173,35 @@ function BlockFields(props: BlockEditorProps) {
 
     case 'checklist':
       return (
-        <div className={styles.items}>
+        <div className={styles.items} data-testid="checklist-items">
           {block.items.map((item, itemIndex) => (
-            <div className={styles.item} key={item.id}>
+            <div className={styles.item} key={item.id} data-testid="checklist-item">
+              <div className={styles.itemHeader}>
+                <ReorderControls
+                  position={itemIndex + 1}
+                  total={block.items.length}
+                  itemLabel={`체크리스트 항목 ${itemIndex + 1}`}
+                  onMove={(delta) => onMoveItem?.(item.id, delta)}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  // 항목이 하나뿐이면 지우지 않는다. 항목 0개인 체크리스트는
+                  // 화면에서 빈 껍데기로만 남는다.
+                  disabled={block.items.length <= 1}
+                  data-testid="checklist-item-remove"
+                  onClick={() => onRemoveItem?.(item.id)}
+                >
+                  항목 삭제
+                </Button>
+              </div>
               <Field label={`항목 ${itemIndex + 1}`} hideLabel>
                 {(control) => (
                   <Input
                     {...control}
                     value={item.label}
                     placeholder={`항목 ${itemIndex + 1}`}
+                    data-testid="checklist-item-label"
                     onChange={(event) =>
                       onChange({
                         items: block.items.map((entry) =>
@@ -201,7 +225,14 @@ function BlockFields(props: BlockEditorProps) {
               />
             </div>
           ))}
-          <p className={styles.note}>항목 추가·삭제는 분기 편집과 함께 다음 단계에서 붙습니다.</p>
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="checklist-item-add"
+            onClick={() => onAddItem?.()}
+          >
+            항목 추가
+          </Button>
         </div>
       );
 
@@ -239,8 +270,14 @@ function BlockFields(props: BlockEditorProps) {
               </Field>
             ))}
           </div>
+          {/*
+            선택지 추가·삭제가 여기 없는 이유: `BranchRule.value`가 선택지 ID를
+            직접 가리킨다. 삭제하면 규칙이 고아가 되므로 대체 대상 선택이나
+            규칙 삭제 흐름이 먼저 필요하다. 체크리스트 항목은 분기가 블록
+            단위로만 참조해 이 문제가 없어 먼저 붙였다.
+          */}
           <p className={styles.note}>
-            어느 선택지가 어느 단계로 가는지는 분기 편집 화면에서 정합니다.
+            선택지 추가·삭제와 어느 선택지가 어느 단계로 가는지는 분기 편집 화면에서 함께 정합니다.
           </p>
         </>
       );
@@ -298,25 +335,46 @@ function ImageFields({ block, onChange, onPickImage, asset }: BlockEditorProps) 
       {issues.length === 0 ? null : (
         <ul className={styles.issues} role="list" data-testid="image-issues">
           {issues.map((issue) => (
-            <li key={issue.code}>{issue.message}</li>
+            <li key={issue.code} data-severity={issue.severity}>
+              {issue.message}
+            </li>
           ))}
         </ul>
       )}
 
-      <Field
-        label="대체 텍스트"
-        required
-        help="비워 두면 장식용 이미지로 봅니다. 내용을 전달하는 이미지는 반드시 채웁니다."
-      >
-        {(control) => (
-          <Input
-            {...control}
-            value={block.alt}
-            data-testid="block-image-alt"
-            onChange={(event) => onChange({ alt: event.target.value } as Partial<ContentBlock>)}
-          />
-        )}
-      </Field>
+      {/*
+        장식용 선언을 빈 alt로 대신하지 않는다. 새 블록의 alt 기본값이 빈
+        문자열이라, 그렇게 하면 설명을 잊은 이미지와 구분되지 않는다.
+      */}
+      <Checkbox
+        label="장식용 이미지 (읽어 줄 내용 없음)"
+        checked={block.decorative === true}
+        data-testid="block-image-decorative"
+        onChange={(event) =>
+          onChange({
+            decorative: event.target.checked ? true : undefined,
+          } as Partial<ContentBlock>)
+        }
+      />
+
+      {block.decorative === true ? (
+        <p className={styles.note}>장식용으로 표시했습니다. 대체 텍스트는 쓰지 않습니다.</p>
+      ) : (
+        <Field
+          label="대체 텍스트"
+          required
+          help="이미지가 전달하는 내용을 적습니다. 읽어 줄 내용이 없으면 위에서 장식용으로 표시합니다."
+        >
+          {(control) => (
+            <Input
+              {...control}
+              value={block.alt}
+              data-testid="block-image-alt"
+              onChange={(event) => onChange({ alt: event.target.value } as Partial<ContentBlock>)}
+            />
+          )}
+        </Field>
+      )}
 
       <Field label="캡션">
         {(control) => (

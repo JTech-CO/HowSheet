@@ -132,7 +132,8 @@
           "order": 2,
           "type": "image",
           "assetId": "asset-diagram",
-          "alt": ""
+          "alt": "",
+          "decorative": true
         }
       ],
       "completionMode": "checkbox",

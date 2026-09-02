@@ -40,6 +40,19 @@
   align-items: center;
 }
 
+/* 재정렬·삭제는 항목 전체 폭을 차지한다. 좁은 화면에서 라벨 입력과 같은
+   줄에 두면 터치 대상 44px(INV-13)을 지킬 수 없다. */
+.itemHeader {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.itemHeader > :last-child {
+  margin-left: auto;
+}
+
 .note {
   margin: 0;
   font-size: 0.875rem;

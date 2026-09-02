@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
 
 import { createGuideDocument } from '@/domain/guide.defaults.ts';
 import {
@@ -33,6 +32,27 @@ function mutate(change: (doc: GuideDocument) => void): unknown {
   const doc = structuredClone(baseDocument()) as GuideDocument;
   change(doc);
   return doc;
+}
+
+/** 자산 manifest까지 갖춘 이미지 블록 하나를 기본 문서에 더한다. */
+function imageBlock(overrides: Record<string, unknown>): unknown {
+  return mutate((d) => {
+    d.assets.push({
+      id: 'asset-img',
+      fileName: 'a.png',
+      mimeType: 'image/png',
+      byteSize: 100,
+      checksum: `sha256-${'a'.repeat(64)}`,
+    });
+    d.steps[0]!.blocks.push({
+      id: 'img-1',
+      order: 1,
+      type: 'image',
+      assetId: 'asset-img',
+      alt: '설명',
+      ...overrides,
+    } as never);
+  });
 }
 
 function codesOf(raw: unknown): IssueCode[] {
@@ -325,6 +345,39 @@ describe('문서 구조 검증', () => {
     expect(codesOf(raw)).toContain(ISSUE_CODES.ASSET_REF_NOT_FOUND);
   });
 
+  /**
+   * 하네스 M5 DoD 6 후반부. 빈 `alt`와 장식용 선언을 분리한다.
+   *
+   * 기술 §2.2.4:235는 이 규칙을 **필드 검증**에 둔다. 내보내기 차단은 INV-05가
+   * 이 오류를 받아 자동으로 따라온다.
+   */
+  it('장식용 선언 없이 alt가 비면 보고한다 (M5 DoD 6)', () => {
+    const issue = issueAt(imageBlock({ alt: '' }), ISSUE_CODES.IMAGE_ALT_REQUIRED);
+    expect(issue?.path).toBe('steps[0].blocks[1].alt');
+    expect(issue?.severity).toBe('error');
+    expect(issue?.stage).toBe('field');
+  });
+
+  it('장식용으로 선언하면 빈 alt를 통과시킨다 (M5 DoD 6)', () => {
+    expect(codesOf(imageBlock({ alt: '', decorative: true }))).not.toContain(
+      ISSUE_CODES.IMAGE_ALT_REQUIRED,
+    );
+  });
+
+  it('장식용 선언이 false면 빈 alt를 그대로 보고한다', () => {
+    expect(codesOf(imageBlock({ alt: '', decorative: false }))).toContain(
+      ISSUE_CODES.IMAGE_ALT_REQUIRED,
+    );
+  });
+
+  it('공백만 채운 alt는 장식용 선언 없이는 누락으로 본다', () => {
+    expect(codesOf(imageBlock({ alt: '   ' }))).toContain(ISSUE_CODES.IMAGE_ALT_REQUIRED);
+  });
+
+  it('alt가 채워져 있으면 선언 없이 통과한다', () => {
+    expect(codesOf(imageBlock({}))).not.toContain(ISSUE_CODES.IMAGE_ALT_REQUIRED);
+  });
+
   it('같은 단계에 없는 블록을 분기 기준으로 삼으면 보고한다', () => {
     const raw = mutate((d) =>
       d.steps[0]!.branchRules.push({
@@ -392,24 +445,35 @@ describe('스키마 버전 (M2 DoD 6·7)', () => {
     expect(codesOf(raw)).toEqual([ISSUE_CODES.UNSUPPORTED_SCHEMA_MAJOR]);
   });
 
-  // DoD 7의 방향은 '스키마에 minor 필드를 더해도 기존 1.0 문서가 통과하는가'다.
-  // 입력에 모르는 키가 있어도 통과하는지(= Zod 기본 strip 동작)와는 다른 이야기다.
-  it('스키마에 minor 호환 필드를 더해도 기존 1.0 문서가 통과한다', () => {
-    const nextMinorMeta = z.object({
-      title: z.string(),
-      summary: z.string().optional(),
-      audience: z.string().optional(),
-      author: z.string().optional(),
-      language: z.string(),
-      estimatedMinutes: z.number().int().positive().optional(),
-      tags: z.array(z.string()).optional(),
-      // 1.1에서 추가될 법한 하위 호환 필드
-      difficulty: z.enum(['easy', 'normal', 'hard']).optional(),
-    });
+  /**
+   * DoD 7의 방향은 '스키마에 minor 필드를 더해도 기존 1.0 문서가 통과하는가'다.
+   * 입력에 모르는 키가 있어도 통과하는지(= Zod 기본 strip 동작)와는 다른 이야기다.
+   *
+   * 사본 스키마로는 이것을 확인할 수 없다. optional 필드를 더한 z.object가
+   * 기존 값을 통과시키는 것은 자명해서 무엇을 단언해도 참이 된다. 실제로
+   * 프로덕션 스키마에 들어간 필드로 봐야 한다 - `ImageBlock.decorative`가
+   * M5 보정에서 추가된 그 필드다. (전수 확인은 fixtures.test.ts)
+   */
+  it('프로덕션 스키마에 minor 호환 필드가 들어와도 그 키 없는 1.0 문서가 통과한다', () => {
+    // decorative 키가 아예 없는 1.0 문서다.
+    const outcome = parseGuideDocument(imageBlock({}));
+    expect(outcome.ok).toBe(true);
+    expect(outcome.result.issues).toEqual([]);
 
+    // optional 필드는 없는 채로 남는다. 기본값을 채워 넣어 문서를 바꾸지 않는다.
+    const block = outcome.document?.steps[0]?.blocks[1];
+    expect(block?.type).toBe('image');
+    expect(Object.hasOwn(block!, 'decorative')).toBe(false);
+
+    // 필드를 더했다고 버전을 올리지 않는다. 지금 올리면 마이그레이션이 없는
+    // 상태(M8 전)라 기존 1.0 문서가 전부 열리지 않는다.
+    expect(SCHEMA_VERSION).toBe('1.0');
+  });
+
+  it('meta 스키마는 모르는 키를 버리고 알려진 값은 유지한다', () => {
     const existing = baseDocument().meta;
-    expect(nextMinorMeta.safeParse(existing).success).toBe(true);
     expect(guideMetaSchema.safeParse(existing).success).toBe(true);
+    expect(guideMetaSchema.safeParse({ ...existing, difficulty: 'hard' }).success).toBe(true);
   });
 
   it('1.0 문서에 모르는 필드가 있어도 파싱되지만 그 필드는 버려진다', () => {

@@ -26,7 +26,7 @@ import { Button } from '../../components/ui/Button/Button.tsx';
 import { Dialog } from '../../components/ui/Dialog/Dialog.tsx';
 import { LiveRegion } from '../../components/ui/LiveRegion/LiveRegion.tsx';
 import { useAutosave } from '../../features/autosave/useAutosave.ts';
-import { findStepReferences, useGuideStore } from '../../store/guide.store.ts';
+import { findChecklistBlock, findStepReferences, useGuideStore } from '../../store/guide.store.ts';
 import { useUiStore } from '../../store/ui.store.ts';
 import styles from './EditorPage.module.css';
 
@@ -273,6 +273,21 @@ export function EditorPage() {
                   .sort((a, b) => a.order - b.order);
                 const position = (ordered ?? []).findIndex((block) => block.id === blockId) + 1;
                 announce(reorderAnnouncement('블록', position, ordered?.length ?? 0));
+              }}
+              onAddChecklistItem={(blockId) => {
+                if (store().addChecklistItem(activeStep.id, blockId) === null) return;
+                announce('체크리스트 항목이 추가되었습니다.');
+              }}
+              onRemoveChecklistItem={(blockId, itemId) => {
+                if (!store().removeChecklistItem(activeStep.id, blockId, itemId)) return;
+                announce('체크리스트 항목이 삭제되었습니다.');
+              }}
+              onMoveChecklistItem={(blockId, itemId, delta) => {
+                if (!store().moveChecklistItem(activeStep.id, blockId, itemId, delta)) return;
+                const items =
+                  findChecklistBlock(store().document!, activeStep.id, blockId)?.items ?? [];
+                const position = items.findIndex((item) => item.id === itemId) + 1;
+                announce(reorderAnnouncement('체크리스트 항목', position, items.length));
               }}
               onPickImage={(blockId, file) => store().attachImage(activeStep.id, blockId, file)}
               onMove={(delta) => {

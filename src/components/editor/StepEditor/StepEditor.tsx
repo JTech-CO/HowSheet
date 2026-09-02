@@ -50,6 +50,9 @@ export interface StepEditorProps {
   onAddBlock: (type: ContentBlockType, afterBlockId?: string) => void;
   onRemoveBlock: (blockId: string) => void;
   onMoveBlock: (blockId: string, delta: number) => void;
+  onAddChecklistItem: (blockId: string) => void;
+  onRemoveChecklistItem: (blockId: string, itemId: string) => void;
+  onMoveChecklistItem: (blockId: string, itemId: string, delta: number) => void;
   onPickImage: (blockId: string, file: File) => Promise<ImageIssue[]>;
   /** 이미지 블록이 가리키는 자산 본문. 미리보기에 쓴다. */
   assets: Record<string, StoredAsset>;
@@ -68,6 +71,9 @@ export function StepEditor({
   onAddBlock,
   onRemoveBlock,
   onMoveBlock,
+  onAddChecklistItem,
+  onRemoveChecklistItem,
+  onMoveChecklistItem,
   onPickImage,
   assets,
   onMove,
@@ -143,6 +149,9 @@ export function StepEditor({
                 onChange={(patch) => onUpdateBlock(block.id, patch)}
                 onRemove={() => onRemoveBlock(block.id)}
                 onMove={(delta) => onMoveBlock(block.id, delta)}
+                onAddItem={() => onAddChecklistItem(block.id)}
+                onRemoveItem={(itemId) => onRemoveChecklistItem(block.id, itemId)}
+                onMoveItem={(itemId, delta) => onMoveChecklistItem(block.id, itemId, delta)}
                 onPickImage={(file) => onPickImage(block.id, file)}
               />
             ))}

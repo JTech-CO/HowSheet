@@ -13,7 +13,7 @@ import {
   FIELD_LIMITS,
   type AllowedImageMimeType,
 } from '../../domain/guide.types.ts';
-import { ISSUE_CODES, type IssueCode } from '../../domain/validation.types.ts';
+import { ISSUE_CODES, type IssueCode, type IssueSeverity } from '../../domain/validation.types.ts';
 
 /** §4.4.4 - 긴 변 상한. */
 export const MAX_LONG_EDGE = 1920;
@@ -24,6 +24,11 @@ export const ENCODE_QUALITY = 0.82;
 export interface ImageIssue {
   code: IssueCode;
   message: string;
+  /**
+   * `error`는 저장을 막고 `warning`은 알리기만 한다. 둘을 같은 목록에 담되
+   * 등급을 함께 넘긴다. 등급이 없으면 화면이 경고를 차단으로 보여 준다.
+   */
+  severity: IssueSeverity;
 }
 
 export interface ImageFileInfo {
@@ -50,6 +55,7 @@ export function validateImageFile(file: ImageFileInfo): ImageIssue[] {
     issues.push({
       code: ISSUE_CODES.IMAGE_MIME_NOT_ALLOWED,
       message: `${file.type === '' ? '알 수 없는 형식' : file.type}은(는) 넣을 수 없습니다. PNG, JPEG, WebP, GIF만 가능합니다.`,
+      severity: 'error',
     });
   }
 
@@ -57,6 +63,7 @@ export function validateImageFile(file: ImageFileInfo): ImageIssue[] {
     issues.push({
       code: ISSUE_CODES.IMAGE_TOO_LARGE,
       message: `이미지는 ${Math.floor(FIELD_LIMITS.imageBytesMax / 1024 / 1024)}MB를 넘을 수 없습니다. (${formatBytes(file.size)})`,
+      severity: 'error',
     });
   }
 
@@ -148,12 +155,17 @@ export interface OptimizeResult {
   mimeType: string;
   width: number;
   height: number;
+  /** 원본 바이트를 그대로 쓴 이유. 변환 결과를 썼으면 undefined. */
+  keptOriginalBecause?: 'animated-gif' | 'already-small';
   /**
-   * 원본을 유지했거나 재인코딩이 이득이 아니었던 이유. 최적화했으면 undefined.
-   * `not-smaller`는 축소는 했지만 바이트가 줄지 않은 경우다. 이때도 상한을
-   * 지키기 위해 변환 결과를 쓴다.
+   * 축소는 했지만 바이트가 줄지 않았다. 이때도 **변환 결과를 쓴다** - 상한이
+   * 우선이기 때문이다. 원본을 남기면 긴 변이 1920을 넘은 채로 내보내기에
+   * 들어가고 용량이 통제 밖으로 나간다. (M5 DoD 7 두 절의 충돌 해소)
+   *
+   * 이 사실을 `keptOriginalBecause`에 담지 않는다. 유지하지 않았는데 "유지
+   * 이유"라는 이름을 붙이면 읽는 쪽이 반드시 오해한다.
    */
-  keptOriginalBecause?: 'animated-gif' | 'already-small' | 'not-smaller';
+  largerThanOriginal?: true;
   issues: ImageIssue[];
 }
 
@@ -197,7 +209,15 @@ export async function optimizeImage(
       width: decoded.width,
       height: decoded.height,
       keptOriginalBecause: 'animated-gif',
-      issues: [],
+      // 기술 §4.4.4 - 변환하지 않으므로 용량이 줄지 않는다는 사실을 알린다.
+      // 막지는 않는다. 애니메이션을 정지 이미지로 바꾸는 것이 더 나쁘다.
+      issues: [
+        {
+          code: ISSUE_CODES.IMAGE_ANIMATION_NOT_OPTIMIZED,
+          message: `애니메이션 GIF는 움직임을 지키려고 최적화하지 않습니다. 원본 크기 그대로 저장됩니다. (${formatBytes(file.size)})`,
+          severity: 'warning',
+        },
+      ],
     };
   }
 
@@ -234,9 +254,7 @@ export async function optimizeImage(
       mimeType: outputType,
       width: target.width,
       height: target.height,
-      ...(shouldKeepOriginal(file.size, encoded.size)
-        ? { keptOriginalBecause: 'not-smaller' as const }
-        : {}),
+      ...(shouldKeepOriginal(file.size, encoded.size) ? { largerThanOriginal: true as const } : {}),
       issues: [],
     };
   } finally {

@@ -407,3 +407,78 @@ describe('미리보기 (기술 §2.1.4)', () => {
     expect((await harness.guides.get(id))?.meta.title).toBe('');
   });
 });
+
+describe('체크리스트 항목 편집 (M5 할 일 1)', () => {
+  /** 단계 편집 화면을 열고 체크리스트 블록을 하나 추가한다. */
+  async function addChecklistBlock(): Promise<void> {
+    await openEditorOnNewGuide();
+    await showStep();
+    await user().click(screen.getByTestId('add-block-checklist'));
+    await screen.findByTestId('checklist-items');
+  }
+
+  it('항목을 추가하고 라벨을 입력할 수 있다', async () => {
+    await addChecklistBlock();
+    expect(screen.getAllByTestId('checklist-item')).toHaveLength(1);
+
+    await user().click(screen.getByTestId('checklist-item-add'));
+    await waitFor(() => expect(screen.getAllByTestId('checklist-item')).toHaveLength(2));
+
+    const inputs = screen.getAllByTestId('checklist-item-label');
+    await user().type(inputs[0]!, '전원 확인');
+    await user().type(inputs[1]!, '케이블 확인');
+
+    const block = store().document!.steps[0]!.blocks.find((entry) => entry.type === 'checklist');
+    expect(block?.type === 'checklist' && block.items.map((item) => item.label)).toEqual([
+      '전원 확인',
+      '케이블 확인',
+    ]);
+  });
+
+  it('항목이 하나뿐이면 삭제 버튼이 비활성이다', async () => {
+    await addChecklistBlock();
+    expect(screen.getByTestId('checklist-item-remove')).toHaveProperty('disabled', true);
+
+    await user().click(screen.getByTestId('checklist-item-add'));
+    await waitFor(() =>
+      expect(screen.getAllByTestId('checklist-item-remove')[0]).toHaveProperty('disabled', false),
+    );
+  });
+
+  it('항목을 지우면 나머지 항목의 내용이 그대로 남는다', async () => {
+    await addChecklistBlock();
+    await user().click(screen.getByTestId('checklist-item-add'));
+    await waitFor(() => expect(screen.getAllByTestId('checklist-item')).toHaveLength(2));
+
+    const inputs = screen.getAllByTestId('checklist-item-label');
+    await user().type(inputs[0]!, '첫째');
+    await user().type(inputs[1]!, '둘째');
+
+    await user().click(screen.getAllByTestId('checklist-item-remove')[0]!);
+
+    await waitFor(() => expect(screen.getAllByTestId('checklist-item')).toHaveLength(1));
+    expect(screen.getByTestId('checklist-item-label')).toHaveProperty('value', '둘째');
+  });
+
+  it('항목을 옮기면 ID를 유지하고 라이브 영역에 알린다 (INV-04, 디자인 §2.2.1)', async () => {
+    await addChecklistBlock();
+    await user().click(screen.getByTestId('checklist-item-add'));
+    await waitFor(() => expect(screen.getAllByTestId('checklist-item')).toHaveLength(2));
+
+    const blockOf = () => {
+      const entry = store().document!.steps[0]!.blocks.find((block) => block.type === 'checklist');
+      if (entry?.type !== 'checklist') throw new Error('체크리스트가 없다');
+      return entry;
+    };
+    const before = blockOf().items.map((item) => item.id);
+
+    const items = screen.getAllByTestId('checklist-item');
+    await user().click(within(items[1]!).getByRole('button', { name: /위로/ }));
+
+    await waitFor(() =>
+      expect(blockOf().items.map((item) => item.id)).toEqual([before[1], before[0]]),
+    );
+    const live = screen.getAllByRole('status').find((node) => node.className.includes('sr-only'));
+    await waitFor(() => expect(live?.textContent).toContain('2개 중 1번째로 이동됨'));
+  });
+});

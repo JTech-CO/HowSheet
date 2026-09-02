@@ -42,6 +42,8 @@ export const ISSUE_CODES = {
   IMAGE_ALT_REQUIRED: 'IMAGE_ALT_REQUIRED',
   /** 브라우저가 이미지를 디코딩·인코딩하지 못했다. (M5) */
   IMAGE_PROCESSING_FAILED: 'IMAGE_PROCESSING_FAILED',
+  /** 애니메이션 GIF라 최적화하지 않았다. 크기 경고다. (기술 §4.4.4) */
+  IMAGE_ANIMATION_NOT_OPTIMIZED: 'IMAGE_ANIMATION_NOT_OPTIMIZED',
   /** 식별자가 비어 있다. */
   EMPTY_ID: 'EMPTY_ID',
 

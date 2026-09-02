@@ -132,6 +132,14 @@ export interface ImageBlock extends BaseBlock {
   assetId: string;
   alt: string;
   caption?: string;
+  /**
+   * 장식용 선언. 지정하지 않으면 내용을 전달하는 이미지로 본다.
+   *
+   * 빈 `alt` 하나로는 "장식용이라 비웠다"와 "채우는 것을 잊었다"를 구분할 수
+   * 없다. 새 블록의 기본값도 `alt: ''`이므로 sentinel과 초기값이 겹친다.
+   * 선언을 별도 필드로 분리해야 검증이 둘을 가른다. (하네스 M5 DoD 6)
+   */
+  decorative?: boolean;
 }
 
 export interface ChecklistItem {

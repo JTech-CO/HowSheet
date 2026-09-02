@@ -46,6 +46,8 @@ describe('크기 제한 (M5 DoD 6)', () => {
     const issues = validateImageFile({ type: 'image/png', size: 5 * MB + 1, name: 'a' });
     expect(issues.map((issue) => issue.code)).toEqual(['IMAGE_TOO_LARGE']);
     expect(issues[0]?.message).toContain('5MB');
+    // 차단이므로 error다. warning으로 내려가면 저장이 그대로 통과한다.
+    expect(issues[0]?.severity).toBe('error');
   });
 
   it('형식과 크기가 모두 잘못되면 둘 다 보고한다', () => {
@@ -252,5 +254,77 @@ describe('체크섬 (M5 DoD 8)', () => {
     expect(isChecksum(digest)).toBe(true);
     expect(isChecksum('sha256-abc')).toBe(false);
     expect(isChecksum('md5-' + 'a'.repeat(64))).toBe(false);
+  });
+});
+
+describe('애니메이션 GIF 크기 경고 (M5 DoD 5, 기술 §4.4.4)', () => {
+  function animatedGif(bytes: number): File {
+    const header = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61];
+    const frames = [0x21, 0xf9, 0x00, 0x21, 0xf9, 0x00];
+    const padding = new Uint8Array(Math.max(0, bytes - header.length - frames.length));
+    return new File([new Uint8Array([...header, ...frames]), padding], 'a.gif', {
+      type: 'image/gif',
+    });
+  }
+
+  it('변환하지 않는다는 사실을 경고로 알린다', async () => {
+    const codec = fakeCodec({ width: 4000, height: 4000 }, 10);
+    const result = await optimizeImage(animatedGif(3 * MB), codec);
+
+    expect(result.issues.map((issue) => issue.code)).toEqual(['IMAGE_ANIMATION_NOT_OPTIMIZED']);
+    expect(result.issues[0]?.message).toContain('3.0MB');
+  });
+
+  it('경고이지 차단이 아니다', async () => {
+    const codec = fakeCodec({ width: 4000, height: 4000 }, 10);
+    const result = await optimizeImage(animatedGif(1 * MB), codec);
+
+    // severity가 error면 스토어가 첨부를 막아 애니메이션 GIF를 넣을 수 없게 된다.
+    expect(result.issues.every((issue) => issue.severity === 'warning')).toBe(true);
+    expect(result.keptOriginalBecause).toBe('animated-gif');
+  });
+
+  it('정지 GIF에는 경고가 없다', async () => {
+    const still = new File(
+      [new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x21, 0xf9])],
+      'a.gif',
+      {
+        type: 'image/gif',
+      },
+    );
+    const result = await optimizeImage(still, fakeCodec({ width: 100, height: 100 }, 5));
+    expect(result.issues).toEqual([]);
+  });
+});
+
+describe('상한과 원본 유지가 충돌할 때 (M5 DoD 7)', () => {
+  it('축소가 필요하면 결과가 더 커도 변환 결과를 쓴다', async () => {
+    // 원본 1000B, 인코딩 결과 9000B. 축소는 반드시 일어나야 한다.
+    const codec = fakeCodec({ width: 4000, height: 3000 }, 9000);
+    const result = await optimizeImage(file('image/jpeg', 1000), codec);
+
+    expect(result.blob.size).toBe(9000);
+    expect(Math.max(result.width, result.height)).toBeLessThanOrEqual(MAX_LONG_EDGE);
+    // 유지하지 않았으므로 "유지 이유"가 붙으면 안 된다.
+    expect(result.keptOriginalBecause).toBeUndefined();
+    expect(result.largerThanOriginal).toBe(true);
+  });
+
+  it('축소가 필요하고 결과가 작으면 아무 표시도 없다', async () => {
+    const codec = fakeCodec({ width: 4000, height: 3000 }, 100);
+    const result = await optimizeImage(file('image/jpeg', 5000), codec);
+
+    expect(result.keptOriginalBecause).toBeUndefined();
+    expect(result.largerThanOriginal).toBeUndefined();
+  });
+
+  it('축소가 필요 없고 결과가 더 크면 원본을 유지한다', async () => {
+    const codec = fakeCodec({ width: 800, height: 600 }, 9000);
+    const original = file('image/png', 5000);
+    const result = await optimizeImage(original, codec);
+
+    expect(result.blob).toBe(original);
+    expect(result.keptOriginalBecause).toBe('already-small');
+    expect(result.largerThanOriginal).toBeUndefined();
   });
 });

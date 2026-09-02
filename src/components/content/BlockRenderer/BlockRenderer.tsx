@@ -79,6 +79,7 @@ export function BlockRenderer(props: BlockRendererProps) {
         <GuideImage
           src={props.resolveAssetUrl?.(block.assetId) ?? null}
           alt={block.alt}
+          {...(block.decorative === undefined ? {} : { decorative: block.decorative })}
           {...(block.caption === undefined ? {} : { caption: block.caption })}
           {...(props.onReconnectAsset === undefined
             ? {}

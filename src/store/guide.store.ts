@@ -23,6 +23,8 @@ import {
 } from '../domain/guide.defaults.ts';
 import { ISSUE_CODES } from '../domain/validation.types.ts';
 import type {
+  ChecklistBlock,
+  ChecklistItem,
   ContentBlock,
   ContentBlockType,
   GuideDocument,
@@ -142,9 +144,25 @@ export interface GuideStoreState {
   addBlock: (stepId: string, type: ContentBlockType, afterBlockId?: string) => string | null;
   removeBlock: (stepId: string, blockId: string) => void;
   moveBlock: (stepId: string, blockId: string, delta: number) => boolean;
+
+  /**
+   * 체크리스트 항목 CRUD.
+   *
+   * 라벨·필수 여부 수정은 `updateBlock`으로 충분하지만 추가는 ID가 필요하고
+   * ID는 주입된 `newId`만 만들 수 있다. 삭제·이동도 같은 자리에 두어야
+   * 준비물·경고·블록의 add/remove/move 모양과 어긋나지 않는다.
+   *
+   * 선택지(`decision`)는 여기 없다. `BranchRule.value`가 선택지 ID를 직접
+   * 참조하므로 삭제는 참조 무결성 처리가 먼저다. M6이 붙인다.
+   */
+  addChecklistItem: (stepId: string, blockId: string) => string | null;
+  removeChecklistItem: (stepId: string, blockId: string, itemId: string) => boolean;
+  moveChecklistItem: (stepId: string, blockId: string, itemId: string, delta: number) => boolean;
+
   /**
    * 이미지 파일을 검증·최적화해 자산으로 저장하고 블록에 연결한다.
-   * 이슈가 있으면 저장하지 않고 그대로 돌려준다. (M5 DoD 5·6)
+   * 오류가 있으면 저장하지 않고 그대로 돌려준다. 경고는 저장한 뒤 함께
+   * 돌려준다. (M5 DoD 5·6)
    */
   attachImage: (
     stepId: string,
@@ -219,6 +237,49 @@ export function moveById<T extends { id: string; order: number }>(
 
   // order만 다시 매긴다. ID와 다른 필드는 건드리지 않는다. (INV-04, M4 DoD 6)
   return next.map((item, index) => (item.order === index ? item : { ...item, order: index }));
+}
+
+/** 단계 안의 체크리스트 블록을 찾는다. 타입이 다르면 `null`이다. */
+export function findChecklistBlock(
+  doc: GuideDocument,
+  stepId: string,
+  blockId: string,
+): ChecklistBlock | null {
+  const block = doc.steps
+    .find((step) => step.id === stepId)
+    ?.blocks.find((entry) => entry.id === blockId);
+  return block !== undefined && block.type === 'checklist' ? block : null;
+}
+
+/**
+ * 체크리스트 항목 배열만 바꾼 문서를 돌려준다.
+ *
+ * `ChecklistItem`에는 `order`가 없다. 배열 순서가 곧 표시 순서라서
+ * `moveById`·`normalizeOrder`를 쓸 수 없다 - 둘 다 `order` 필드를 요구한다.
+ * 순서를 위해 스키마에 `order`를 더하면 저장 형식이 바뀐다. 배열로 충분한
+ * 문제에 그 대가를 치를 이유가 없다.
+ */
+export function replaceChecklistItems(
+  doc: GuideDocument,
+  stepId: string,
+  blockId: string,
+  update: (items: readonly ChecklistItem[]) => ChecklistItem[],
+): GuideDocument {
+  return {
+    ...doc,
+    steps: doc.steps.map((step) =>
+      step.id === stepId
+        ? {
+            ...step,
+            blocks: step.blocks.map((block) =>
+              block.id === blockId && block.type === 'checklist'
+                ? { ...block, items: update(block.items) }
+                : block,
+            ),
+          }
+        : step,
+    ),
+  };
 }
 
 /** 단계 삭제가 건드리게 될 참조를 미리 조사한다. UI가 영향 범위를 보여 줄 때 쓴다. */
@@ -694,6 +755,63 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
       return true;
     },
 
+    addChecklistItem(stepId, blockId) {
+      const doc = get().document;
+      if (doc === null) return null;
+      if (findChecklistBlock(doc, stepId, blockId) === null) return null;
+
+      const item: ChecklistItem = {
+        id: guideStoreDeps().newId('item'),
+        label: '',
+        required: true,
+      };
+
+      mutate((current) =>
+        replaceChecklistItems(current, stepId, blockId, (items) => [...items, item]),
+      );
+      return item.id;
+    },
+
+    removeChecklistItem(stepId, blockId, itemId) {
+      const doc = get().document;
+      if (doc === null) return false;
+
+      const block = findChecklistBlock(doc, stepId, blockId);
+      if (block === null) return false;
+      if (!block.items.some((item) => item.id === itemId)) return false;
+
+      mutate((current) =>
+        replaceChecklistItems(current, stepId, blockId, (items) =>
+          items.filter((item) => item.id !== itemId),
+        ),
+      );
+      return true;
+    },
+
+    moveChecklistItem(stepId, blockId, itemId, delta) {
+      const doc = get().document;
+      if (doc === null) return false;
+
+      const block = findChecklistBlock(doc, stepId, blockId);
+      if (block === null) return false;
+
+      const from = block.items.findIndex((item) => item.id === itemId);
+      if (from === -1) return false;
+      const to = from + delta;
+      if (to < 0 || to >= block.items.length) return false;
+
+      mutate((current) =>
+        replaceChecklistItems(current, stepId, blockId, (items) => {
+          const next = [...items];
+          const [moved] = next.splice(from, 1);
+          if (moved === undefined) return [...items];
+          next.splice(to, 0, moved);
+          return next;
+        }),
+      );
+      return true;
+    },
+
     async attachImage(stepId, blockId, file, codec) {
       const doc = get().document;
       if (doc === null) return [];
@@ -711,10 +829,15 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
           {
             code: ISSUE_CODES.IMAGE_PROCESSING_FAILED,
             message: `이미지를 처리하지 못했습니다: ${describeError(error)}`,
+            severity: 'error',
           },
         ];
       }
-      if (optimized.issues.length > 0) return optimized.issues;
+
+      // 경고는 첨부를 막지 않는다. 애니메이션 GIF의 크기 경고가 여기서 걸리면
+      // 움직이는 이미지를 아예 넣을 수 없게 된다. (기술 §4.4.4)
+      if (optimized.issues.some((issue) => issue.severity === 'error')) return optimized.issues;
+      const notices = optimized.issues;
 
       const bytes = await optimized.blob.arrayBuffer();
       const checksum = await checksumOf(bytes);
@@ -755,7 +878,7 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
       }));
 
       await get().refreshAssets();
-      return [];
+      return notices;
     },
 
     removeStep(id) {

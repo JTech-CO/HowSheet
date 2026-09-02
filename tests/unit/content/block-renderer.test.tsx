@@ -217,15 +217,46 @@ describe('이미지 블록', () => {
     expect(screen.getByRole('button', { name: '자산 다시 연결' })).toBeTruthy();
   });
 
-  it('빈 alt는 장식 이미지로 보고 보조 기술에서 숨긴다', () => {
+  it('장식용으로 선언하면 보조 기술에서 숨긴다', () => {
+    render(
+      <BlockRenderer
+        block={{ ...block, alt: '', decorative: true, caption: undefined }}
+        resolveAssetUrl={() => 'blob:http://localhost/x'}
+      />,
+    );
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(within(screen.getByTestId('guide-image')).getByRole('presentation')).toBeTruthy();
+  });
+
+  // 새 이미지 블록의 alt 기본값이 빈 문자열이라, 빈 alt를 선언으로 읽으면
+  // 설명을 잊은 이미지가 경고 없이 사라진다. 선언은 `decorative`만 본다.
+  it('선언 없이 alt만 비어 있으면 장식 이미지로 보지 않는다', () => {
     render(
       <BlockRenderer
         block={{ ...block, alt: '', caption: undefined }}
         resolveAssetUrl={() => 'blob:http://localhost/x'}
       />,
     );
-    expect(screen.queryByRole('img')).toBeNull();
-    expect(within(screen.getByTestId('guide-image')).getByRole('presentation')).toBeTruthy();
+    // 빈 alt는 브라우저가 이미 장식으로 취급한다. 여기서 확인하는 것은
+    // 렌더러가 **선언 없이 role을 붙이지 않는다**는 것이다. 빈 alt 자체를
+    // 오류로 만드는 것은 스키마의 일이다(IMAGE_ALT_REQUIRED).
+    const img = screen.getByTestId('guide-image').querySelector('img');
+    expect(img?.getAttribute('role')).toBeNull();
+    expect(img?.getAttribute('alt')).toBe('');
+  });
+
+  it('장식용 선언은 alt에 값이 있어도 그것을 이긴다', () => {
+    render(
+      <BlockRenderer
+        block={{ ...block, decorative: true, caption: undefined }}
+        resolveAssetUrl={() => 'blob:http://localhost/x'}
+      />,
+    );
+    // 선언과 값이 어긋나면 선언을 따른다. 아니면 보조 기술이 두 번 읽는다.
+    expect(screen.queryByRole('img', { name: '공유기 뒷면' })).toBeNull();
+    const declared = screen.getByTestId('guide-image').querySelector('img');
+    expect(declared?.getAttribute('alt')).toBe('');
+    expect(declared?.getAttribute('role')).toBe('presentation');
   });
 });
 

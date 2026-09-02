@@ -186,6 +186,55 @@ test.describe('M5 콘텐츠 블록', () => {
     await expect(page.getByRole('img', { name: '공유기 뒷면 도식' })).toBeVisible();
   });
 
+  test('장식용으로 선언하면 대체 텍스트를 묻지 않고 보조 기술에서 숨긴다 (DoD 6)', async ({
+    page,
+  }) => {
+    await openStepEditor(page);
+    await page.getByTestId('add-block-image').click();
+
+    await page
+      .getByTestId('block-image-input')
+      .setInputFiles(path.join(FIXTURES, 'transparent-diagram.png'));
+    await expect(page.getByTestId('block-image-preview')).toBeVisible();
+
+    // 선언 전에는 대체 텍스트를 묻는다.
+    await expect(page.getByTestId('block-image-alt')).toBeVisible();
+
+    await page.getByTestId('block-image-decorative').check();
+    await expect(page.getByTestId('block-image-alt')).toHaveCount(0);
+
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await page.getByRole('button', { name: '미리보기' }).click();
+
+    const image = page.getByTestId('guide-image').locator('img');
+    await expect(image).toHaveAttribute('role', 'presentation');
+    await expect(image).toHaveAttribute('alt', '');
+  });
+
+  test('체크리스트 항목을 늘리고 줄일 수 있다 (M5 할 일 1)', async ({ page }) => {
+    await openStepEditor(page);
+    await page.getByTestId('add-block-checklist').click();
+
+    await expect(page.getByTestId('checklist-item')).toHaveCount(1);
+    // 항목이 하나면 지울 수 없다.
+    await expect(page.getByTestId('checklist-item-remove')).toBeDisabled();
+
+    await page.getByTestId('checklist-item-add').click();
+    await expect(page.getByTestId('checklist-item')).toHaveCount(2);
+
+    const labels = page.getByTestId('checklist-item-label');
+    await labels.nth(0).fill('전원 확인');
+    await labels.nth(1).fill('케이블 확인');
+
+    await page.getByTestId('checklist-item-remove').first().click();
+    await expect(page.getByTestId('checklist-item')).toHaveCount(1);
+    await expect(page.getByTestId('checklist-item-label')).toHaveValue('케이블 확인');
+
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByText('케이블 확인')).toBeVisible();
+  });
+
   test('원격 이미지 Markdown은 네트워크로 나가지 않는다 (INV-15)', async ({ page }) => {
     const external: string[] = [];
     page.on('request', (request) => {

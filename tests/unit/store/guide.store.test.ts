@@ -561,3 +561,118 @@ describe('저장소 초기화 경합', () => {
     configureBackendOpener(null);
   });
 });
+
+describe('체크리스트 항목 (M5 할 일 1)', () => {
+  /** 체크리스트 블록 하나를 가진 단계를 만든다. */
+  async function withChecklist() {
+    await openNewGuide();
+    const stepId = store().document!.steps[0]!.id;
+    const blockId = store().addBlock(stepId, 'checklist')!;
+    return { stepId, blockId };
+  }
+
+  const itemsOf = (stepId: string, blockId: string) => {
+    const block = store()
+      .document!.steps.find((step) => step.id === stepId)!
+      .blocks.find((entry) => entry.id === blockId)!;
+    if (block.type !== 'checklist') throw new Error('체크리스트가 아니다');
+    return block.items;
+  };
+
+  it('기본 항목은 하나다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    expect(itemsOf(stepId, blockId)).toHaveLength(1);
+  });
+
+  it('항목을 더하면 주입된 newId로 ID가 생긴다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const id = store().addChecklistItem(stepId, blockId);
+
+    expect(id).toMatch(/^item-\d+$/);
+    const items = itemsOf(stepId, blockId);
+    expect(items).toHaveLength(2);
+    expect(items[1]).toEqual({ id, label: '', required: true });
+  });
+
+  it('항목을 더해도 다른 필드는 그대로다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const first = itemsOf(stepId, blockId)[0]!;
+    store().updateBlock(stepId, blockId, {
+      items: [{ ...first, label: '전원 확인' }],
+    } as never);
+
+    store().addChecklistItem(stepId, blockId);
+
+    expect(itemsOf(stepId, blockId)[0]).toEqual({ ...first, label: '전원 확인' });
+  });
+
+  it('항목을 지운다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const added = store().addChecklistItem(stepId, blockId)!;
+
+    expect(store().removeChecklistItem(stepId, blockId, added)).toBe(true);
+    expect(itemsOf(stepId, blockId).map((item) => item.id)).not.toContain(added);
+  });
+
+  it('없는 항목을 지우면 false이고 문서를 건드리지 않는다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const before = store().document;
+
+    expect(store().removeChecklistItem(stepId, blockId, 'item-nope')).toBe(false);
+    expect(store().document).toBe(before);
+  });
+
+  it('체크리스트가 아닌 블록에는 항목을 더하지 않는다', async () => {
+    await openNewGuide();
+    const stepId = store().document!.steps[0]!.id;
+    const textBlockId = store().document!.steps[0]!.blocks[0]!.id;
+
+    expect(store().addChecklistItem(stepId, textBlockId)).toBeNull();
+    expect(store().removeChecklistItem(stepId, textBlockId, 'item-1')).toBe(false);
+    expect(store().moveChecklistItem(stepId, textBlockId, 'item-1', 1)).toBe(false);
+  });
+
+  it('항목 순서를 바꾸고 ID는 유지한다 (INV-04)', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const second = store().addChecklistItem(stepId, blockId)!;
+    const first = itemsOf(stepId, blockId)[0]!.id;
+
+    expect(store().moveChecklistItem(stepId, blockId, second, -1)).toBe(true);
+    expect(itemsOf(stepId, blockId).map((item) => item.id)).toEqual([second, first]);
+  });
+
+  it('경계를 넘는 이동은 false이고 아무것도 바꾸지 않는다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const second = store().addChecklistItem(stepId, blockId)!;
+    const before = store().document;
+
+    expect(store().moveChecklistItem(stepId, blockId, second, 1)).toBe(false);
+    expect(store().moveChecklistItem(stepId, blockId, second, -2)).toBe(false);
+    expect(store().document).toBe(before);
+  });
+
+  it('다른 단계와 다른 블록을 건드리지 않는다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    const otherBlockId = store().addBlock(stepId, 'checklist')!;
+    const otherStepId = store().addStep()!;
+
+    const otherBefore = itemsOf(stepId, otherBlockId);
+    const otherStepBefore = store().document!.steps.find((step) => step.id === otherStepId);
+
+    store().addChecklistItem(stepId, blockId);
+
+    expect(itemsOf(stepId, otherBlockId)).toEqual(otherBefore);
+    expect(store().document!.steps.find((step) => step.id === otherStepId)).toEqual(
+      otherStepBefore,
+    );
+  });
+
+  it('항목 변경은 dirty로 잡히고 저장 대상이 된다', async () => {
+    const { stepId, blockId } = await withChecklist();
+    await store().save();
+    expect(store().dirty).toBe(false);
+
+    store().addChecklistItem(stepId, blockId);
+    expect(store().dirty).toBe(true);
+  });
+});

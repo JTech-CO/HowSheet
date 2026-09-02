@@ -144,12 +144,15 @@ export const imageBlockSchema = z
     assetId: identifier,
     alt: z.string(),
     caption: z.string().optional(),
+    decorative: z.boolean().optional(),
   })
   .superRefine((block, ctx) => {
     checkId(ctx, block.id, ['id']);
     checkId(ctx, block.assetId, ['assetId']);
-    // 장식용 이미지는 alt를 빈 문자열로 명시한다. 공백만 채운 값은 누락으로 본다.
-    if (block.alt !== '' && block.alt.trim() === '') {
+    // 장식용 선언이 없는데 대체 텍스트가 비어 있으면 오류다. 기술 §2.2.4는 이
+    // 규칙을 **필드 검증**에 둔다. 내보내기 차단은 INV-05가 이 오류를 받아
+    // 자동으로 따라오므로 M9에 별도 판정을 두지 않는다.
+    if (block.decorative !== true && block.alt.trim() === '') {
       addIssue(ctx, ISSUE_CODES.IMAGE_ALT_REQUIRED, '대체 텍스트가 비어 있습니다.', ['alt']);
     }
   });
