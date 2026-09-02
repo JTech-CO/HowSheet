@@ -11,16 +11,20 @@
  */
 
 import type {
+  BranchRule,
   CompletionMode,
   ContentBlock,
   ContentBlockType,
   GuideStep,
 } from '../../../domain/guide.types.ts';
 import { FIELD_LIMITS } from '../../../domain/guide.types.ts';
+import type { ValidationIssue } from '../../../domain/validation.types.ts';
 import type { ImageIssue } from '../../../features/assets/image-optimizer.ts';
 import type { StoredAsset } from '../../../storage/db.ts';
 import { BlockEditor } from '../BlockEditor/BlockEditor.tsx';
 import { BlockTypePicker } from '../BlockTypePicker/BlockTypePicker.tsx';
+import { BranchRuleEditor } from '../BranchRuleEditor/BranchRuleEditor.tsx';
+import { BranchSummary } from '../BranchSummary/BranchSummary.tsx';
 import { Button } from '../../ui/Button/Button.tsx';
 import { Checkbox } from '../../ui/Checkbox/Checkbox.tsx';
 import { Field } from '../../ui/Field/Field.tsx';
@@ -53,6 +57,17 @@ export interface StepEditorProps {
   onAddChecklistItem: (blockId: string) => void;
   onRemoveChecklistItem: (blockId: string, itemId: string) => void;
   onMoveChecklistItem: (blockId: string, itemId: string, delta: number) => void;
+  onAddDecisionOption: (blockId: string) => void;
+  onRemoveDecisionOption: (blockId: string, optionId: string) => void;
+  onMoveDecisionOption: (blockId: string, optionId: string, delta: number) => void;
+
+  /** 분기 규칙 편집. 대상 후보와 이슈는 화면이 골라 넘긴다. */
+  steps: readonly GuideStep[];
+  issues: readonly ValidationIssue[];
+  onAddRule: () => void;
+  onUpdateRule: (ruleId: string, patch: Partial<BranchRule>) => void;
+  onRemoveRule: (ruleId: string) => void;
+  onMoveRule: (ruleId: string, delta: number) => void;
   onPickImage: (blockId: string, file: File) => Promise<ImageIssue[]>;
   /** 이미지 블록이 가리키는 자산 본문. 미리보기에 쓴다. */
   assets: Record<string, StoredAsset>;
@@ -74,6 +89,15 @@ export function StepEditor({
   onAddChecklistItem,
   onRemoveChecklistItem,
   onMoveChecklistItem,
+  onAddDecisionOption,
+  onRemoveDecisionOption,
+  onMoveDecisionOption,
+  steps,
+  issues,
+  onAddRule,
+  onUpdateRule,
+  onRemoveRule,
+  onMoveRule,
   onPickImage,
   assets,
   onMove,
@@ -152,6 +176,9 @@ export function StepEditor({
                 onAddItem={() => onAddChecklistItem(block.id)}
                 onRemoveItem={(itemId) => onRemoveChecklistItem(block.id, itemId)}
                 onMoveItem={(itemId, delta) => onMoveChecklistItem(block.id, itemId, delta)}
+                onAddOption={() => onAddDecisionOption(block.id)}
+                onRemoveOption={(optionId) => onRemoveDecisionOption(block.id, optionId)}
+                onMoveOption={(optionId, delta) => onMoveDecisionOption(block.id, optionId, delta)}
                 onPickImage={(file) => onPickImage(block.id, file)}
               />
             ))}
@@ -204,12 +231,23 @@ export function StepEditor({
         </div>
       </div>
 
-      <p className={styles.branchNote}>
-        다음 단계와 조건 분기 설정은 분기 편집 화면에서 추가됩니다.
-        {step.branchRules.length > 0
-          ? ` 현재 분기 규칙 ${step.branchRules.length}개가 있습니다.`
-          : null}
-      </p>
+      <section className={styles.content} aria-label="다음 단계">
+        <h3 className={styles.contentTitle}>다음 단계</h3>
+
+        {/* 상단에 문장식 요약을 먼저 보여 준다. (디자인 §2.4.6) */}
+        <BranchSummary steps={steps} stepId={step.id} />
+
+        <BranchRuleEditor
+          step={step}
+          steps={steps}
+          issues={issues}
+          onAddRule={onAddRule}
+          onUpdateRule={onUpdateRule}
+          onRemoveRule={onRemoveRule}
+          onMoveRule={onMoveRule}
+          onUpdateStep={onUpdate}
+        />
+      </section>
     </div>
   );
 }

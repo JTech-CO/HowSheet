@@ -36,6 +36,10 @@ export interface BlockEditorProps {
   onAddItem?: () => void;
   onRemoveItem?: (itemId: string) => void;
   onMoveItem?: (itemId: string, delta: number) => void;
+  /** 선택지 CRUD. 삭제는 분기 규칙 참조를 먼저 본다. (M6) */
+  onAddOption?: () => void;
+  onRemoveOption?: (optionId: string) => void;
+  onMoveOption?: (optionId: string, delta: number) => void;
   /** 이미지 파일을 붙인다. 검증·최적화·저장은 스토어가 한다. */
   onPickImage?: (file: File) => Promise<ImageIssue[]>;
   /** 이미지 블록이 가리키는 자산. 미리보기 URL은 이 컴포넌트가 만들고 해제한다. */
@@ -73,6 +77,7 @@ export function BlockEditor(props: BlockEditorProps) {
 
 function BlockFields(props: BlockEditorProps) {
   const { block, onChange, onAddItem, onRemoveItem, onMoveItem } = props;
+  const { onAddOption, onRemoveOption, onMoveOption } = props;
 
   switch (block.type) {
     case 'text':
@@ -251,33 +256,98 @@ function BlockFields(props: BlockEditorProps) {
               />
             )}
           </Field>
-          <div className={styles.items}>
+          <div className={styles.items} data-testid="decision-options">
             {block.options.map((option, optionIndex) => (
-              <Field label={`선택지 ${optionIndex + 1}`} key={option.id}>
-                {(control) => (
-                  <Input
-                    {...control}
-                    value={option.label}
-                    onChange={(event) =>
-                      onChange({
-                        options: block.options.map((entry) =>
-                          entry.id === option.id ? { ...entry, label: event.target.value } : entry,
-                        ),
-                      } as Partial<ContentBlock>)
-                    }
+              <div className={styles.item} key={option.id} data-testid="decision-option">
+                <div className={styles.itemHeader}>
+                  <ReorderControls
+                    position={optionIndex + 1}
+                    total={block.options.length}
+                    itemLabel={`선택지 ${optionIndex + 1}`}
+                    onMove={(delta) => onMoveOption?.(option.id, delta)}
                   />
-                )}
-              </Field>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    // 선택지가 하나뿐이면 지우지 않는다. 고를 것이 없는 결정
+                    // 블록은 화면에서 빈 껍데기로만 남는다.
+                    disabled={block.options.length <= 1}
+                    data-testid="decision-option-remove"
+                    onClick={() => onRemoveOption?.(option.id)}
+                  >
+                    선택지 삭제
+                  </Button>
+                </div>
+                <Field label={`선택지 ${optionIndex + 1}`} hideLabel>
+                  {(control) => (
+                    <Input
+                      {...control}
+                      value={option.label}
+                      placeholder={`선택지 ${optionIndex + 1}`}
+                      data-testid="decision-option-label"
+                      onChange={(event) =>
+                        onChange({
+                          options: block.options.map((entry) =>
+                            entry.id === option.id
+                              ? { ...entry, label: event.target.value }
+                              : entry,
+                          ),
+                        } as Partial<ContentBlock>)
+                      }
+                    />
+                  )}
+                </Field>
+                <Field label="설명" hideLabel>
+                  {(control) => (
+                    <Input
+                      {...control}
+                      value={option.description ?? ''}
+                      placeholder="설명 (선택)"
+                      data-testid="decision-option-description"
+                      onChange={(event) =>
+                        onChange({
+                          options: block.options.map((entry) =>
+                            entry.id === option.id
+                              ? {
+                                  ...entry,
+                                  description:
+                                    event.target.value === '' ? undefined : event.target.value,
+                                }
+                              : entry,
+                          ),
+                        } as Partial<ContentBlock>)
+                      }
+                    />
+                  )}
+                </Field>
+              </div>
             ))}
+            <Button
+              variant="secondary"
+              size="sm"
+              data-testid="decision-option-add"
+              onClick={() => onAddOption?.()}
+            >
+              선택지 추가
+            </Button>
           </div>
+
+          <Checkbox
+            label="반드시 하나를 골라야 다음 단계로 넘어감"
+            checked={block.required}
+            data-testid="decision-required"
+            onChange={(event) =>
+              onChange({ required: event.target.checked } as Partial<ContentBlock>)
+            }
+          />
+
           {/*
-            선택지 추가·삭제가 여기 없는 이유: `BranchRule.value`가 선택지 ID를
-            직접 가리킨다. 삭제하면 규칙이 고아가 되므로 대체 대상 선택이나
-            규칙 삭제 흐름이 먼저 필요하다. 체크리스트 항목은 분기가 블록
-            단위로만 참조해 이 문제가 없어 먼저 붙였다.
+            선택지 삭제는 `BranchRule.value`가 그 ID를 가리키는지 먼저 본다.
+            가리키는 규칙이 있으면 스토어가 `needsPlan`으로 막고 화면이 대체
+            선택지나 규칙 삭제를 묻는다. (M6 DoD 9와 같은 계약)
           */}
           <p className={styles.note}>
-            선택지 추가·삭제와 어느 선택지가 어느 단계로 가는지는 분기 편집 화면에서 함께 정합니다.
+            어느 선택지가 어느 단계로 가는지는 아래 «다음 단계»에서 정합니다.
           </p>
         </>
       );

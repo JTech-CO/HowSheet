@@ -21,12 +21,19 @@ export interface GuideOutlineProps {
   onAddStep: () => void;
   /** 방금 추가된 단계. 잠시 강조해 위치를 알려 준다. (디자인 §2.2.1) */
   highlightStepId?: string | null;
+  /** 검증 섹션 옆에 붙일 이슈 수. 0이면 표시하지 않는다. */
+  issueCount?: number;
 }
 
 const SECTIONS: { id: EditorSection; label: string }[] = [
   { id: 'meta', label: '기본 정보' },
   { id: 'preparation', label: '준비물' },
   { id: 'warnings', label: '경고' },
+];
+
+/** 단계 목록 아래에 두는 섹션. 문서 전체를 대상으로 한다. */
+const DOCUMENT_SECTIONS: { id: EditorSection; label: string }[] = [
+  { id: 'validation', label: '검증' },
 ];
 
 export function GuideOutline({
@@ -37,6 +44,7 @@ export function GuideOutline({
   onSelectStep,
   onAddStep,
   highlightStepId = null,
+  issueCount = 0,
 }: GuideOutlineProps) {
   const steps = [...document.steps].sort((a, b) => a.order - b.order);
 
@@ -92,6 +100,23 @@ export function GuideOutline({
       <Button variant="secondary" size="sm" onClick={onAddStep} data-testid="outline-add-step">
         + 단계 추가
       </Button>
+
+      <ul className={styles.sections} role="list">
+        {DOCUMENT_SECTIONS.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              className={[styles.sectionButton, 'focus-ring'].join(' ')}
+              data-testid={`outline-${item.id}`}
+              aria-current={section === item.id ? 'true' : undefined}
+              onClick={() => onSelectSection(item.id)}
+            >
+              {item.label}
+              {issueCount > 0 ? <span className={styles.count}>{issueCount}</span> : null}
+            </button>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }

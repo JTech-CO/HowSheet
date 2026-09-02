@@ -283,7 +283,10 @@ describe('단계 추가·복제·삭제', () => {
 
   it('마지막 단계는 삭제하지 않는다', async () => {
     await openNewGuide();
-    expect(store().removeStep(store().document!.steps[0]!.id)).toBeNull();
+    expect(store().removeStep(store().document!.steps[0]!.id)).toEqual({
+      status: 'rejected',
+      reason: 'lastStep',
+    });
     expect(store().document!.steps).toHaveLength(1);
   });
 
@@ -297,13 +300,17 @@ describe('단계 추가·복제·삭제', () => {
       branchRules: [{ id: 'rule-1', operator: 'checked', targetStepId: second!, priority: 10 }],
     });
 
-    const impact = store().removeStep(second!);
-
-    expect(impact).toEqual({
-      defaultNextFrom: [first],
-      branchRuleFrom: [first],
-      wasStartStep: false,
+    // 참조가 있으면 처리 방법 없이는 지우지 않는다. (M6 DoD 9)
+    const blocked = store().removeStep(second!);
+    expect(blocked).toEqual({
+      status: 'needsPlan',
+      impact: { defaultNextFrom: [first], branchRuleFrom: [first], wasStartStep: false },
     });
+    expect(store().document!.steps).toHaveLength(2);
+
+    const outcome = store().removeStep(second!, { kind: 'dropRules' });
+    expect(outcome).toMatchObject({ status: 'removed' });
+
     const remaining = store().document!.steps[0]!;
     expect(remaining.defaultNextStepId).toBeUndefined();
     expect(remaining.branchRules).toEqual([]);
@@ -314,9 +321,10 @@ describe('단계 추가·복제·삭제', () => {
     store().addStep();
     const [first, second] = store().document!.steps.map((step) => step.id);
 
-    const impact = store().removeStep(first!);
+    const outcome = store().removeStep(first!);
 
-    expect(impact?.wasStartStep).toBe(true);
+    expect(outcome).toMatchObject({ status: 'removed' });
+    expect(outcome).toMatchObject({ impact: { wasStartStep: true } });
     expect(store().document!.startStepId).toBe(second);
   });
 

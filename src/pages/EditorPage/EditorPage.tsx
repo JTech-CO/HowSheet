@@ -24,9 +24,22 @@ import { AppHeader } from '../../components/layout/AppHeader/AppHeader.tsx';
 import { EditorShell } from '../../components/layout/EditorShell/EditorShell.tsx';
 import { Button } from '../../components/ui/Button/Button.tsx';
 import { Dialog } from '../../components/ui/Dialog/Dialog.tsx';
+import { Field } from '../../components/ui/Field/Field.tsx';
+import { Select } from '../../components/ui/Select/Select.tsx';
 import { LiveRegion } from '../../components/ui/LiveRegion/LiveRegion.tsx';
 import { useAutosave } from '../../features/autosave/useAutosave.ts';
-import { findChecklistBlock, findStepReferences, useGuideStore } from '../../store/guide.store.ts';
+import { BranchSummary } from '../../components/editor/BranchSummary/BranchSummary.tsx';
+import { ValidationPanel } from '../../components/editor/ValidationPanel/ValidationPanel.tsx';
+import { validateGuideDocument } from '../../domain/guide.schema.ts';
+import { summarize, type ValidationIssue } from '../../domain/validation.types.ts';
+import { validateGuideGraph } from '../../features/branching/graph-validator.ts';
+import {
+  findChecklistBlock,
+  findStepReferences,
+  needsRemovalPlan,
+  useGuideStore,
+  type StepRemovalPlan,
+} from '../../store/guide.store.ts';
 import { useUiStore } from '../../store/ui.store.ts';
 import styles from './EditorPage.module.css';
 
@@ -56,6 +69,8 @@ export function EditorPage() {
 
   const [highlightStepId, setHighlightStepId] = useState<string | null>(null);
   const [removeStepId, setRemoveStepId] = useState<string | null>(null);
+  /** 참조가 있는 단계를 지울 때 고른 처리 방법. 고르기 전에는 삭제하지 않는다. */
+  const [removalTargetId, setRemovalTargetId] = useState<string>('');
   const cancelRemoveRef = useRef<HTMLButtonElement | null>(null);
   const stepTitleFocusRef = useRef<string | null>(null);
 
@@ -124,6 +139,19 @@ export function EditorPage() {
   const activeStep = activeIndex === -1 ? steps[0] : steps[activeIndex];
   const removeTarget = steps.find((step) => step.id === removeStepId) ?? null;
   const removeImpact = removeTarget === null ? null : findStepReferences(document, removeTarget.id);
+  const removeNeedsPlan = removeImpact !== null && needsRemovalPlan(removeImpact);
+
+  // 문서 검증과 그래프 검증을 합친다. 합성은 호출자의 일이다 - `domain`은
+  // `features`를 import할 수 없고, 반대로 그래프 검증기가 스키마를 끌어오면
+  // zod가 리더 번들 폐포에 들어간다. (D-11)
+  const validation = summarize([
+    ...validateGuideDocument(document).issues,
+    ...validateGuideGraph(document).issues,
+  ]);
+  const stepIssues: ValidationIssue[] =
+    activeStep === undefined
+      ? []
+      : validation.issues.filter((issue) => issue.stepId === activeStep.id);
 
   const onAddStep = (afterStepId?: string) => {
     const newId = store().addStep(afterStepId);
@@ -165,6 +193,7 @@ export function EditorPage() {
             onSelectSection={selectSection}
             onSelectStep={selectStep}
             onAddStep={() => onAddStep()}
+            issueCount={validation.issues.length}
           />
         }
       >
@@ -289,6 +318,54 @@ export function EditorPage() {
                 const position = items.findIndex((item) => item.id === itemId) + 1;
                 announce(reorderAnnouncement('체크리스트 항목', position, items.length));
               }}
+              onAddDecisionOption={(blockId) => {
+                if (store().addDecisionOption(activeStep.id, blockId) === null) return;
+                announce('선택지가 추가되었습니다.');
+              }}
+              onRemoveDecisionOption={(blockId, optionId) => {
+                const outcome = store().removeDecisionOption(activeStep.id, blockId, optionId);
+                if (outcome.status === 'removed') {
+                  announce('선택지가 삭제되었습니다.');
+                  return;
+                }
+                if (outcome.status === 'needsPlan') {
+                  // 분기 규칙이 이 선택지를 가리킨다. 규칙을 함께 지운다.
+                  // 대체 선택지 고르기는 규칙 편집에서 직접 바꿀 수 있다.
+                  store().removeDecisionOption(activeStep.id, blockId, optionId, {
+                    kind: 'dropRules',
+                  });
+                  announce(
+                    `선택지와 이 선택지를 쓰던 분기 규칙 ${outcome.referencingRuleIds.length}개를 함께 삭제했습니다.`,
+                  );
+                }
+              }}
+              onMoveDecisionOption={(blockId, optionId, delta) => {
+                store().moveDecisionOption(activeStep.id, blockId, optionId, delta);
+              }}
+              steps={steps}
+              issues={stepIssues}
+              onAddRule={() => {
+                if (store().addBranchRule(activeStep.id) === null) return;
+                announce('분기 규칙이 추가되었습니다.');
+              }}
+              onUpdateRule={(ruleId, patch) =>
+                store().updateBranchRule(activeStep.id, ruleId, patch)
+              }
+              onRemoveRule={(ruleId) => {
+                if (!store().removeBranchRule(activeStep.id, ruleId)) return;
+                announce('분기 규칙이 삭제되었습니다.');
+              }}
+              onMoveRule={(ruleId, delta) => {
+                if (!store().moveBranchRule(activeStep.id, ruleId, delta)) return;
+                const rules =
+                  store().document?.steps.find((step) => step.id === activeStep.id)?.branchRules ??
+                  [];
+                const position =
+                  [...rules]
+                    .sort((a, b) => a.priority - b.priority)
+                    .findIndex((rule) => rule.id === ruleId) + 1;
+                announce(reorderAnnouncement('분기 규칙', position, rules.length));
+              }}
               onPickImage={(blockId, file) => store().attachImage(activeStep.id, blockId, file)}
               onMove={(delta) => {
                 if (!store().moveStep(activeStep.id, delta)) return;
@@ -306,9 +383,37 @@ export function EditorPage() {
             />
           </>
         ) : null}
+
+        {section === 'validation' ? (
+          <>
+            <SectionHeader
+              title="검증"
+              description="내보내기 전에 고쳐야 할 것과 확인하면 좋은 것입니다."
+            />
+            <ValidationPanel
+              result={validation}
+              onSelectIssue={(issue) => {
+                // 이슈에서 그 단계로 이동한다. 문서 전체 이슈는 기본 정보로 보낸다.
+                if (issue.stepId !== undefined) {
+                  selectStep(issue.stepId);
+                  return;
+                }
+                selectSection(issue.path.startsWith('warnings') ? 'warnings' : 'meta');
+              }}
+            />
+
+            <SectionHeader title="경로 요약" description="분기가 있는 단계의 이동 규칙입니다." />
+            <BranchSummary steps={steps} onSelectStep={(stepId) => selectStep(stepId)} />
+          </>
+        ) : null}
       </EditorShell>
 
-      {/* 디자인 §2.2.1 - 분기에서 참조되는 단계는 삭제 전 영향 범위를 보여준다. */}
+      {/*
+        디자인 §2.2.1·기술 §2.2.3 - 참조가 있으면 **대체 대상 선택 또는 규칙
+        삭제**를 요구한다. 스토어가 `plan` 없이는 지우지 않으므로(M6 DoD 9)
+        여기서 고르지 않으면 삭제 버튼이 아무 일도 하지 않는 것이 아니라
+        애초에 눌리지 않는다.
+      */}
       <Dialog
         open={removeTarget !== null}
         title="단계를 삭제할까요?"
@@ -321,20 +426,40 @@ export function EditorPage() {
                 removeImpact.wasStartStep,
               )
         }
-        onClose={() => setRemoveStepId(null)}
+        onClose={() => {
+          setRemoveStepId(null);
+          setRemovalTargetId('');
+        }}
         initialFocusRef={cancelRemoveRef}
         footer={
           <>
-            <Button ref={cancelRemoveRef} onClick={() => setRemoveStepId(null)}>
+            <Button
+              ref={cancelRemoveRef}
+              onClick={() => {
+                setRemoveStepId(null);
+                setRemovalTargetId('');
+              }}
+            >
               취소
             </Button>
             <Button
               variant="danger"
               data-testid="step-remove-confirm"
+              disabled={removeNeedsPlan && removalTargetId === ''}
               onClick={() => {
                 if (removeStepId === null) return;
-                store().removeStep(removeStepId);
+
+                const plan: StepRemovalPlan | undefined = !removeNeedsPlan
+                  ? undefined
+                  : removalTargetId === 'drop'
+                    ? { kind: 'dropRules' }
+                    : { kind: 'retarget', targetStepId: removalTargetId };
+
+                const outcome = store().removeStep(removeStepId, plan);
+                if (outcome.status !== 'removed') return;
+
                 setRemoveStepId(null);
+                setRemovalTargetId('');
                 selectStep(null);
                 announce('단계가 삭제되었습니다.');
               }}
@@ -343,7 +468,34 @@ export function EditorPage() {
             </Button>
           </>
         }
-      />
+      >
+        {removeNeedsPlan && removeTarget !== null ? (
+          <Field
+            label="이 단계를 가리키던 연결을 어떻게 할까요?"
+            required
+            help="고르기 전에는 삭제할 수 없습니다."
+          >
+            {(control) => (
+              <Select
+                {...control}
+                value={removalTargetId}
+                data-testid="step-remove-plan"
+                onChange={(event) => setRemovalTargetId(event.target.value)}
+              >
+                <option value="">고르지 않음</option>
+                <option value="drop">가리키던 분기 규칙과 기본 경로를 지웁니다</option>
+                {steps
+                  .filter((step) => step.id !== removeTarget.id)
+                  .map((step, index) => (
+                    <option key={step.id} value={step.id}>
+                      {`${index + 1}단계 «${step.title.trim() === '' ? '제목 없는 단계' : step.title}»로 옮깁니다`}
+                    </option>
+                  ))}
+              </Select>
+            )}
+          </Field>
+        ) : null}
+      </Dialog>
     </>
   );
 }
