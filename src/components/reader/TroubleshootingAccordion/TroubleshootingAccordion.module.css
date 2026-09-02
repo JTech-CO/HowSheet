@@ -1,0 +1,51 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+/* 터치 대상 최소 44px. (INV-13) */
+.summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.cause {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* 인쇄에서는 접힌 내용도 보인다. (기술 §2.4.x 인쇄 계약) */
+@media print {
+  .item[open],
+  .item {
+    break-inside: avoid;
+  }
+
+  .body {
+    display: flex !important;
+  }
+}

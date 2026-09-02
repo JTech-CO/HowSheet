@@ -72,3 +72,14 @@
 .back {
   color: var(--color-brand-600);
 }
+
+/* M7 DoD 7 - 저장이 지속되지 않는 동안 계속 보인다. */
+.persistBanner {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 0.875rem;
+  line-height: var(--line-height-body);
+}
