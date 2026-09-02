@@ -1,35 +1,36 @@
 # HowSheet Progress
 
-- 현재 phase: M6 진입 대기 - 분기 엔진·그래프 검증·활성 경로 ★
-- 상태: M5 DONE + M6 진입 전 보정 DONE
+- 현재 phase: M6 - 분기 엔진·그래프 검증·활성 경로 ★
+- 상태: DONE
 - 마지막 갱신: 2026-09-02 KST
 
 ## 직전에 끝낸 것
 
-**M5 - 콘텐츠 블록 렌더러·Markdown 안전화·이미지 자산**
+**M6 - 분기 엔진·그래프 검증·활성 경로**
 
-- `features/sanitize/` - remark로 raw HTML을 떨어뜨리고 DOMPurify로 2차 살균한다. 두 겹 모두 필요하다는 것을 음성 검증으로 확인했다
-- `features/assets/` - MIME·5MB 검증, 긴 변 1920px 축소, EXIF 방향, SHA-256 중복 제거, Blob URL 수명 훅
-- `components/content/` 8종 - 작성기 미리보기와 리더가 공유한다. 미리보기가 이제 실제 블록을 그린다
-- `components/editor/BlockEditor`·`BlockTypePicker` - 블록 7종 편집과 고정 순서 추가 목록
-- `utils/clipboard.ts` - Clipboard API 실패 시 코드 전체 선택 폴백
-- `scripts/verify-security.mjs`(`pnpm test:security`), `scripts/generate-fixture-assets.mjs`
-- 테스트 539개(단위 471, 통합 68), E2E 54개(브라우저 3종)
+- `features/branching/` 3종 - 규칙 평가(`branch-engine`), 그래프 판정(`graph-validator`), 활성 경로·진행률(`path-calculator`). 전부 순수 함수이고 `domain`만 import한다. 외부 패키지 의존이 0이라 리더 런타임이 그대로 쓴다
+- `BranchRuleEditor`·`BranchSummary`·`ValidationPanel` - 조건·값·대상을 한 행에 압축하지 않고, 기본 경로는 별도 카드이며, 검증 이슈는 대상 선택 바로 아래에 붙는다 (디자인 §2.4.6·§4.3.8)
+- 스토어: 분기 규칙 CRUD 4종, 선택지 CRUD 3종, 계약이 바뀐 `removeStep`
+- `scripts/benchmark-graph-validation.mjs`(`pnpm benchmark:graph`), `pnpm test:coverage`
+- 테스트 730개(단위 639, 통합 91), E2E 60개(브라우저 3종)
 
 **설계 판단**
 
-- 살균 정책은 **허용 목록**이고 금지 목록은 그 위의 이중 확인이다. 금지 목록만 두면 새 태그마다 구멍이 생긴다
-- 원격 이미지는 렌더링하지 않는다. 그리는 순간 독자의 접속 사실이 제3자에게 새어 나간다(INV-15). `src`만 지우고 `alt`는 남긴다
-- `MarkdownText`는 살균된 HTML이 아니라 **원문 Markdown**을 받는다. "이미 안전한 문자열"을 넘기는 경로를 아예 두지 않았다
-- `isAllowedUrl`을 `guide.schema.ts`에서 `guide.types.ts`로 옮겼다. 스키마에 두면 살균기가 그 함수를 쓰려고 zod를 끌어오고 그 의존이 리더 번들까지 따라간다 (D-11)
+- **미응답과 완료를 나눈다.** DoD 3의 "완료"는 평가를 마쳤는데 아무것도 참이 아닌 경우다. 아직 답하지 않은 분기를 여기 밀어 넣으면 예상 진행률이 거짓말을 한다
+- **완료와 대상 누락도 나눈다.** 합치면 망가진 문서에서 조용히 완료 화면이 뜬다(디자인 §7.3). 누락에서 `defaultNextStepId`로 폴백하지도 않는다 - 폴백은 누락을 숨긴다
+- **미응답에서 `notEquals`는 거짓이다.** `undefined !== 'opt-mobile'`을 참으로 두면 독자가 고르기도 전에 낮은 우선순위 규칙이 경로를 가로챈다
+- **소스를 해석할 수 없으면 연산자와 무관하게 거짓이다.** `notEquals`·`notChecked`가 참이 되면 망가진 규칙이 경로를 가져간다
+- **그래프 판정은 `features`, 이슈 코드는 `domain`.** `domain`은 외부 계층을 import할 수 없고, 반대로 검증기가 스키마를 부르면 zod가 리더 번들 폐포에 들어간다(D-11). 합성은 호출자의 일이다
+- **종료 단계는 실행 의미로 정의한다.** out-degree 0으로 보면 "규칙은 있고 기본 경로가 없는" 정상 단계가 오탐으로 차단된다. 픽스처 10종에서는 결과가 같아 테스트가 이 선택을 잡아 주지 못한다
+- **순환은 전수 보고하고 도달 불가 영역까지 본다.** 하나씩 고치게 만드는 것이 곧 탐지를 어렵게 하는 것이다 (INV-06)
 
 **이번 phase에서 드러난 것**
 
-- **Safari에서 이미지 첨부가 깨져 있었다.** WebKit E2E가 잡았다. `OffscreenCanvas.convertToBlob`이 없는 빌드가 있는데 인코더가 그것만 썼다. `<canvas>` 폴백과 EXIF 옵션 없는 디코딩 폴백을 넣고, 코덱 실패를 사용자가 볼 수 있는 이슈로 바꿨다
-- **DOMPurify의 `ALLOWED_URI_REGEXP`는 URI가 아닌 속성에도 적용된다.** 좁게 잡았더니 `type="checkbox"`·`colspan`이 조용히 사라져 GFM 작업 목록이 통째로 없어졌다. `ADD_URI_SAFE_ATTR`로 비-URI 속성을 명시했다
-- **의존성 버전 고정이 M4부터 새고 있었다.** `.npmrc`에 `save-exact=true`가 있는데 M4·M5의 8종이 전부 캐럿 범위로 들어왔고 어떤 게이트도 보지 않았다. 전부 고정하고 `verify:dependencies`를 만들었다
+- **통합 테스트 한 건이 물지 않았다.** `removeStep`의 DoD 9 차단을 지웠는데 통합 19건이 전부 통과했다. 화면의 버튼 비활성이 스토어가 아니라 화면이 따로 계산한 값에 걸려 있었다. 차단이 화면에만 있으면 스토어를 직접 부르는 경로로 뚫린다. 스토어 계약 단언을 더했다
+- **기술 §4.4.1 검증 6단계에 대응하는 이슈 코드가 없었다.** 조건 중복은 우선순위 중복과 다르고, 뒤 규칙이 영원히 평가되지 않는 죽은 간선이 된다. `DUPLICATE_BRANCH_CONDITION`을 warning으로 추가했다
+- **`verify:fixtures`가 코드 집합만 대조하고 있었다.** severity가 뒤집혀도 통과한다. `pendingGraph`를 실제 판정으로 옮기면서 severity와 `exportable`을 함께 고정했다
 
-**M6 진입 전 보정 (2026-09-02)**
+****M6 진입 전 보정 (2026-09-02)**
 
 M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "통과"라고 적었는데
 근거 코드가 없거나, 이월 사유가 하네스 원문과 어긋난 항목을 찾는 것이 목적이었다.
@@ -57,53 +58,28 @@ M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "�
 
 ## 다음 할 일
 
-1. M6 진입 - 분기 엔진·그래프 검증·활성 경로
-   - `pnpm test:coverage`와 `scripts/benchmark-graph-validation.mjs`가 아직 없다.
-     M6 검증 블록이 둘 다 호출하므로 phase 시작과 함께 만든다.
-2. **리더 런타임 ↔ 살균기 경계에 대한 사용자 승인** (아래 미결 항목). M6과
-   병렬로 진행할 수 있지만 M7 할 일 2가 시작되기 전에는 있어야 한다.
-3. 선택지(`decision`) 항목 추가·삭제 UI를 분기 규칙 참조 무결성과 함께 붙인다.
-   `DecisionOption.description`·`DecisionBlock.required`도 편집 경로가 없다.
+1. M7 진입 - 리더 런타임·진행 저장·완료 흐름
+   - 경계는 D-12로 확정됐다(사용자 승인). `reader-renderer.ts`를 만드는 커밋에서
+     허용 목록과 그 정확 동등 테스트를 **함께** 고친다. 위 미결 항목의 세 줄.
+   - `features/branching` 3종을 그대로 쓴다. 리더용 분기 로직을 다시 만들지
+     않는다 (INV-09). 외부 패키지 의존이 0이라 경계는 이미 통과한다.
+2. 선택지 삭제의 **대체 선택지 고르기** UI. 스토어는 `retarget`을 지원하지만
+   화면은 "규칙도 함께 삭제"만 묻는다. 단계 삭제와 같은 수준으로 맞춘다 (M11).
 
 ## 미결 질문 / 차단 요소
 
-- **리더 런타임이 살균기를 어떻게 쓸 것인가 - 사용자 승인 대기 (M7 전 필요)**:
-  조사와 실측이 끝났고 **선택지 A를 권고**한다. 승인이 필요한 이유는 이것이
-  AGENTS.md §7의 "모듈 경계" 변경이기 때문이다.
-  - **실측 (프로브 파일로 확인, 2026-09-02)**: `src/reader-runtime/`에 파일
-    하나를 넣고 `verify:architecture`를 돌린 결과 -
-    `markdown-to-html.ts`를 export하면 **위반 6건**(unified·remark-parse·
-    remark-gfm·remark-rehype·rehype-stringify·dompurify), `sanitize-html.ts`만
-    export하면 **위반 1건**(dompurify)이다. `sanitize-html.ts`의 패키지 폐포가
-    `{dompurify}` 하나인 것은 M5에서 `isAllowedUrl`을 `guide.types.ts`로 옮긴
-    결과다(D-11). A안이 요구하는 리팩터링은 이미 끝나 있었다.
-  - **선택지 A (권장)**: 내보내기(M9)가 Markdown을 미리 살균된 HTML로 바꿔
-    문서 **본문에** 싣고, 리더는 `sanitize-html.ts`만 import해 렌더 직전에 한 번
-    더 살균한다. `dompurify`만 `READER_RUNTIME_ALLOWED_PACKAGES`에 추가한다.
-    근거는 번들 바이트가 아니다 - 기술 §7.3의 "리더 런타임은 작성기 라이브러리를
-    포함하지 않는다"는 정성 규칙, 하네스 M9 할 일 2가 이미 적은 파이프라인 순서
-    (full validation → **sanitization** → asset inlining → …), M9 DoD 9의 초기
-    렌더 1초/2초(파서 초기화가 임계 경로), 그리고 INV-07 공격면이다.
-  - **A안에 붙는 조건**: 렌더된 HTML은 **본문에만** 싣고 M9의
-    `application/json` 데이터 스크립트에는 원문 Markdown을 유지한다. 이 조건이
-    빠지면 저장 형식이 바뀌어 §7의 "파일 형식" 변경이 되고 M8 가져오기의 왕복
-    계약에도 영향한다.
-  - **A안의 대가**: 살균이 두 번 도므로 INV-09/M9 DoD 10의 parity가 살균
-    **멱등성**에 의존한다. 그 단언이 0건이었으므로 보정에서 게이트로 만들었다
-    (`tests/unit/security/sanitize.test.ts`의 "살균 멱등성").
-  - **선택지 B**: 리더가 `markdown-to-html.ts`까지 import하고 remark 전체를
-    허용 목록에 넣는다. parity가 구조적으로 자명하다는 장점이 있다(같은 함수를
-    부른다). 그러나 위 정성 규칙과 M9 주의 3번째에 정면으로 걸린다.
-  - **선택지 C**: 리더 전용 경량 살균기. 기술 §7.1-2의 "경계 한 곳"과 INV-07을
-    동시에 깨므로 채택하지 않는다.
-  - **승인 후에도 지금 코드를 바꾸지 않는다.** `READER_RUNTIME_ALLOWED_PACKAGES`에
-    `dompurify`를 넣는 것은 M7에서 `reader-renderer.ts`가 실제로 그것을 쓰는
-    커밋과 **같은 커밋**이어야 한다. 사용처 없이 허용 목록만 넓히는 것은 게이트를
-    미리 느슨하게 만드는 것이다.
-- **`docs/File_Structure.md` §3.3의 "이 순수 함수"가 어느 파일인지 특정되지 않았다**:
-  §3.3은 "내보낸 HTML은 `reader-runtime/reader-renderer.ts`가 직접 이 순수 함수를
-  호출한다"고만 적어 A와 B 어느 쪽으로도 읽힌다. 위 승인과 함께 지시 대상을
-  `sanitize-html.ts`로 좁혀야 한다. 이것도 경계 축소이므로 승인 대상이다.
+- **M7에서 D-12를 코드에 반영해야 한다 (승인 완료, 아직 미적용)**: 경계 결정은
+  2026-09-02에 사용자 승인을 받아 `File_Structure.md` §7 D-12에 기록했다. 코드
+  변경은 M7에서 `reader-renderer.ts`가 실제로 살균기를 쓰는 커밋과 **같은 커밋**에
+  넣는다. 사용처 없이 허용 목록만 넓히면 게이트를 미리 느슨하게 만드는 것이다.
+  그 커밋에서 함께 할 일 셋:
+  1. `scripts/verify-architecture.mjs`의 `READER_RUNTIME_ALLOWED_PACKAGES`에
+     `'dompurify'` 추가
+  2. `tests/unit/architecture/analyze.test.ts`의 `toEqual([])`을
+     `toEqual(['dompurify'])`로. **`toContain`으로 완화하지 않는다** - 정확
+     동등이라야 허용 목록이 조용히 자라는 것을 막는다
+  3. `src/reader-runtime/reader-renderer.ts`는 `sanitize-html.ts`만 import한다.
+     `markdown-to-html.ts`를 쓰면 그 자리에서 위반 6건이 난다(실측)
 - **모르는 필드가 버려진다**: Zod 기본 동작이 strip이라 1.0 문서에 담긴 모르는
   키가 파싱 시 사라진다. 보존 정책은 M8에서 정한다. 지금은 동작을 테스트로 고정해
   두었다.
@@ -193,6 +169,14 @@ M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "�
 | 2026-09-02 | 시작 시 `removeOrphans()` 자동 실행을 하지 않는다                                                           | 고아 판정 기준이 "`guides`에 id가 있는가" 하나뿐이라 버려도 되는 찌꺼기와 복구에 필요한 증거가 같은 모양이다. 부분 커밋 후 남은 `existed: true` 스냅샷은 그 문서의 마지막 사본인데 이 함수가 그것을 지운다(INV-08 위반). 진행 중인 `withSnapshot`도 정상 상태인 채로 고아로 보인다. 게다가 `capture()`를 부르는 제품 코드가 아직 0건이라 지울 것 자체가 없다. 사용자가 누르는 정리 경로는 M12, 자동 실행 재검토는 M8 뒤 | `src/storage/guide.repository.ts` (주석), M8·M12                                                                                             | 에이전트 (M3 이월 해소)           |
 | 2026-09-02 | domain에도 JSX 파일 금지 규칙을 건다                                                                        | JSX 런타임은 import 문 없이 React를 주입한다. 규칙이 reader-runtime에만 있고 ESLint의 domain 블록은 `*.ts`만 대상이라 `src/domain/x.tsx` 하나로 M1 DoD 5가 뚫렸다                                                                                                                                                                                                                                                       | `scripts/verify-architecture.mjs`, `eslint.config.js`                                                                                        | 에이전트 (M1 감사)                |
 | 2026-09-02 | `verify:fixtures`를 CI에 배선하고 markdown-samples 5종을 작성                                               | 하네스 M2 검증 블록의 명령 하나가 사람이 로컬에서 칠 때만 돌고 있었다. §0.10은 markdown 픽스처도 "M2부터 유지"로 적고, M10 DoD 10이 배정한 것은 snapshot이지 파일 자체가 아니다                                                                                                                                                                                                                                         | `.github/workflows/ci.yml`, `scripts/verify-fixtures.mjs`, `tests/fixtures/markdown-samples/`                                                | 에이전트 (M2 감사)                |
+| 2026-09-02 | 그래프 판정은 `features/branching`이 하고 이슈 코드는 `domain`에 남긴다. 합성은 호출자가 한다               | `domain`은 외부 계층을 import할 수 없어(§3.2-1) `validateGuideDocument`가 검증기를 부를 수 없고, 반대로 검증기가 `guide.schema.ts`를 부르면 zod가 리더 번들 폐포에 들어간다(D-11). 합성 함수를 두는 순간 둘 중 하나가 깨진다                                                                                                                                                                                            | `src/features/branching/graph-validator.ts`, `src/pages/EditorPage/`, `scripts/verify-fixtures.mjs`, M9                                      | 에이전트 (M6)                     |
+| 2026-09-02 | `UNREACHABLE_STEP`은 warning, 나머지 그래프 코드는 error                                                    | 하네스 DoD 4가 error로 열거한 것은 누락·순환·시작 단계·종료 부재 넷이고 도달 불가는 빠져 있다. DoD 5가 그것만 따로 "설계된 severity"라 부른다. 기술 §2.2.4도 "경고 또는 오류"로 결정을 미뤘다. 디자인 §2.4.6은 "오류"라 부르지만 §0.1에서 severity는 하네스가, 표시 위치는 디자인이 이긴다. 결과로 `invalid-unreachable`은 `exportable: true`다                                                                         | `src/features/branching/graph-validator.ts`, `scripts/verify-fixtures.mjs`                                                                   | 에이전트 (M6)                     |
+| 2026-09-02 | `DUPLICATE_BRANCH_CONDITION` 이슈 코드 추가                                                                 | 기술 §4.4.1 검증 6단계("조건이 완전히 동일한 중복 규칙")에 대응 코드가 없었다. 우선순위 중복과 다르다 - 조건이 같으면 뒤 규칙은 영원히 평가되지 않는 죽은 간선이고, 대상이 서로 다를 때 더 위험하다. 이슈 코드는 저장 형식에 실리지 않으므로 스키마 변경이 아니다                                                                                                                                                       | `src/domain/validation.types.ts`, `src/features/branching/graph-validator.ts`                                                                | 에이전트 (M6)                     |
+| 2026-09-02 | 종료 가능 단계를 out-degree 0이 아니라 실행 의미로 정의                                                     | §4.4.1은 그래프 용어로, §4.3.4는 실행 의미로 말해 "규칙은 있고 기본 경로가 없는" 단계에서 갈린다. out-degree 0으로 보면 그런 정상 문서가 오탐으로 차단된다. 픽스처 10종에서는 결과가 같아 테스트가 이 선택을 잡아 주지 못하므로 근거를 코드 주석에 남겼다                                                                                                                                                               | `src/features/branching/graph-validator.ts`                                                                                                  | 에이전트 (M6)                     |
+| 2026-09-02 | `removeStep(id, plan)` - 참조가 있으면 처리 방법 없이 지우지 않는다                                         | M4까지는 참조를 조용히 고쳐서 지웠다. 하네스 M6 DoD 9와 기술 §2.2.3이 "대상 대체 또는 규칙 삭제를 요구한다"고 적는다. `needsPlan`을 돌려줄 때 문서를 하나도 바꾸지 않는 것이 계약이다                                                                                                                                                                                                                                   | `src/store/guide.store.ts`, `src/pages/EditorPage/`                                                                                          | 에이전트 (M6)                     |
+| 2026-09-02 | `@vitest/coverage-v8` 4.1.11 추가. 커버리지 임계는 `features/branching`에만 건다                            | vitest 4.1.11의 peer 범위가 정확한 단일 버전이고 어긋나면 provider가 런타임 경고를 낸다. 측정한 적 없는 전체 수치에 맞춰 임계를 정하면 게이트가 아니라 스냅샷이 된다. vitest 4의 glob 임계는 전역의 면제가 아니라 추가라 M12에서 전체 80%를 더해도 이 90%가 무뎌지지 않는다. 라이선스 MIT                                                                                                                               | `package.json`, `vitest.config.ts`, M12                                                                                                      | 에이전트 (M6)                     |
+| 2026-09-02 | 벤치마크 종료 코드는 하드 상한만 문다                                                                       | DoD 10과 기술 §2.4.2가 "목표"와 "하드 상한"(표에서는 "최대 허용")을 다른 낱말로 나눈다. 목표 초과를 실패로 만들면 "하드 상한"이 할 일이 없어진다. 시간 여유가 커서 시간 임계가 사실상 물지 않으므로 픽스처 크기 계약·조기 종료 감지·결정론·보고서 기록을 함께 문다                                                                                                                                                      | `scripts/benchmark-graph-validation.mjs`, `.github/workflows/ci.yml`                                                                         | 에이전트 (M6)                     |
+| 2026-09-02 | D-12 리더 런타임은 `sanitize-html.ts`만 쓴다. 내보내기가 Markdown을 미리 렌더한다                           | 프로브 실측으로 `markdown-to-html.ts` 경유 6건 vs `sanitize-html.ts` 경유 1건 확인. 근거는 번들 바이트가 아니라 기술 §7.3의 정성 규칙·하네스 M9 할 일 2의 파이프라인 순서·M9 DoD 9 렌더 예산·INV-07 공격면이다. 조건: 렌더된 HTML은 본문에만, `application/json` 페이로드는 원문 Markdown 유지. 대가는 살균이 두 번 도는 것이고 멱등성 게이트로 막았다. **코드 반영은 M7의 `reader-renderer.ts` 커밋과 동시에**         | `docs/File_Structure.md` §3.3·§7, `AGENTS.md` §4, `scripts/verify-architecture.mjs`(M7), M9                                                  | 사용자 (2026-09-02 승인)          |
 
 ## 검증 로그
 
@@ -236,3 +220,9 @@ M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "�
 | 2026-09-02 | markdown 픽스처 제거·내용 변조·허용 목록 선제 확대                                        | 의도대로 실패 - 종료 코드 1·불일치 5건·단위 3건                    | `artifacts/qa/phase-reports/M5.md` |
 | 2026-09-02 | `pnpm exec playwright test`                                                               | 성공 - 60 passed (chromium/firefox/webkit)                         | `artifacts/qa/phase-reports/M5.md` |
 | 2026-09-02 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/test:security/verify\*/build) | 성공 - 단위 543, 통합 72                                           | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | `pnpm exec vitest run tests/unit/branching tests/integration/branch-editor`               | 성공 - 110 passed                                                  | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm test:coverage`                                                                      | 성공 - branching 97.33/94.90/97.87/97.93 (임계 90)                 | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm benchmark:graph`                                                                    | 성공 - 100단계 30회 median 0.113ms (목표 100ms, 상한 300ms)        | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm verify:fixtures` (그래프 판정 이관)                                                 | 성공 - 코드·severity·exportable 셋을 함께 대조                     | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | priority 정렬·순환 탐지 범위·DoD 9 차단·severity·커버리지 임계·픽스처 크기 주입           | 의도대로 실패 - 6건 모두                                           | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | 전체 회귀 (M6 검증 블록 + format/lint/typecheck/verify\*/build/e2e)                       | 성공 - 단위 639, 통합 91, E2E 60. JS gzip 233.2 kB                 | `artifacts/qa/phase-reports/M6.md` |

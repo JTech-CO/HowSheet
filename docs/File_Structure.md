@@ -310,7 +310,8 @@ storage  ←  store              styles  ←  전 계층 (토큰 참조)
 ### 3.3. 살균 경계
 
 - `dangerouslySetInnerHTML`을 사용하는 모듈은 프로젝트 전체에서 `components/content/MarkdownText/` **한 곳뿐**이다. (기술 §7.1-2)
-- 살균 자체는 프레임워크에 의존하지 않는 `features/sanitize/`가 수행한다. React 화면은 `MarkdownText`를 통해, 내보낸 HTML은 `reader-runtime/reader-renderer.ts`가 직접 이 순수 함수를 호출한다.
+- 살균 자체는 프레임워크에 의존하지 않는 `features/sanitize/`가 수행한다. React 화면은 `MarkdownText`를 통해, 내보낸 HTML은 `reader-runtime/reader-renderer.ts`가 **`features/sanitize/sanitize-html.ts`의 `sanitizeHtml`만** 직접 호출한다. (D-12)
+- 리더는 `markdown-to-html.ts`에 의존하지 않는다. Markdown → HTML 변환은 내보내기(M9)가 미리 끝내고, 리더는 렌더 직전에 한 번 더 살균한다. 실측으로 `markdown-to-html.ts`를 경유하면 리더 번들 폐포에 외부 패키지 6종이 들어오고 `sanitize-html.ts`만 쓰면 `dompurify` 하나다.
 - 이 분리가 없으면 리더 런타임이 살균기를 복제해야 하고, 그 순간 기술 §7.1-2의 "경계 한 곳" 규칙과 INV-07이 동시에 깨진다.
 - URL 프로토콜 허용 목록(`ALLOWED_URL_PROTOCOLS`)과 판정 함수는 `domain/guide.types.ts`·`domain/guide.schema.ts`가 단독으로 소유한다. §2.2.4의 필드 검증 규칙이라 스키마가 파싱 시점에 판정해야 하고, §3.2-1이 domain의 외부 계층 import를 금지하므로 `utils/`에 둘 수 없다. `utils/url.ts`는 도메인 상수를 가져다 쓰는 브라우저측 헬퍼만 담는다. 링크 렌더러와 Markdown 매퍼가 각자 판정하지 않는다.
 
@@ -562,6 +563,16 @@ M1에서 `PROGRESS.md`를 생성할 때 아래 9건을 결정 로그로 옮긴�
 - **결정**: `verify:architecture`가 `reader-runtime`에서 도달 가능한 내부 모듈이 끌어오는 **외부 패키지까지** 검사한다. 직접 import뿐 아니라 경유 import도 위반이다.
 - **근거**: `@/domain/guide.schema.ts`는 §3.2-3의 허용 경로에 있지만 `zod`를 import한다. 리더가 그 모듈을 쓰면 zod가 리더 번들에 들어가는데, 직접 import만 보면 이것이 M9의 `verify:bundle`까지 드러나지 않는다. INV-11의 "편집기 전용 라이브러리를 import하지 않음"은 전이 의존을 포함해야 의미가 있다.
 - **영향**: 리더가 쓸 domain 모듈은 외부 의존이 없어야 한다. `guide.types.ts`, `progress.types.ts`, `validation.types.ts`는 조건을 만족하고 `guide.schema.ts`는 만족하지 않는다.
+
+### D-12. 리더 런타임은 `sanitize-html.ts`만 쓴다. 내보내기가 Markdown을 미리 렌더한다
+
+- **결정**: `reader-runtime/reader-renderer.ts`는 `features/sanitize/sanitize-html.ts`의 순수 함수만 import한다. `markdown-to-html.ts`는 쓰지 않는다. 내보내기(M9)가 Markdown을 미리 살균된 HTML로 바꿔 문서 **본문에** 싣고, 리더는 렌더 직전에 한 번 더 살균한다. `READER_RUNTIME_ALLOWED_PACKAGES`에 `dompurify` 하나를 추가한다.
+- **조건**: 렌더된 HTML은 본문에만 싣고, M9의 `application/json` 데이터 스크립트에는 **원문 Markdown을 유지한다.** 이 조건이 빠지면 저장 형식이 바뀌어 AGENTS.md §7의 "파일 형식" 변경이 되고 M8 가져오기의 왕복 계약에도 영향한다.
+- **근거**: 번들 바이트가 아니다. (1) 기술 §7.3의 "리더 런타임은 작성기 라이브러리를 포함하지 않는 독립 번들로 유지한다" - remark·unified는 작성 도구 체인이다. (2) 하네스 M9 할 일 2가 이미 `full validation → sanitization → asset inlining → …` 순서를 적어 살균을 내보내기 단계에 둔다. (3) M9 DoD 9의 초기 렌더 1초/2초에서 임계 경로는 바이트가 아니라 파서 초기화다. (4) INV-07 공격면 - 신뢰할 수 없는 텍스트 위에서 리더가 다시 돌리는 코드가 "허용 목록 살균기 하나"인 쪽이 "Markdown 파서 5종 + 살균기"보다 작다.
+- **실측** (2026-09-02, `src/reader-runtime/`에 프로브 파일을 넣고 `verify:architecture` 실행): `markdown-to-html.ts`를 경유하면 위반 6건(`unified`·`remark-parse`·`remark-gfm`·`remark-rehype`·`rehype-stringify`·`dompurify`), `sanitize-html.ts`만 경유하면 위반 1건(`dompurify`). `sanitize-html.ts`의 패키지 폐포가 `{dompurify}` 하나인 것은 M5에서 `isAllowedUrl`을 `guide.types.ts`로 옮긴 결과다.
+- **대가**: 살균이 두 번 돈다. INV-09와 M9 DoD 10(미리보기와 내보낸 리더가 같은 결과)이 살균 **멱등성**에 의존하게 된다. 그 단언이 0건이었으므로 M5 보정에서 게이트로 만들었다(`tests/unit/security/sanitize.test.ts`의 "살균 멱등성").
+- **기각한 대안**: 리더가 `markdown-to-html.ts`까지 쓴다 - parity가 구조적으로 자명하다는 장점이 있으나 위 근거 (1)·(2)에 정면으로 걸린다. 리더 전용 경량 살균기 - 기술 §7.1-2의 "경계 한 곳"과 INV-07을 동시에 깬다.
+- **적용 시점**: `READER_RUNTIME_ALLOWED_PACKAGES`에 `dompurify`를 넣는 것은 **M7에서 `reader-renderer.ts`가 실제로 그것을 쓰는 커밋과 같은 커밋**이다. 사용처 없이 허용 목록만 넓히면 게이트를 미리 느슨하게 만드는 것이다. 그때 `tests/unit/architecture/analyze.test.ts`의 `toEqual([])`도 `toEqual(['dompurify'])`로 함께 바꾼다. `toContain`으로 완화하지 않는다 - 정확 동등이라야 목록이 조용히 자라는 것을 막는다.
 
 ---
 

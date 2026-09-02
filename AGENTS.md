@@ -46,7 +46,8 @@
 경계 정의는 `docs/File_Structure.md` §3이며 `pnpm verify:architecture`가 기계 검증한다.
 
 - `domain`은 React·Zustand·Dexie·DOM API를 import하지 않는다.
-- `reader-runtime`의 import 허용 목록은 `src/domain/**`, `src/features/branching/**`, `src/features/sanitize/**`, `src/reader-runtime/**` 네 곳뿐이다. **모듈 단위로** 판정한다.
+- `reader-runtime`의 import 허용 목록은 `src/domain/**`, `src/features/branching/**`, `src/features/sanitize/**`, `src/reader-runtime/**` 네 곳뿐이다. **모듈 단위로** 판정하고 전이 의존까지 본다. (D-11)
+- `reader-runtime`의 **외부 패키지는 기본 거부**다. 허용은 `dompurify` 하나뿐이며, `features/sanitize`에서는 `sanitize-html.ts`만 쓴다. `markdown-to-html.ts`를 쓰면 remark 계열 5종이 리더 번들 폐포에 들어온다. (D-12)
 - `src/components/common/`, `src/lib/`, `src/hooks/`, `src/types/`는 만들지 않는다.
 - `dexie`와 `localStorage`는 `src/storage/` 안에서만 쓴다.
 - `dangerouslySetInnerHTML`은 `src/components/content/MarkdownText/`에서만 쓴다.
