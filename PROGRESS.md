@@ -1,85 +1,59 @@
 # HowSheet Progress
 
-- 현재 phase: M6 - 분기 엔진·그래프 검증·활성 경로 ★
+- 현재 phase: M7 - 리더 런타임·진행 저장·완료 흐름 ★
 - 상태: DONE
-- 마지막 갱신: 2026-09-02 KST
+- 마지막 갱신: 2026-09-03 KST
 
 ## 직전에 끝낸 것
 
-**M6 - 분기 엔진·그래프 검증·활성 경로**
+**M7 - 리더 런타임·진행 저장·완료 흐름**
 
-- `features/branching/` 3종 - 규칙 평가(`branch-engine`), 그래프 판정(`graph-validator`), 활성 경로·진행률(`path-calculator`). 전부 순수 함수이고 `domain`만 import한다. 외부 패키지 의존이 0이라 리더 런타임이 그대로 쓴다
-- `BranchRuleEditor`·`BranchSummary`·`ValidationPanel` - 조건·값·대상을 한 행에 압축하지 않고, 기본 경로는 별도 카드이며, 검증 이슈는 대상 선택 바로 아래에 붙는다 (디자인 §2.4.6·§4.3.8)
-- 스토어: 분기 규칙 CRUD 4종, 선택지 CRUD 3종, 계약이 바뀐 `removeStep`
-- `scripts/benchmark-graph-validation.mjs`(`pnpm benchmark:graph`), `pnpm test:coverage`
-- 테스트 730개(단위 639, 통합 91), E2E 60개(브라우저 3종)
+- `reader-runtime/` 3종 - 순수 상태 전이(`reader-state`), 진행 저장(`reader-storage`), 프레임워크 비의존 렌더러(`reader-renderer`). React·DOM·시계를 모른다
+- `store/reader.store.ts` - React 바인딩과 저장소 배선만. 판정은 전부 `reader-runtime`에 위임한다
+- `components/reader/` 9종과 `PreviewPage`의 리더 셸 승격
+- 테스트 811개(단위 706, 통합 105), E2E 74개(브라우저 3종). M7 검증 블록 E2E 13개 신설
+- **D-12를 코드에 반영했다.** 허용 목록·정확 동등 테스트·`sanitize-html.ts`만 import를 한 변경에 넣었다
+
+**범위 판정**
+
+`File_Structure.md`의 구현 순서표가 M7에 `components/reader/`와 `reader-runtime/`을 **둘 다** 배정한다. M9에 남는 것은 `reader-template.html`과 빌드 스크립트뿐이고, 할 일 2의 "state·renderer·storage" 세 단어가 트리의 세 파일명과 1:1로 대응한다. 앱 내 리더 라우트는 만들지 않았다 - 기술 §2.1.4에서 '리더' 모드의 경로 칸은 라우트가 아니라 "내보낸 HTML"이고, §3.5가 `/guide/:id/preview`를 그 자리로 확정했다.
 
 **설계 판단**
 
-- **미응답과 완료를 나눈다.** DoD 3의 "완료"는 평가를 마쳤는데 아무것도 참이 아닌 경우다. 아직 답하지 않은 분기를 여기 밀어 넣으면 예상 진행률이 거짓말을 한다
-- **완료와 대상 누락도 나눈다.** 합치면 망가진 문서에서 조용히 완료 화면이 뜬다(디자인 §7.3). 누락에서 `defaultNextStepId`로 폴백하지도 않는다 - 폴백은 누락을 숨긴다
-- **미응답에서 `notEquals`는 거짓이다.** `undefined !== 'opt-mobile'`을 참으로 두면 독자가 고르기도 전에 낮은 우선순위 규칙이 경로를 가로챈다
-- **소스를 해석할 수 없으면 연산자와 무관하게 거짓이다.** `notEquals`·`notChecked`가 참이 되면 망가진 규칙이 경로를 가져간다
-- **그래프 판정은 `features`, 이슈 코드는 `domain`.** `domain`은 외부 계층을 import할 수 없고, 반대로 검증기가 스키마를 부르면 zod가 리더 번들 폐포에 들어간다(D-11). 합성은 호출자의 일이다
-- **종료 단계는 실행 의미로 정의한다.** out-degree 0으로 보면 "규칙은 있고 기본 경로가 없는" 정상 단계가 오탐으로 차단된다. 픽스처 10종에서는 결과가 같아 테스트가 이 선택을 잡아 주지 못한다
-- **순환은 전수 보고하고 도달 불가 영역까지 본다.** 하나씩 고치게 만드는 것이 곧 탐지를 어렵게 하는 것이다 (INV-06)
+- **리더 상태를 `guide.store`와 분리한다.** 독자 진행은 다른 저장소에 다른 수명으로 산다. 한 스토어에 두면 리더에서 체크만 해도 편집기의 `dirty`가 선다
+- **판정은 `reader-runtime`이 하고 스토어는 붙이기만 한다.** 상태 전이를 스토어에 쓰면 내보낸 HTML과 갈라지고 INV-09를 손으로 유지해야 한다
+- **진행 게이트는 `completionMode`가 아니라 실제 입력을 본다.** `checkbox`인데 성공 기준이 없는 단계와 `automatic`인데 문장만 있는 단계가 픽스처에 실제로 있다. 모드를 게이트로 삼으면 그 문서들이 완주할 수 없다
+- **준비물 체크는 저장하지 않는다.** `ReaderProgress`에 자리가 없고 DoD 5의 복원 목록에도 없다. 스키마를 늘리지 않고 M7을 닫는 유일한 길이다
+- **진행은 첫 단계 진입 CTA에서 만든다.** 화면을 여는 것만으로 만들면 다음 방문에 "0단계 이어하기"가 뜬다
+- **ping-pong은 세 겹으로 끊는다.** 자기 쓰기 에코 무시 + `updatedAt` 동률 무시 + 원격 적용 시 저장 미예약. 하나라도 빠지면 두 탭이 서로를 영원히 갱신한다
+- **저장된 본문이 키와 어긋나면 버린다.** 본문을 믿으면 INV-10의 revision 격리가 본문 조작으로 뚫린다
 
 **이번 phase에서 드러난 것**
 
-- **통합 테스트 한 건이 물지 않았다.** `removeStep`의 DoD 9 차단을 지웠는데 통합 19건이 전부 통과했다. 화면의 버튼 비활성이 스토어가 아니라 화면이 따로 계산한 값에 걸려 있었다. 차단이 화면에만 있으면 스토어를 직접 부르는 경로로 뚫린다. 스토어 계약 단언을 더했다
-- **기술 §4.4.1 검증 6단계에 대응하는 이슈 코드가 없었다.** 조건 중복은 우선순위 중복과 다르고, 뒤 규칙이 영원히 평가되지 않는 죽은 간선이 된다. `DUPLICATE_BRANCH_CONDITION`을 warning으로 추가했다
-- **`verify:fixtures`가 코드 집합만 대조하고 있었다.** severity가 뒤집혀도 통과한다. `pendingGraph`를 실제 판정으로 옮기면서 severity와 `exportable`을 함께 고정했다
-
-****M6 진입 전 보정 (2026-09-02)**
-
-M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "통과"라고 적었는데
-근거 코드가 없거나, 이월 사유가 하네스 원문과 어긋난 항목을 찾는 것이 목적이었다.
-
-- **M5 DoD 6** - 이월 근거가 원문과 어긋났다. 기술 §2.2.4의 alt 규칙은 내보내기
-  검증이 아니라 **필드 검증** 목록에 있고, 하네스 M9 절에는 "alt"라는 말이 없다.
-  `ImageBlock.decorative`를 추가해 필드 단계에서 판정한다. 진짜 문제는 판정
-  로직이 아니라 기본값과 선언값이 같다는 것이었다
-- **M5 DoD 5** - 기술 §4.4.4가 요구한 애니메이션 GIF 크기 경고가 없었다.
-  `ImageIssue.severity`를 넣고 warning으로 발행한다. 경고는 첨부를 막지 않는다
-- **M5 DoD 7** - 축소 경로에서 `keptOriginalBecause: 'not-smaller'`를 돌려주면서
-  실제로는 원본을 유지하지 않았다. `largerThanOriginal`로 분리하고 그 조합을
-  덮는 테스트를 추가했다
-- **M5 할 일 1** - 체크리스트 항목 추가·삭제 UI. 분기 결합도가 체크리스트와
-  선택지에서 다르다는 것을 픽스처로 확인하고 앞의 것만 붙였다
-- **M2 DoD 7** - 근거 테스트가 항진명제였다. 프로덕션 스키마와 1.0 픽스처 전수로
-  다시 썼다
-- **M2 DoD 8** - `markdown-samples/` 5종 작성, `verify:fixtures`를 CI에 배선
-- **M1 DoD 5** - domain의 `.tsx` 파일이 두 게이트를 모두 빠져나갔다. 규칙 추가
-- **D-11 전이 검사** - `reader-runtime/`이 비어 있어 게이트가 공회전 중이었다.
-  중간 모듈까지 넣은 전이 테스트 4건으로 규칙을 고정하고, 실제 프로브로 A/B안의
-  위반 건수를 실측했다
-- **살균 멱등성** - 단언이 0건이었다. INV-09/M9 DoD 10의 전제이므로 게이트로 만듦
-- **M3 이월** - `removeOrphans()` 자동 실행은 하지 않기로 확정. INV-08과 충돌한다
+- **완료 화면의 진행률 분자가 틀렸다.** 마지막 단계가 커서로 남아 `active`로 덮이면서 `completedAt`이 있는데도 분자에서 빠졌다(`2/2`가 아니라 `0/1`). **E2E가 실제 화면에서 잡았다** - 단위 테스트는 경로와 상태만 보고 완료 화면의 숫자를 보지 않았다
+- **게이트 공회전을 끝냈다.** M5·M6 감사에서 두 번 지적한 문제다. 실물 3종을 만든 것이 1차 조치이고, 다시 비면 조용히 통과하므로 `srcCount === 0` 가드의 선례를 따라 실패 가드를 넣었다. 요약줄에도 `reader-runtime 3개`를 찍는다
+- **`reader-runtime`은 `storage/`도 `features/autosave`도 쓸 수 없다.** 허용 목록 밖이고 내보낸 HTML에는 그 계층이 없다. 최소 저장소 모양만 받고 앱 내 리더가 어댑터를 댄다
 
 ## 다음 할 일
 
-1. M7 진입 - 리더 런타임·진행 저장·완료 흐름
-   - 경계는 D-12로 확정됐다(사용자 승인). `reader-renderer.ts`를 만드는 커밋에서
-     허용 목록과 그 정확 동등 테스트를 **함께** 고친다. 위 미결 항목의 세 줄.
-   - `features/branching` 3종을 그대로 쓴다. 리더용 분기 로직을 다시 만들지
-     않는다 (INV-09). 외부 패키지 의존이 0이라 경계는 이미 통과한다.
-2. 선택지 삭제의 **대체 선택지 고르기** UI. 스토어는 `retarget`을 지원하지만
+1. M8 진입 - HowSheet JSON 가져오기·내보내기·마이그레이션
+   - 리더가 쓰는 `snapshotToJson`과 `StorageUnavailableBanner`의 `onBackup`이
+     아직 이어지지 않았다. 기술 §4.6의 메모리 모드 탈출구가 여기서 닫힌다.
+   - 다른 revision "이어쓰기"(진행 복사)를 여기서 다시 본다. 아래 미결 항목.
+2. `reader-runtime/index.ts`와 `reader.css`는 M9다. 내보낸 HTML의 부트스트랩과
+   정적 CSS라 번들을 만들 때 함께 만든다.
+3. `ReaderOutline`·`ReaderSettings`·`StickyActionBar`는 M11에서 붙인다.
+   `resolveReaderTheme`은 이미 `reader-state.ts`에 있고 화면만 없다.
+4. 선택지 삭제의 **대체 선택지 고르기** UI. 스토어는 `retarget`을 지원하지만
    화면은 "규칙도 함께 삭제"만 묻는다. 단계 삭제와 같은 수준으로 맞춘다 (M11).
 
 ## 미결 질문 / 차단 요소
 
-- **M7에서 D-12를 코드에 반영해야 한다 (승인 완료, 아직 미적용)**: 경계 결정은
-  2026-09-02에 사용자 승인을 받아 `File_Structure.md` §7 D-12에 기록했다. 코드
-  변경은 M7에서 `reader-renderer.ts`가 실제로 살균기를 쓰는 커밋과 **같은 커밋**에
-  넣는다. 사용처 없이 허용 목록만 넓히면 게이트를 미리 느슨하게 만드는 것이다.
-  그 커밋에서 함께 할 일 셋:
-  1. `scripts/verify-architecture.mjs`의 `READER_RUNTIME_ALLOWED_PACKAGES`에
-     `'dompurify'` 추가
-  2. `tests/unit/architecture/analyze.test.ts`의 `toEqual([])`을
-     `toEqual(['dompurify'])`로. **`toContain`으로 완화하지 않는다** - 정확
-     동등이라야 허용 목록이 조용히 자라는 것을 막는다
-  3. `src/reader-runtime/reader-renderer.ts`는 `sanitize-html.ts`만 import한다.
-     `markdown-to-html.ts`를 쓰면 그 자리에서 위반 6건이 난다(실측)
+- **다른 revision "이어쓰기"가 알림까지만 구현됐다 (M8 전 판단)**: DoD 6의
+  "이어쓰기 또는 새 버전 시작 선택"에서 새 버전 시작은 동작한다(키가 revision별로
+  갈리므로 자동). 이전 개정의 진행을 새 개정으로 **복사**하는 흐름은 만들지
+  않았다. 원문이 복사를 요구하는지 분명하지 않고, 문서가 바뀐 뒤 옛 커서를 그대로
+  옮기면 없는 단계를 가리킬 수 있다. M8의 가져오기·마이그레이션과 함께 정한다.
 - **모르는 필드가 버려진다**: Zod 기본 동작이 strip이라 1.0 문서에 담긴 모르는
   키가 파싱 시 사라진다. 보존 정책은 M8에서 정한다. 지금은 동작을 테스트로 고정해
   두었다.
@@ -177,52 +151,64 @@ M1~M5의 DoD를 저장소 실제 상태와 다시 대조했다. 보고서가 "�
 | 2026-09-02 | `@vitest/coverage-v8` 4.1.11 추가. 커버리지 임계는 `features/branching`에만 건다                            | vitest 4.1.11의 peer 범위가 정확한 단일 버전이고 어긋나면 provider가 런타임 경고를 낸다. 측정한 적 없는 전체 수치에 맞춰 임계를 정하면 게이트가 아니라 스냅샷이 된다. vitest 4의 glob 임계는 전역의 면제가 아니라 추가라 M12에서 전체 80%를 더해도 이 90%가 무뎌지지 않는다. 라이선스 MIT                                                                                                                               | `package.json`, `vitest.config.ts`, M12                                                                                                      | 에이전트 (M6)                     |
 | 2026-09-02 | 벤치마크 종료 코드는 하드 상한만 문다                                                                       | DoD 10과 기술 §2.4.2가 "목표"와 "하드 상한"(표에서는 "최대 허용")을 다른 낱말로 나눈다. 목표 초과를 실패로 만들면 "하드 상한"이 할 일이 없어진다. 시간 여유가 커서 시간 임계가 사실상 물지 않으므로 픽스처 크기 계약·조기 종료 감지·결정론·보고서 기록을 함께 문다                                                                                                                                                      | `scripts/benchmark-graph-validation.mjs`, `.github/workflows/ci.yml`                                                                         | 에이전트 (M6)                     |
 | 2026-09-02 | D-12 리더 런타임은 `sanitize-html.ts`만 쓴다. 내보내기가 Markdown을 미리 렌더한다                           | 프로브 실측으로 `markdown-to-html.ts` 경유 6건 vs `sanitize-html.ts` 경유 1건 확인. 근거는 번들 바이트가 아니라 기술 §7.3의 정성 규칙·하네스 M9 할 일 2의 파이프라인 순서·M9 DoD 9 렌더 예산·INV-07 공격면이다. 조건: 렌더된 HTML은 본문에만, `application/json` 페이로드는 원문 Markdown 유지. 대가는 살균이 두 번 도는 것이고 멱등성 게이트로 막았다. **코드 반영은 M7의 `reader-renderer.ts` 커밋과 동시에**         | `docs/File_Structure.md` §3.3·§7, `AGENTS.md` §4, `scripts/verify-architecture.mjs`(M7), M9                                                  | 사용자 (2026-09-02 승인)          |
+| 2026-09-03 | M7이 `components/reader/`와 `reader-runtime/`을 둘 다 만든다. 앱 내 리더 라우트는 만들지 않는다             | `File_Structure.md`의 구현 순서표가 M7에 두 디렉터리를 배정하고, M9 행에는 `reader-template.html`과 빌드 스크립트만 남는다. 할 일 2의 "state·renderer·storage"가 트리의 세 파일명과 1:1이다. 라우트를 배정한 하네스 문장은 M4 할 일 1뿐이고 기술 §2.1.4에서 '리더' 모드의 경로 칸은 "내보낸 HTML"이다                                                                                                                   | `src/reader-runtime/`, `src/components/reader/`, `src/pages/PreviewPage/`                                                                    | 에이전트 (M7)                     |
+| 2026-09-03 | 리더 상태는 `store/reader.store.ts`가 갖고 판정은 `reader-runtime`이 한다                                   | 독자 진행은 LocalStorage에 다른 수명으로 살고 문서를 바꾸지 않는다. `guide.store`에 두면 리더에서 체크만 해도 편집기의 `dirty`가 선다(기술 §4.1.1). 상태 전이를 스토어에 쓰면 내보낸 HTML과 갈라져 INV-09를 손으로 유지해야 한다                                                                                                                                                                                        | `src/store/reader.store.ts`, `src/reader-runtime/reader-state.ts`                                                                            | 에이전트 (M7)                     |
+| 2026-09-03 | 진행 게이트는 `completionMode`가 아니라 실제 입력을 본다. 성공 체크는 진행률의 분자이지 게이트가 아니다     | `checkbox`인데 `successCriteria`가 없는 단계(valid-branched 셋)와 `automatic`인데 문장만 있는 단계(valid-linear-5step step-5)가 픽스처에 실제로 있다. 모드를 게이트로 삼으면 그 문서들이 완주할 수 없어 DoD 3이 불가능해진다                                                                                                                                                                                            | `src/reader-runtime/reader-state.ts`                                                                                                         | 에이전트 (M7)                     |
+| 2026-09-03 | 준비물 체크는 저장하지 않는다                                                                               | `ReaderProgress`에 자리가 없고(기술 §2.3.3) DoD 5의 복원 목록에도 준비물이 없다. 이어하기는 게이트를 지나지 않으므로 재체크를 강요하지 않고, 진행이 없으면 처음이라 재체크가 정상이다. 스키마를 늘리지 않고 M7을 닫는 유일한 길이다                                                                                                                                                                                     | `src/store/reader.store.ts`, `src/components/reader/GuideIntro/`                                                                             | 에이전트 (M7)                     |
+| 2026-09-03 | 다른 탭 ping-pong을 세 겹으로 끊는다                                                                        | 자기 쓰기 에코 무시 + `updatedAt` 동률 무시 + 원격 적용 시 저장 미예약. 시계 해상도가 ms라 100ms 예약에서도 동률이 실제로 생긴다. 하나라도 빠지면 두 탭이 서로를 영원히 갱신한다                                                                                                                                                                                                                                        | `src/reader-runtime/reader-storage.ts`, `src/store/reader.store.ts`                                                                          | 에이전트 (M7)                     |
+| 2026-09-03 | `verify:architecture`에 reader-runtime 반공허 가드를 넣는다                                                 | M5·M6 감사에서 두 번 지적한 공회전이다. 실물을 만든 것이 1차 조치이고 다시 비면 조용히 통과한다. 같은 파일의 `srcCount === 0` 가드가 선례다. 요약줄만 고치는 것은 게이트가 아니라 안내문이다                                                                                                                                                                                                                            | `scripts/verify-architecture.mjs`                                                                                                            | 에이전트 (M7)                     |
 
 ## 검증 로그
 
-| 날짜       | 명령                                                                                      | 결과                                                               | 증거 경로                          |
-| ---------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------- |
-| 2026-08-30 | `pnpm install --frozen-lockfile`                                                          | 성공                                                               | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm format:check`                                                                       | 성공 - All matched files use Prettier code style                   | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm lint`                                                                               | 성공 - 0 problems                                                  | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm typecheck`                                                                          | 성공 - `tsc --noEmit` 종료 코드 0                                  | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm test:unit`                                                                          | 성공 - 46 passed (1 file)                                          | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm verify:architecture`                                                                | 성공 - 소스 8개, 규칙 6종                                          | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm verify:architecture` (위반 3건 주입)                                                | 의도대로 실패 - 위반 5건 보고, 종료 코드 1                         | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm build`                                                                              | 성공 - JS 231.44 kB (gzip 74.32 kB), CSS 4.15 kB (gzip 1.61 kB)    | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-30 | `pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium`                    | 성공 - 3 passed                                                    | `artifacts/qa/phase-reports/M1.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/unit/domain`                                                  | 성공 - 171 passed                                                  | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:fixtures`                                                                    | 성공 - 가이드 10개                                                 | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:fixtures` (픽스처·페이로드 변형)                                             | 의도대로 실패 - 종료 코드 1                                        | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm typecheck`                                                                          | 성공. 타입·스키마 드리프트 주입 시 의도대로 실패                   | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm verify:architecture`                                                                | 성공. DOM 우회 2종·전이 zod 유입 모두 탐지 확인                    | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | 전체 회귀 (format/lint/test:unit/build/e2e)                                               | 성공 - 단위 테스트 258 passed                                      | `artifacts/qa/phase-reports/M2.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/unit/storage tests/integration/storage`                       | 성공 - 96 passed                                                   | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `pnpm test:integration`                                                                   | 성공 - 46 passed (두 백엔드 동등성 포함)                           | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `pnpm verify:architecture` (저장소 전역 위반 주입)                                        | 의도대로 실패 - STORAGE_ENCAPSULATION, 종료 코드 1                 | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `index.html` 테마 키 변형                                                                 | 의도대로 실패 - 단위 테스트 2건                                    | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/verify\*/build/e2e)                            | 성공 - 단위 308, 전체 354 passed, e2e 9 passed                     | `artifacts/qa/phase-reports/M3.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/unit/store tests/unit/autosave`                               | 성공 - 53 passed                                                   | `artifacts/qa/phase-reports/M4.md` |
-| 2026-08-31 | `pnpm exec vitest run tests/integration/editor-core`                                      | 성공 - 22 passed                                                   | `artifacts/qa/phase-reports/M4.md` |
-| 2026-08-31 | `pnpm exec playwright test`                                                               | 성공 - 27 passed (chromium/firefox/webkit)                         | `artifacts/qa/phase-reports/M4.md` |
-| 2026-08-31 | 시퀀스 가드·자동 저장 상한 무력화 주입                                                    | 의도대로 실패 - 각각 단위 1건 + 통합 1건                           | `artifacts/qa/phase-reports/M4.md` |
-| 2026-08-31 | `pnpm build`                                                                              | 성공 - JS 414.00 kB (gzip 134.15 kB). 기술 §2.4.2 목표 300 kB 이하 | `artifacts/qa/phase-reports/M4.md` |
-| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/verify\*)                     | 성공 - 단위 361, 통합 68                                           | `artifacts/qa/phase-reports/M4.md` |
-| 2026-09-01 | `pnpm exec vitest run tests/unit/content tests/unit/security tests/unit/assets`           | 성공 - 108 passed                                                  | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-01 | `pnpm test:security`                                                                      | 성공 - 픽스처 문자열 44개, 실행 잔재 0건                           | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-01 | 살균 2단계 무력화·경계 밖 innerHTML·픽스처 페이로드 제거·캐럿 범위 주입                   | 의도대로 실패 - 4건 모두                                           | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-01 | `pnpm exec playwright test`                                                               | 성공 - 54 passed (chromium/firefox/webkit)                         | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-01 | `pnpm build`                                                                              | 성공 - JS 623.3 kB (gzip 199.7 kB). 기술 §2.4.2 목표 300 kB 이하   | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-01 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/verify\*)                     | 성공 - 단위 471, 통합 68                                           | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | `pnpm verify:architecture` (리더 프로브 A/B)                                              | A안 위반 1건(dompurify), B안 6건(remark 계열 5 + dompurify)        | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | `pnpm verify:fixtures`                                                                    | 성공 - 가이드 10개 + markdown-samples 5종                          | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | decorative 되돌림·GIF 경고 제거·이중 이스케이프 주입·domain `.tsx` 생성                   | 의도대로 실패 - 각각 2건·1건·4건·종료 코드 1                       | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | markdown 픽스처 제거·내용 변조·허용 목록 선제 확대                                        | 의도대로 실패 - 종료 코드 1·불일치 5건·단위 3건                    | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | `pnpm exec playwright test`                                                               | 성공 - 60 passed (chromium/firefox/webkit)                         | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/test:security/verify\*/build) | 성공 - 단위 543, 통합 72                                           | `artifacts/qa/phase-reports/M5.md` |
-| 2026-09-02 | `pnpm exec vitest run tests/unit/branching tests/integration/branch-editor`               | 성공 - 110 passed                                                  | `artifacts/qa/phase-reports/M6.md` |
-| 2026-09-02 | `pnpm test:coverage`                                                                      | 성공 - branching 97.33/94.90/97.87/97.93 (임계 90)                 | `artifacts/qa/phase-reports/M6.md` |
-| 2026-09-02 | `pnpm benchmark:graph`                                                                    | 성공 - 100단계 30회 median 0.113ms (목표 100ms, 상한 300ms)        | `artifacts/qa/phase-reports/M6.md` |
-| 2026-09-02 | `pnpm verify:fixtures` (그래프 판정 이관)                                                 | 성공 - 코드·severity·exportable 셋을 함께 대조                     | `artifacts/qa/phase-reports/M6.md` |
-| 2026-09-02 | priority 정렬·순환 탐지 범위·DoD 9 차단·severity·커버리지 임계·픽스처 크기 주입           | 의도대로 실패 - 6건 모두                                           | `artifacts/qa/phase-reports/M6.md` |
-| 2026-09-02 | 전체 회귀 (M6 검증 블록 + format/lint/typecheck/verify\*/build/e2e)                       | 성공 - 단위 639, 통합 91, E2E 60. JS gzip 233.2 kB                 | `artifacts/qa/phase-reports/M6.md` |
+| 날짜       | 명령                                                                                      | 결과                                                                   | 증거 경로                          |
+| ---------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------- |
+| 2026-08-30 | `pnpm install --frozen-lockfile`                                                          | 성공                                                                   | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm format:check`                                                                       | 성공 - All matched files use Prettier code style                       | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm lint`                                                                               | 성공 - 0 problems                                                      | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm typecheck`                                                                          | 성공 - `tsc --noEmit` 종료 코드 0                                      | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm test:unit`                                                                          | 성공 - 46 passed (1 file)                                              | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm verify:architecture`                                                                | 성공 - 소스 8개, 규칙 6종                                              | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm verify:architecture` (위반 3건 주입)                                                | 의도대로 실패 - 위반 5건 보고, 종료 코드 1                             | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm build`                                                                              | 성공 - JS 231.44 kB (gzip 74.32 kB), CSS 4.15 kB (gzip 1.61 kB)        | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-30 | `pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium`                    | 성공 - 3 passed                                                        | `artifacts/qa/phase-reports/M1.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/domain`                                                  | 성공 - 171 passed                                                      | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:fixtures`                                                                    | 성공 - 가이드 10개                                                     | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:fixtures` (픽스처·페이로드 변형)                                             | 의도대로 실패 - 종료 코드 1                                            | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm typecheck`                                                                          | 성공. 타입·스키마 드리프트 주입 시 의도대로 실패                       | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm verify:architecture`                                                                | 성공. DOM 우회 2종·전이 zod 유입 모두 탐지 확인                        | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/test:unit/build/e2e)                                               | 성공 - 단위 테스트 258 passed                                          | `artifacts/qa/phase-reports/M2.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/storage tests/integration/storage`                       | 성공 - 96 passed                                                       | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm test:integration`                                                                   | 성공 - 46 passed (두 백엔드 동등성 포함)                               | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm verify:architecture` (저장소 전역 위반 주입)                                        | 의도대로 실패 - STORAGE_ENCAPSULATION, 종료 코드 1                     | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `index.html` 테마 키 변형                                                                 | 의도대로 실패 - 단위 테스트 2건                                        | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/verify\*/build/e2e)                            | 성공 - 단위 308, 전체 354 passed, e2e 9 passed                         | `artifacts/qa/phase-reports/M3.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/unit/store tests/unit/autosave`                               | 성공 - 53 passed                                                       | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm exec vitest run tests/integration/editor-core`                                      | 성공 - 22 passed                                                       | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm exec playwright test`                                                               | 성공 - 27 passed (chromium/firefox/webkit)                             | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | 시퀀스 가드·자동 저장 상한 무력화 주입                                                    | 의도대로 실패 - 각각 단위 1건 + 통합 1건                               | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | `pnpm build`                                                                              | 성공 - JS 414.00 kB (gzip 134.15 kB). 기술 §2.4.2 목표 300 kB 이하     | `artifacts/qa/phase-reports/M4.md` |
+| 2026-08-31 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/verify\*)                     | 성공 - 단위 361, 통합 68                                               | `artifacts/qa/phase-reports/M4.md` |
+| 2026-09-01 | `pnpm exec vitest run tests/unit/content tests/unit/security tests/unit/assets`           | 성공 - 108 passed                                                      | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-01 | `pnpm test:security`                                                                      | 성공 - 픽스처 문자열 44개, 실행 잔재 0건                               | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-01 | 살균 2단계 무력화·경계 밖 innerHTML·픽스처 페이로드 제거·캐럿 범위 주입                   | 의도대로 실패 - 4건 모두                                               | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-01 | `pnpm exec playwright test`                                                               | 성공 - 54 passed (chromium/firefox/webkit)                             | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-01 | `pnpm build`                                                                              | 성공 - JS 623.3 kB (gzip 199.7 kB). 기술 §2.4.2 목표 300 kB 이하       | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-01 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/verify\*)                     | 성공 - 단위 471, 통합 68                                               | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | `pnpm verify:architecture` (리더 프로브 A/B)                                              | A안 위반 1건(dompurify), B안 6건(remark 계열 5 + dompurify)            | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | `pnpm verify:fixtures`                                                                    | 성공 - 가이드 10개 + markdown-samples 5종                              | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | decorative 되돌림·GIF 경고 제거·이중 이스케이프 주입·domain `.tsx` 생성                   | 의도대로 실패 - 각각 2건·1건·4건·종료 코드 1                           | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | markdown 픽스처 제거·내용 변조·허용 목록 선제 확대                                        | 의도대로 실패 - 종료 코드 1·불일치 5건·단위 3건                        | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | `pnpm exec playwright test`                                                               | 성공 - 60 passed (chromium/firefox/webkit)                             | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | 전체 회귀 (format/lint/typecheck/test:unit/test:integration/test:security/verify\*/build) | 성공 - 단위 543, 통합 72                                               | `artifacts/qa/phase-reports/M5.md` |
+| 2026-09-02 | `pnpm exec vitest run tests/unit/branching tests/integration/branch-editor`               | 성공 - 110 passed                                                      | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm test:coverage`                                                                      | 성공 - branching 97.33/94.90/97.87/97.93 (임계 90)                     | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm benchmark:graph`                                                                    | 성공 - 100단계 30회 median 0.113ms (목표 100ms, 상한 300ms)            | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | `pnpm verify:fixtures` (그래프 판정 이관)                                                 | 성공 - 코드·severity·exportable 셋을 함께 대조                         | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | priority 정렬·순환 탐지 범위·DoD 9 차단·severity·커버리지 임계·픽스처 크기 주입           | 의도대로 실패 - 6건 모두                                               | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-02 | 전체 회귀 (M6 검증 블록 + format/lint/typecheck/verify\*/build/e2e)                       | 성공 - 단위 639, 통합 91, E2E 60. JS gzip 233.2 kB                     | `artifacts/qa/phase-reports/M6.md` |
+| 2026-09-03 | `pnpm exec vitest run tests/unit/reader tests/integration/reader`                         | 성공 - 81 passed                                                       | `artifacts/qa/phase-reports/M7.md` |
+| 2026-09-03 | `pnpm exec playwright test reader-linear reader-branch reader-storage`                    | 성공 - linear 4·branch 3(×3 브라우저)·storage 6                        | `artifacts/qa/phase-reports/M7.md` |
+| 2026-09-03 | `pnpm verify:architecture` (D-12 적용 후)                                                 | 성공 - 소스 121개(src 80, reader-runtime 3), 허용 패키지 dompurify 1종 | `artifacts/qa/phase-reports/M7.md` |
+| 2026-09-03 | 진입·진행 게이트 무력화, 저장 상한 제거, 에코 차단 제거, 키 신뢰 제거, 포커스 제거        | 의도대로 실패 - 6건 모두                                               | `artifacts/qa/phase-reports/M7.md` |
+| 2026-09-03 | reader-runtime 비우기 · 리더가 markdown-to-html import                                    | 의도대로 실패 - 종료 코드 1, 경계 위반 5건                             | `artifacts/qa/phase-reports/M7.md` |
+| 2026-09-03 | 전체 회귀 (M7 검증 블록 + format/lint/typecheck/verify\*/coverage/build/e2e)              | 성공 - 단위 706, 통합 105, E2E 74                                      | `artifacts/qa/phase-reports/M7.md` |
