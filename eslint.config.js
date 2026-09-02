@@ -100,7 +100,10 @@ export default tseslint.config(
   // 권위 있는 판정은 scripts/verify-architecture.mjs가 한다. 아래는 편집 중
   // 즉시 피드백을 주기 위한 굵은 deny-list다. (File_Structure.md §3.2)
   {
-    files: ['src/domain/**/*.ts'],
+    // `.tsx`까지 본다. domain에 JSX 파일을 두는 것 자체는 verify:architecture가
+    // 막지만, 여기서 확장자를 좁혀 두면 그 파일의 import·전역 검사가 통째로
+    // 빠진다.
+    files: ['src/domain/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-globals': ['error', ...DOM_GLOBALS],
       'no-restricted-imports': [

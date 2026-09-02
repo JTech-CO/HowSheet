@@ -224,3 +224,60 @@ describe('허용 목록', () => {
     expect(markdownToSafeHtml('   \n  ')).toBe('');
   });
 });
+
+/**
+ * 살균은 멱등이어야 한다.
+ *
+ * 리더가 살균된 HTML을 다시 살균하는 구조(PROGRESS 미결 항목 선택지 A)에서는
+ * 이것이 INV-09와 M9 DoD 10(미리보기와 내보낸 리더가 같은 결과)의 전제가 된다.
+ * 코드를 읽으면 성립하지만, 읽어서 성립하는 것과 게이트가 지키는 것은 다르다.
+ *
+ * 음성 검증: `hardenAnchor`의 `rel` 재설정을 지우면 2회차 결과가 달라져 실패한다.
+ */
+describe('살균 멱등성 (INV-09 전제)', () => {
+  it.each(PAYLOADS)('$name - 두 번 살균해도 같다', ({ markdown }) => {
+    const once = markdownToSafeHtml(markdown);
+    expect(sanitizeHtml(once)).toBe(once);
+  });
+
+  it.each([
+    '<a href="https://a.example">링크</a>',
+    '<img src="blob:http://x/1" alt="그림" width="10">',
+    '<table><tr><td colspan="2">칸</td></tr></table>',
+    '<ul><li><input type="checkbox" checked disabled> 항목</li></ul>',
+    '<blockquote><p>인용</p></blockquote>',
+    '<pre><code class="language-bash">echo hi</code></pre>',
+    // 따옴표 엔티티는 1회차에 문자로 정규화된다. 그 정규화도 멱등이어야 한다.
+    '<p>&quot;따옴표&quot; 와 &#39;작은따옴표&#39;</p>',
+  ])('안전한 HTML %s도 두 번째 통과에서 변하지 않는다', (html) => {
+    const once = sanitizeHtml(html);
+    expect(sanitizeHtml(once)).toBe(once);
+  });
+
+  // 엔티티가 든 출력이 없으면 이중 이스케이프 회귀를 잡지 못한다.
+  // `&`를 담은 사례를 반드시 포함한다.
+  it.each([
+    '<p>A &amp; B</p>',
+    '<p>&lt;tag&gt; 는 태그가 아니다</p>',
+    '<pre><code>if (a &amp;&amp; b) { echo "&lt;hi&gt;" }</code></pre>',
+  ])('엔티티가 든 %s도 두 번째 통과에서 변하지 않는다', (html) => {
+    const once = sanitizeHtml(html);
+    expect(once).toContain('&');
+    expect(sanitizeHtml(once)).toBe(once);
+  });
+
+  it('코드 펜스 안의 꺾쇠와 앰퍼샌드가 회차마다 다시 이스케이프되지 않는다', () => {
+    const once = markdownToSafeHtml(
+      ['```bash', 'curl "http://a?x=1&y=2" | grep "<tag>"', '```'].join('\n'),
+    );
+    expect(once).toContain('&');
+    expect(sanitizeHtml(once)).toBe(once);
+  });
+
+  it('세 번째 통과도 같다', () => {
+    const source = PAYLOADS.map((payload) => payload.markdown).join('\n\n');
+    const once = markdownToSafeHtml(source);
+    const twice = sanitizeHtml(once);
+    expect(sanitizeHtml(twice)).toBe(once);
+  });
+});

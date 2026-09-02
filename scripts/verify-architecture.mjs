@@ -332,6 +332,17 @@ export function analyze(input) {
       );
     }
 
+    // M1 DoD 5 - domain에도 같은 이유로 JSX 파일을 두지 않는다. import 문만 보는
+    // 검사는 자동 주입 경로를 놓친다. reader-runtime만 막고 domain을 열어 두면
+    // `src/domain/x.tsx` 하나로 domain 순수성이 조용히 뚫린다.
+    if (inDomain && /\.(tsx|jsx)$/.test(file.path)) {
+      add(
+        'DOMAIN_PURITY',
+        file.path,
+        'domain에는 JSX 파일을 두지 않는다. JSX 런타임이 React를 자동 주입한다. (M1 DoD 5)',
+      );
+    }
+
     for (const specifier of imports) {
       const target = resolveSpecifier(file.path, specifier);
       const pkg = packageRoot(specifier);

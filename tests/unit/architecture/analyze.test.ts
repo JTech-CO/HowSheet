@@ -29,6 +29,20 @@ const analyzeSource = (path: string, source: string) =>
   analyze({ files: [{ path, ...parseModule(source, path) }] }) as Violation[];
 
 describe('domain 순수성 (하네스 M1 DoD 5)', () => {
+  // import 문만 보는 검사는 JSX 자동 주입을 놓친다. reader-runtime에는 이미
+  // 같은 규칙이 있었는데 domain에는 없어, `.tsx` 파일 하나로 뚫리는 상태였다.
+  it.each(['src/domain/guide.view.tsx', 'src/domain/guide.view.jsx'])(
+    "domain에 JSX 파일 '%s'를 두면 실패한다",
+    (path) => {
+      const v = analyze({ files: [file(path)] }) as Violation[];
+      expect(rulesOf(v)).toContain('DOMAIN_PURITY');
+    },
+  );
+
+  it('domain의 .ts 파일은 그 자체로 위반이 아니다', () => {
+    expect(analyze({ files: [file('src/domain/guide.types.ts')] })).toEqual([]);
+  });
+
   it.each(['react', 'react-dom', 'zustand', 'dexie', 'react-hook-form'])(
     "domain이 '%s'를 import하면 실패한다",
     (pkg) => {
@@ -121,14 +135,17 @@ describe('reader-runtime 경계 (하네스 M1 DoD 6·10, INV-11)', () => {
     expect(rulesOf(v)).toContain('READER_RUNTIME_BOUNDARY');
   });
 
+  // 경로만 보는 판정이다. `markdown-to-html`은 이 목록에 넣지 않는다 - 경로는
+  // 허용이지만 전이 검사가 거부한다. 대상 모듈 파일이 없는 합성 입력에서는
+  // BFS가 즉시 멈춰 위반 0건이 나오므로, 여기에 두면 사실과 반대되는 것을
+  // 단언하게 된다. 그 경우는 아래 전이 describe에서 중간 모듈까지 넣고 본다.
   it.each([
     '@/features/branching/branch-engine',
     '@/features/branching/path-calculator',
     '@/features/sanitize/sanitize-html',
-    '@/features/sanitize/markdown-to-html',
     '@/domain/guide.types',
     './reader-storage',
-  ])("reader-runtime이 '%s'를 import하는 것은 허용한다", (spec) => {
+  ])("reader-runtime이 '%s'를 경로 기준으로 import하는 것은 허용한다", (spec) => {
     const v = analyze({ files: [file('src/reader-runtime/reader-renderer.ts', [spec])] });
     expect(v).toEqual([]);
   });
@@ -163,6 +180,93 @@ describe('reader-runtime 경계 (하네스 M1 DoD 6·10, INV-11)', () => {
 
   it('외부 패키지 허용 목록은 기본이 비어 있다', () => {
     expect(READER_RUNTIME_ALLOWED_PACKAGES).toEqual([]);
+  });
+});
+
+/**
+ * D-11 전이 검사.
+ *
+ * 결정 로그는 "전이 zod 유입을 탐지 확인"이라고 적었지만 그것을 고정한 테스트가
+ * 없었다. 확인은 1회성이고 테스트만 규칙을 지킨다.
+ *
+ * 합성 입력에 **중간 모듈 파일까지 넣는 것**이 핵심이다. BFS는 `files` 집합
+ * 안에서만 해석하므로, 대상 모듈이 없으면 즉시 멈춰 위반 0건이 나온다.
+ */
+describe('reader-runtime 전이 의존 (D-11, INV-11)', () => {
+  const sanitizeHtml = file('src/features/sanitize/sanitize-html.ts', [
+    'dompurify',
+    '../../domain/guide.types.ts',
+  ]);
+  const markdownToHtml = file('src/features/sanitize/markdown-to-html.ts', [
+    'unified',
+    'remark-parse',
+    'remark-gfm',
+    'remark-rehype',
+    'rehype-stringify',
+    './sanitize-html.ts',
+  ]);
+  const guideTypes = file('src/domain/guide.types.ts', []);
+  const guideSchema = file('src/domain/guide.schema.ts', ['zod', './guide.types.ts']);
+
+  const packagesFlagged = (violations: Violation[]) =>
+    violations
+      .filter((v) => v.rule === 'READER_RUNTIME_BOUNDARY')
+      .map((v) => v.detail.match(/외부 패키지 '([^']+)'/)?.[1])
+      .filter((name): name is string => name !== undefined)
+      .sort();
+
+  it('markdown-to-html을 거치면 remark 계열이 전부 걸린다', () => {
+    const v = analyze({
+      files: [
+        file('src/reader-runtime/reader-renderer.ts', ['../features/sanitize/markdown-to-html.ts']),
+        markdownToHtml,
+        sanitizeHtml,
+        guideTypes,
+      ],
+    }) as Violation[];
+
+    expect(packagesFlagged(v)).toEqual([
+      'dompurify',
+      'rehype-stringify',
+      'remark-gfm',
+      'remark-parse',
+      'remark-rehype',
+      'unified',
+    ]);
+    // 어느 모듈을 거쳐 들어왔는지 보고한다. 그것이 없으면 고칠 곳을 못 찾는다.
+    expect(v.some((entry) => entry.detail.includes('markdown-to-html.ts'))).toBe(true);
+  });
+
+  it('sanitize-html만 거치면 dompurify 하나뿐이고 remark는 나오지 않는다', () => {
+    const v = analyze({
+      files: [
+        file('src/reader-runtime/reader-renderer.ts', ['../features/sanitize/sanitize-html.ts']),
+        markdownToHtml,
+        sanitizeHtml,
+        guideTypes,
+      ],
+    }) as Violation[];
+
+    expect(packagesFlagged(v)).toEqual(['dompurify']);
+  });
+
+  it('D-11의 원래 사례 - guide.schema를 거친 zod 유입을 잡는다', () => {
+    const v = analyze({
+      files: [
+        file('src/reader-runtime/reader-state.ts', ['../domain/guide.schema.ts']),
+        guideSchema,
+        guideTypes,
+      ],
+    }) as Violation[];
+
+    expect(packagesFlagged(v)).toEqual(['zod']);
+  });
+
+  it('guide.types만 거치면 아무것도 딸려오지 않는다', () => {
+    const v = analyze({
+      files: [file('src/reader-runtime/reader-state.ts', ['../domain/guide.types.ts']), guideTypes],
+    });
+    expect(v).toEqual([]);
   });
 });
 

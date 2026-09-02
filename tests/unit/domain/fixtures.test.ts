@@ -273,3 +273,78 @@ describe('픽스처가 맡은 역할을 실제로 담고 있다', () => {
     expect(edges).toBeGreaterThan(doc.steps.length * 1.5);
   });
 });
+
+describe('Markdown 기준 픽스처 (하네스 §0.10)', () => {
+  const MARKDOWN_DIR = path.join(FIXTURE_DIR, 'markdown-samples');
+  const markdownNames = readdirSync(MARKDOWN_DIR)
+    .filter((name) => name.endsWith('.md'))
+    .sort();
+
+  it('§0.10이 요구한 5종이 모두 있다', () => {
+    expect(markdownNames).toEqual([
+      'ambiguous-headings.md',
+      'complete-guide.md',
+      'local-images.md',
+      'raw-html.md',
+      'remote-images.md',
+    ]);
+  });
+
+  it.each(markdownNames)('%s 는 비어 있지 않다', (name) => {
+    const source = readFileSync(path.join(MARKDOWN_DIR, name), 'utf8');
+    expect(source.trim().length).toBeGreaterThan(0);
+  });
+
+  // 역할별 계약은 scripts/verify-fixtures.mjs의 MARKDOWN_EXPECTATIONS가 갖는다.
+  // 여기서는 M10이 반드시 만나게 될 입력 두 가지만 못 박아 둔다.
+  it('raw-html.md는 살균 대상 페이로드를 담고 있다', () => {
+    const source = readFileSync(path.join(MARKDOWN_DIR, 'raw-html.md'), 'utf8');
+    for (const marker of ['<script', 'onerror=', 'javascript:', 'srcdoc']) {
+      expect(source).toContain(marker);
+    }
+  });
+
+  it('local-images.md에는 원격 이미지가 섞여 있지 않다', () => {
+    const source = readFileSync(path.join(MARKDOWN_DIR, 'local-images.md'), 'utf8');
+    expect(source).not.toContain('](https://');
+    expect(source).not.toContain('](http://');
+  });
+});
+
+/**
+ * M2 DoD 7 - minor 호환 필드 추가가 기존 1.0 픽스처를 깨지 않는다.
+ *
+ * `ImageBlock.decorative`가 M5 보정에서 프로덕션 스키마에 실제로 들어간
+ * optional 필드다. 사본 스키마가 아니라 그 필드로, 기본 문서가 아니라 저장소의
+ * 1.0 픽스처 전수로 확인한다.
+ */
+describe('minor 호환 필드 추가 (M2 DoD 7)', () => {
+  const imageBlocksOf = (doc: GuideDocument) =>
+    doc.steps.flatMap((step) => step.blocks).filter((block) => block.type === 'image');
+
+  it('decorative 키가 없는 1.0 픽스처가 전부 그대로 통과한다', () => {
+    for (const name of fixtureNames) {
+      expect(parseGuideDocument(load(name)).ok).toBe(true);
+    }
+  });
+
+  it('키가 없던 이미지 블록에 기본값을 채워 넣지 않는다', () => {
+    const withoutKey = fixtureNames
+      .flatMap((name) => imageBlocksOf(documentOf(name)))
+      .filter((block) => !Object.hasOwn(block, 'decorative'));
+
+    // 키 없는 이미지 블록이 실제로 있어야 이 단언이 의미를 갖는다.
+    expect(withoutKey.length).toBeGreaterThan(0);
+    for (const block of withoutKey) {
+      expect((block as unknown as Record<string, unknown>)['decorative']).toBeUndefined();
+    }
+  });
+
+  it('선언한 픽스처는 값을 그대로 유지한다', () => {
+    const declared = imageBlocksOf(documentOf('valid-linear-5step.howsheet.json')).filter(
+      (block) => block.type === 'image' && block.decorative === true,
+    );
+    expect(declared).toHaveLength(1);
+    expect(declared[0]).toMatchObject({ alt: '', decorative: true });
+  });
+});

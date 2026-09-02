@@ -29,6 +29,7 @@ import { ISSUE_CODES } from '../src/domain/validation.types.ts';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_DIR = path.join(REPO_ROOT, 'tests/fixtures');
 const SAMPLE_DIR = path.join(REPO_ROOT, 'src/assets/samples');
+const MARKDOWN_DIR = path.join(FIXTURE_DIR, 'markdown-samples');
 
 /**
  * @typedef {{
@@ -102,6 +103,41 @@ const EXPECTATIONS = {
     role: '100단계 성능 기준. 3단계마다 분기하고 합류한다 (§2.4.2, M6 DoD 10)',
     parses: true,
     codes: [],
+  },
+};
+
+/**
+ * Markdown 기준 픽스처. 하네스 §0.10이 M2부터 유지하라고 명시한 5종이다.
+ *
+ * 여기서는 **파일이 있고 그 역할에 맞는 입력을 담고 있는지**만 본다.
+ * 기대 매핑 snapshot은 M10 DoD 10이 붙인다. 그때까지 이 표가 픽스처의
+ * 계약이다. 파일만 있고 내용이 역할과 어긋나면 M10이 엉뚱한 것을 고정한다.
+ *
+ * @type {Record<string, { role: string, mustContain: string[], forbid?: string[] }>}
+ */
+const MARKDOWN_EXPECTATIONS = {
+  'complete-guide.md': {
+    role: '깔끔하게 매핑되는 기준 문서. 제목·준비물·주의·번호 단계·코드·링크',
+    mustContain: ['# ', '## 준비물', '## 주의', '```', '](https://'],
+  },
+  'ambiguous-headings.md': {
+    role: '제목 계층이 일정하지 않은 문서. 매핑 검토 화면(M10 DoD 5)의 입력',
+    // 건너뛴 계층, 굵은 글씨 의사 제목, setext 제목, 같은 이름의 중복 제목.
+    mustContain: ['#### ', '**2단계**', '-----', '## 1단계'],
+  },
+  'raw-html.md': {
+    role: '원본 HTML이 섞인 문서. 가져오기가 살균을 거치는지 확인하는 입력',
+    mustContain: ['<script', 'onerror=', 'javascript:', 'srcdoc', '<svg', '<iframe'],
+  },
+  'local-images.md': {
+    role: '상대 경로 이미지. 파일 시스템에 없는 참조를 어떻게 보고하는지 (M10 DoD 6)',
+    mustContain: ['](./images/', '](images/', '](../', '![]('],
+    // 원격 이미지가 섞이면 이 픽스처가 무엇을 고정하는지 흐려진다.
+    forbid: ['](https://', '](http://'],
+  },
+  'remote-images.md': {
+    role: '원격 이미지. 리더가 내려받지 않는다는 것을 확인하는 입력 (INV-15)',
+    mustContain: ['](https://', '](http://', '](//'],
   },
 };
 
@@ -230,6 +266,58 @@ async function listJson(dir) {
   }
 }
 
+/** Markdown 기준 픽스처가 있고 역할에 맞는 입력을 담고 있는지 본다. (하네스 §0.10) */
+async function checkMarkdownSamples() {
+  let files;
+  try {
+    files = (await readdir(MARKDOWN_DIR)).filter((name) => name.endsWith('.md')).sort();
+  } catch {
+    files = [];
+  }
+
+  const expected = Object.keys(MARKDOWN_EXPECTATIONS).sort();
+  for (const name of expected) {
+    if (!files.includes(name)) {
+      fail(`markdown-samples/${name}`, '하네스 §0.10이 요구한 픽스처가 없습니다.');
+    }
+  }
+  for (const name of files) {
+    if (name in MARKDOWN_EXPECTATIONS) continue;
+    fail(
+      `markdown-samples/${name}`,
+      '픽스처가 기대 표에 없습니다. MARKDOWN_EXPECTATIONS에 역할을 적으세요.',
+    );
+  }
+
+  for (const name of files) {
+    const expectation = MARKDOWN_EXPECTATIONS[name];
+    if (expectation === undefined) continue;
+
+    const source = await readFile(path.join(MARKDOWN_DIR, name), 'utf8');
+    const label = `markdown-samples/${name}`;
+
+    if (source.trim() === '') {
+      fail(label, '내용이 비어 있습니다.');
+      continue;
+    }
+
+    for (const marker of expectation.mustContain) {
+      if (!source.includes(marker)) {
+        fail(label, `역할("${expectation.role}")에 필요한 '${marker}'가 없습니다.`);
+      }
+    }
+    for (const marker of expectation.forbid ?? []) {
+      if (source.includes(marker)) {
+        fail(label, `이 픽스처에는 '${marker}'가 없어야 합니다. 역할이 흐려집니다.`);
+      }
+    }
+  }
+
+  notes.push(
+    `markdown-samples: ${files.length}종 확인. 기대 매핑 snapshot은 M10 DoD 10에서 붙인다`,
+  );
+}
+
 async function main() {
   const fixtureFiles = await listJson(FIXTURE_DIR);
   if (fixtureFiles === null || fixtureFiles.length === 0) {
@@ -254,6 +342,7 @@ async function main() {
   }
 
   await checkXssPayloads();
+  await checkMarkdownSamples();
 
   // 샘플 템플릿 (FR-020). 아직 없으면 그 사실을 보고한다.
   const sampleFiles = await listJson(SAMPLE_DIR);

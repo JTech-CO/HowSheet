@@ -58,6 +58,9 @@ jobs:
       - name: verify:architecture
         run: pnpm verify:architecture
 
+      - name: verify:fixtures
+        run: pnpm verify:fixtures
+
       - name: build
         run: pnpm build
 
