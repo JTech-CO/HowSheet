@@ -8,9 +8,9 @@
  * 스키마가 픽스처에서 벗어나면 이 게이트가 깨진다. INV-03(스키마 단일 기준)을
  * 지키는 것이 이 스크립트의 목적이다.
  *
- * 그래프 판정(순환·도달 가능성·분기 대상·우선순위·종료 단계)은 M6이 맡는다.
- * 그때까지 해당 픽스처는 `pendingGraph`에 기대 코드를 적어 두고, M6이
- * graph-validator를 붙이면서 이 표를 실제 판정으로 옮긴다.
+ * 그래프 판정(순환·도달 가능성·분기 대상·우선순위·종료 단계)은 M6의
+ * `features/branching/graph-validator.ts`가 한다. 코드 집합만 비교하면 severity가
+ * 뒤집히거나 내보내기 가능 여부가 바뀌어도 통과하므로 셋을 함께 고정한다.
  *
  * `src/assets/samples/`의 샘플 템플릿(FR-020)도 같은 방식으로 검증한다.
  *
@@ -23,8 +23,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { parseGuideDocument } from '../src/domain/guide.schema.ts';
-import { ISSUE_CODES } from '../src/domain/validation.types.ts';
+import { validateGuideGraph } from '../src/features/branching/graph-validator.ts';
+import { parseGuideDocument, validateGuideDocument } from '../src/domain/guide.schema.ts';
+import { ISSUE_CODES, summarize } from '../src/domain/validation.types.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_DIR = path.join(REPO_ROOT, 'tests/fixtures');
@@ -32,11 +33,15 @@ const SAMPLE_DIR = path.join(REPO_ROOT, 'src/assets/samples');
 const MARKDOWN_DIR = path.join(FIXTURE_DIR, 'markdown-samples');
 
 /**
+ * `codes`는 스키마 판정, `graph`는 그래프 판정(M6)의 기대다. 코드 집합만 비교하면
+ * severity와 내보내기 가능 여부가 조용히 뒤집혀도 통과하므로 셋을 함께 고정한다.
+ *
  * @typedef {{
  *   role: string,
  *   parses: boolean,
  *   codes: string[],
- *   pendingGraph?: string[],
+ *   graph?: Array<[string, 'error' | 'warning' | 'info']>,
+ *   exportable?: boolean,
  *   pendingPhase?: string,
  * }} Expectation
  */
@@ -62,36 +67,44 @@ const EXPECTATIONS = {
     role: '분기 대상 단계만 존재하지 않음. 도달 불가는 섞지 않아 M6이 규칙을 분리해 검사할 수 있다',
     parses: true,
     codes: [],
-    pendingGraph: [ISSUE_CODES.BRANCH_TARGET_NOT_FOUND],
-    pendingPhase: 'M6',
+    graph: [[ISSUE_CODES.BRANCH_TARGET_NOT_FOUND, 'error']],
+    exportable: false,
   },
   'invalid-cycle.howsheet.json': {
     role: '분기 간선으로 닫히는 3노드 순환. 도달 가능한 종료 단계가 따로 있다',
     parses: true,
     codes: [],
-    pendingGraph: [ISSUE_CODES.CYCLE_DETECTED],
-    pendingPhase: 'M6',
+    graph: [[ISSUE_CODES.CYCLE_DETECTED, 'error']],
+    exportable: false,
   },
   'invalid-unreachable.howsheet.json': {
     role: '시작 단계에서 도달할 수 없는 단계',
     parses: true,
     codes: [],
-    pendingGraph: [ISSUE_CODES.UNREACHABLE_STEP],
-    pendingPhase: 'M6',
+    // 도달 불가는 warning이라 내보내기를 막지 않는다. 하네스 DoD 4의 error
+    // 열거에 없고 DoD 5가 따로 "설계된 severity"라고 부른다.
+    graph: [[ISSUE_CODES.UNREACHABLE_STEP, 'warning']],
+    exportable: true,
   },
   'invalid-no-terminal.howsheet.json': {
     role: '종료 가능한 단계가 없음. 자기 자신을 가리키는 간선을 포함한다',
     parses: true,
     codes: [],
-    pendingGraph: [ISSUE_CODES.NO_TERMINAL_STEP, ISSUE_CODES.CYCLE_DETECTED],
-    pendingPhase: 'M6',
+    graph: [
+      [ISSUE_CODES.NO_TERMINAL_STEP, 'error'],
+      [ISSUE_CODES.CYCLE_DETECTED, 'error'],
+    ],
+    exportable: false,
   },
   'invalid-duplicate-priority.howsheet.json': {
     role: '분기 우선순위 중복. 조건이 완전히 같은 규칙 쌍도 포함한다',
     parses: true,
     codes: [],
-    pendingGraph: [ISSUE_CODES.DUPLICATE_BRANCH_PRIORITY],
-    pendingPhase: 'M6',
+    graph: [
+      [ISSUE_CODES.DUPLICATE_BRANCH_PRIORITY, 'error'],
+      [ISSUE_CODES.DUPLICATE_BRANCH_CONDITION, 'warning'],
+    ],
+    exportable: false,
   },
   'xss-guide.howsheet.json': {
     role: 'XSS 페이로드. 스키마는 통과하고 살균·직렬화가 무력화해야 함',
@@ -184,6 +197,56 @@ function sameSet(a, b) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+/**
+ * 그래프 판정 대조. (M6 DoD 4·5)
+ *
+ * `sameSet`으로 코드만 보던 방식으로는 부족하다. severity 하나가 뒤집히면
+ * 내보내기 차단이 사라지는데 코드 집합은 그대로다.
+ */
+function checkGraph(label, document, expectation) {
+  const graph = validateGuideGraph(document);
+  const expected = expectation.graph ?? [];
+
+  const actual = graph.issues.map((issue) => `${issue.code}:${issue.severity}`).sort();
+  const wanted = expected.map(([code, severity]) => `${code}:${severity}`).sort();
+
+  if (!sameSet(actual, wanted)) {
+    fail(label, `그래프 판정 기대 [${wanted.join(', ')}], 실제 [${actual.join(', ')}]`);
+    return;
+  }
+
+  // 그래프 이슈는 전부 문서 단계다. field로 새면 Validation Panel의 묶음이 틀린다.
+  for (const issue of graph.issues) {
+    if (issue.stage !== 'document') {
+      fail(label, `${issue.code}의 stage가 '${issue.stage}'입니다. 'document'여야 합니다.`);
+      return;
+    }
+    if (issue.path === '' && issue.code !== ISSUE_CODES.NO_TERMINAL_STEP) {
+      fail(label, `${issue.code}에 이동할 필드 경로가 없습니다. (FR-019)`);
+      return;
+    }
+  }
+
+  // 스키마 이슈와 합쳤을 때의 내보내기 가능 여부. 이것이 M6 DoD 4의 판정이다.
+  const merged = summarize([...validateGuideDocument(document).issues, ...graph.issues]);
+  const wantExportable = expectation.exportable ?? true;
+  if (merged.exportable !== wantExportable) {
+    fail(label, `내보내기 가능 기대 ${wantExportable}, 실제 ${merged.exportable}`);
+    return;
+  }
+
+  // 결정론 - 두 번 돌려도 같다. (M6 DoD 1)
+  const again = validateGuideGraph(document);
+  if (
+    !sameSet(
+      again.issues.map((i) => `${i.code}:${i.severity}`),
+      actual,
+    )
+  ) {
+    fail(label, '같은 문서에 대해 두 번의 그래프 판정 결과가 다릅니다.');
+  }
+}
+
 async function checkGuideFile(absolutePath, label, expectation) {
   let raw;
   try {
@@ -235,12 +298,9 @@ async function checkGuideFile(absolutePath, label, expectation) {
     }
   }
 
-  if (expectation.pendingGraph !== undefined) {
-    notes.push(
-      `${label}: 스키마 통과. 그래프 판정은 ${expectation.pendingPhase} - ` +
-        `기대 코드 ${expectation.pendingGraph.join(', ')}`,
-    );
-  } else if (expectation.pendingPhase !== undefined) {
+  if (outcome.ok) checkGraph(label, outcome.document, expectation);
+
+  if (expectation.pendingPhase !== undefined) {
     notes.push(`${label}: 스키마 통과. 후속 판정은 ${expectation.pendingPhase}`);
   }
 }

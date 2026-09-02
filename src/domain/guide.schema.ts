@@ -567,6 +567,12 @@ function pathOf(zodPath: ReadonlyArray<PropertyKey>): string {
   return joinPath(...zodPath.map((segment) => (typeof segment === 'symbol' ? '?' : segment)));
 }
 
+/**
+ * 이슈 코드의 검증 단계. (기술 §2.2.4)
+ *
+ * 그래프 판정은 `features/branching`이 하지만 단계는 여기 한 곳에서만 정한다.
+ * 그래프 코드를 빠뜨리면 `default`가 `'field'`라 stage가 조용히 틀린다. (M6)
+ */
 function stageFor(code: IssueCode): ValidationStage {
   switch (code) {
     case ISSUE_CODES.DUPLICATE_ID:
@@ -577,6 +583,12 @@ function stageFor(code: IssueCode): ValidationStage {
     case ISSUE_CODES.TROUBLESHOOTING_STEP_NOT_FOUND:
     case ISSUE_CODES.ASSET_REF_NOT_FOUND:
     case ISSUE_CODES.BRANCH_SOURCE_BLOCK_NOT_FOUND:
+    case ISSUE_CODES.BRANCH_TARGET_NOT_FOUND:
+    case ISSUE_CODES.DUPLICATE_BRANCH_PRIORITY:
+    case ISSUE_CODES.DUPLICATE_BRANCH_CONDITION:
+    case ISSUE_CODES.CYCLE_DETECTED:
+    case ISSUE_CODES.UNREACHABLE_STEP:
+    case ISSUE_CODES.NO_TERMINAL_STEP:
       return 'document';
     default:
       return 'field';

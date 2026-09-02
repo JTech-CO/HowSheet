@@ -76,6 +76,14 @@ export const ISSUE_CODES = {
   UNREACHABLE_STEP: 'UNREACHABLE_STEP',
   /** 종료 가능한 단계가 하나도 없다. */
   NO_TERMINAL_STEP: 'NO_TERMINAL_STEP',
+  /**
+   * 같은 단계 안에서 조건(`sourceBlockId`·`operator`·`value`)이 완전히 같은 규칙.
+   *
+   * 우선순위 중복과 다르다. 조건이 같으면 뒤 규칙은 **영원히 평가되지 않는**
+   * 죽은 간선이고, 대상이 서로 다를 때 오히려 더 위험하다. 기술 §4.4.1의
+   * 검증 6단계가 요구하는데 대응 코드가 없었다. (M6)
+   */
+  DUPLICATE_BRANCH_CONDITION: 'DUPLICATE_BRANCH_CONDITION',
 
   // ── 스키마 버전 ───────────────────────────────────────────────
   /** 현재 빌드보다 높은 major 스키마. 편집 상태로 강등하지 않는다. (M2 DoD 6) */
