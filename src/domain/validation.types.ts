@@ -92,6 +92,38 @@ export const ISSUE_CODES = {
   MALFORMED_SCHEMA_VERSION: 'MALFORMED_SCHEMA_VERSION',
   /** 현재보다 낮은 버전이라 마이그레이션이 필요하다. */
   MIGRATION_REQUIRED: 'MIGRATION_REQUIRED',
+  /**
+   * 마이그레이션이 필요한데 그 버전에서 현재까지 이어지는 경로가 없다.
+   *
+   * `MIGRATION_REQUIRED`와 나눈다. 저쪽은 "복사본을 만들어 올리겠다"는 안내고
+   * 이쪽은 중단이다. 합치면 사용자가 기다리면 되는 줄 안다. (M8)
+   */
+  MIGRATION_UNAVAILABLE: 'MIGRATION_UNAVAILABLE',
+  /** 마이그레이션 단계가 예외를 던졌다. 원본은 그대로다. (M8 DoD 5) */
+  MIGRATION_FAILED: 'MIGRATION_FAILED',
+
+  // ── 가져오기 검증 - M8이 판정 ─────────────────────────────────
+  /** 파일이 JSON이 아니다. 파서의 위치 정보를 메시지에 담는다. */
+  INVALID_JSON: 'INVALID_JSON',
+  /** JSON이지만 최상위가 객체가 아니다. (배열·문자열·null) */
+  NOT_AN_OBJECT: 'NOT_AN_OBJECT',
+  /** manifest에 있는 자산의 본문이 파일에 없다. */
+  ASSET_DATA_MISSING: 'ASSET_DATA_MISSING',
+  /** 자산 본문이 `data:` URL 형식이 아니거나 base64를 디코딩할 수 없다. */
+  ASSET_DATA_MALFORMED: 'ASSET_DATA_MALFORMED',
+  /** 자산 본문의 실제 해시가 manifest의 checksum과 다르다. */
+  ASSET_CHECKSUM_MISMATCH: 'ASSET_CHECKSUM_MISMATCH',
+  /**
+   * checksum을 **계산하지 못해** 대조하지 못했다. 불일치와 다르다.
+   *
+   * `crypto.subtle`은 보안 컨텍스트에만 있다. 없을 때 불일치로 보고하면 멀쩡한
+   * 파일을 손상됐다고 말하는 것이고, 조용히 넘기면 검증한 척이 된다.
+   */
+  ASSET_CHECKSUM_UNVERIFIED: 'ASSET_CHECKSUM_UNVERIFIED',
+  /** 자산 본문의 Data URL MIME이 manifest의 mimeType과 다르다. */
+  ASSET_MIME_MISMATCH: 'ASSET_MIME_MISMATCH',
+  /** manifest에 없는 자산 본문이 파일에 들어 있다. 무시하되 알린다. */
+  ASSET_DATA_ORPHANED: 'ASSET_DATA_ORPHANED',
 
   // ── 내보내기 검증 - M9가 판정 ─────────────────────────────────
   /** 자산을 Data URL로 변환할 수 없다. */
