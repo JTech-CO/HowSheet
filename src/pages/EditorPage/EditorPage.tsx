@@ -41,6 +41,7 @@ import {
   type StepRemovalPlan,
 } from '../../store/guide.store.ts';
 import { useUiStore } from '../../store/ui.store.ts';
+import { downloadText } from '../../utils/download.ts';
 import styles from './EditorPage.module.css';
 
 export function EditorPage() {
@@ -133,6 +134,23 @@ export function EditorPage() {
   }
 
   const store = useGuideStore.getState;
+
+  /**
+   * 메모리 모드 탈출구. 열려 있는 문서를 `.howsheet.json`으로 내려받는다.
+   *
+   * 저장소에서 다시 읽는다. 메모리 모드에서도 `guides`는 메모리 백엔드를
+   * 가리키므로 방금 편집한 내용이 그대로 들어 있다. 저장소를 못 쓰는 상황이라
+   * 자산 바이트가 없을 수 있는데, 그때는 exporter가 경고를 남기고 글은 살린다.
+   */
+  // ID를 먼저 꺼낸다. 함수 안에서 `document`를 읽으면 나중에 불릴 수 있다는
+  // 이유로 좁히기가 풀려 null 가능성이 되살아난다.
+  const documentId = document.id;
+  async function backupToJson(): Promise<void> {
+    const result = await store().exportGuideToJson(documentId);
+    if (result === null) return;
+    downloadText(result.fileName, result.mimeType, result.text);
+  }
+
   const steps = [...document.steps].sort((a, b) => a.order - b.order);
   const activeStepId = selectedStepId ?? steps[0]?.id ?? null;
   const activeIndex = steps.findIndex((step) => step.id === activeStepId);
@@ -200,6 +218,9 @@ export function EditorPage() {
         <StorageUnavailableBanner
           mode={storageMode}
           {...(storageUnavailableReason === undefined ? {} : { reason: storageUnavailableReason })}
+          // §4.6 - IndexedDB를 쓸 수 없을 때 "JSON 내보내기 상시 노출". M8 전에는
+          // 내보낼 수단이 없어 버튼을 띄우지 않았다. 비동기라 void로 띄운다.
+          onBackup={() => void backupToJson()}
         />
 
         {section === 'meta' ? (

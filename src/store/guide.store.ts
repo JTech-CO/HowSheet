@@ -21,7 +21,7 @@ import {
   normalizeOrder,
   type IdFactory,
 } from '../domain/guide.defaults.ts';
-import { ISSUE_CODES } from '../domain/validation.types.ts';
+import { ISSUE_CODES, type ValidationIssue } from '../domain/validation.types.ts';
 import type {
   BranchRule,
   ChecklistBlock,
@@ -44,6 +44,8 @@ import {
   type ImageCodec,
   type ImageIssue,
 } from '../features/assets/image-optimizer.ts';
+import { exportGuideJson, type ExportJsonResult } from '../features/export-json/json-exporter.ts';
+import { importGuideJson } from '../features/import-json/json-importer.ts';
 import { AssetRepository, toManifestItem } from '../storage/asset.repository.ts';
 import {
   openStorage,
@@ -232,7 +234,23 @@ export interface GuideStoreState {
   ) => Promise<ImageIssue[]>;
 
   save: () => Promise<void>;
+
+  /** 저장된 가이드를 `.howsheet.json` 텍스트로. 없으면 `null`. (M8 DoD 1·7) */
+  exportGuideToJson: (id: string) => Promise<ExportJsonResult | null>;
+  /** 파일 텍스트를 **새 가이드로** 들여온다. 기존 레코드를 덮지 않는다. (M8 DoD 4) */
+  importGuideFromJson: (text: string) => Promise<ImportGuideResult>;
 }
+
+/**
+ * 가져오기 결과.
+ *
+ * 실패면 `guideId`가 없다. 저장소에 아무것도 쓰지 않았다는 뜻이다. 성공해도
+ * `issues`가 비어 있지 않을 수 있다 - 이미지가 빠졌거나 목록에 없는 이미지가
+ * 들어 있던 경우다. 조용히 넘기지 않는다. (M8 주의)
+ */
+export type ImportGuideResult =
+  | { ok: true; guideId: string; issues: ValidationIssue[]; migratedFrom: string | null }
+  | { ok: false; guideId: null; issues: ValidationIssue[] };
 
 // ────────────────────────────────────────────────────── 의존성
 
@@ -1288,8 +1306,95 @@ export const useGuideStore = create<GuideStoreState>((set, get) => {
         lastSavedAt: snapshot.updatedAt,
       });
     },
+
+    async exportGuideToJson(id) {
+      const { guides, assets } = await ensureDeps();
+      const document = await guides.get(id);
+      if (document === undefined) return null;
+
+      // manifest가 기준이지만 바이트는 저장소에만 있다. 둘을 여기서 만난다.
+      const stored = await assets.listByGuide(id);
+      return exportGuideJson({
+        document,
+        assets: stored.map((asset) => ({
+          id: asset.id,
+          mimeType: asset.mimeType,
+          bytes: asset.bytes,
+        })),
+      });
+    },
+
+    async importGuideFromJson(text) {
+      const { recovery, newId, now } = await ensureDeps();
+
+      // 디코딩·체크섬을 **트랜잭션 밖에서** 끝낸다. 저장소와 무관한 await를
+      // 트랜잭션 안에서 하면 Dexie 트랜잭션이 그 사이에 커밋된다.
+      const outcome = await importGuideJson(text);
+      if (!outcome.ok) return { ok: false, guideId: null, issues: outcome.issues };
+
+      const guideId = newId('guide');
+      const timestamp = now();
+
+      // 자산 ID를 새로 발급한다. `assets` 테이블의 기본키는 가이드별이 아니라
+      // **전역**이라, 파일의 ID를 그대로 쓰면 같은 ID를 가진 다른 가이드의
+      // 자산 행을 덮어쓴다. 가져오기가 기존 레코드를 건드리는 셈이다. (DoD 4)
+      const assetIdMap = new Map<string, string>();
+      for (const item of outcome.document.assets) assetIdMap.set(item.id, newId('asset'));
+
+      const document = reidentify(outcome.document, guideId, assetIdMap, timestamp);
+      const storedAssets: StoredAsset[] = outcome.assets.map((asset) => ({
+        id: assetIdMap.get(asset.id) ?? asset.id,
+        guideId,
+        fileName: fileNameFor(outcome.document, asset.id),
+        mimeType: asset.mimeType,
+        byteSize: asset.byteSize,
+        checksum: asset.checksum,
+        createdAt: timestamp,
+        bytes: asset.bytes,
+      }));
+
+      // 새 가이드라 덮어쓸 문서가 없지만 스냅샷은 여전히 필요하다. 자산을
+      // 쓰다 실패하면 `existed: false` 스냅샷이 부분 결과를 지운다. (INV-08)
+      await recovery.withSnapshot(guideId, { reason: 'import', now: timestamp }, async (tx) => {
+        await tx.guides.put(document);
+        for (const asset of storedAssets) await tx.assets.put(asset);
+      });
+
+      await get().refreshLibrary();
+      return { ok: true, guideId, issues: outcome.issues, migratedFrom: outcome.migratedFrom };
+    },
   };
 });
+
+/** 가져온 문서에 새 가이드 ID와 자산 ID를 입힌다. 원본은 건드리지 않는다. */
+function reidentify(
+  source: GuideDocument,
+  guideId: string,
+  assetIdMap: ReadonlyMap<string, string>,
+  now: string,
+): GuideDocument {
+  const remap = (id: string): string => assetIdMap.get(id) ?? id;
+
+  return {
+    ...structuredClone(source),
+    id: guideId,
+    createdAt: now,
+    updatedAt: now,
+    assets: source.assets.map((item) => ({ ...item, id: remap(item.id) })),
+    steps: structuredClone(source.steps).map((step) => ({
+      ...step,
+      // 이미지 블록의 참조도 함께 옮긴다. 빠뜨리면 ASSET_REF_NOT_FOUND가 된다.
+      blocks: step.blocks.map((block) =>
+        block.type === 'image' ? { ...block, assetId: remap(block.assetId) } : block,
+      ),
+    })),
+  };
+}
+
+/** manifest가 기록한 원래 파일명. 저장소가 그 이름을 함께 보관한다. */
+function fileNameFor(source: GuideDocument, assetId: string): string {
+  return source.assets.find((item) => item.id === assetId)?.fileName ?? assetId;
+}
 
 /** 테스트가 상태를 초기화할 때 쓴다. 액션은 유지된다. */
 export function resetGuideStore(): void {
