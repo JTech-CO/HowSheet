@@ -9,6 +9,16 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 /** 편집기로 최소 가이드를 만들고 미리보기(리더)로 넘어간다. */
+/**
+ * 자동 저장이 끝나기를 기다리는 예산.
+ *
+ * 제품 계약(500ms 목표, 1초 하드 상한)은 가짜 시계를 쓰는
+ * `tests/unit/autosave`가 판정한다. 여기 값은 "저장이 끝난 뒤에 이동한다"를
+ * 위한 하네스 예산일 뿐이라 제품 기준을 낮추지 않는다. 5초로 두면 워커 4개가
+ * 붙는 Firefox에서 브라우저 기동 경합만으로 넘어간다.
+ */
+const SAVED_TIMEOUT_MS = 15_000;
+
 async function createAndOpenReader(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByTestId('create-guide').click();
@@ -25,7 +35,9 @@ async function createAndOpenReader(page: Page): Promise<string> {
 
   const target = page.getByTestId('branch-default-target');
   await target.selectOption((await target.locator('option').nth(1).getAttribute('value')) ?? '');
-  await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+  await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+    timeout: SAVED_TIMEOUT_MS,
+  });
 
   await page.goto(`/guide/${id}/preview`);
   await expect(page.getByTestId('reader-root')).toBeVisible();

@@ -11,12 +11,35 @@ import { expect, test, type Page } from '@playwright/test';
  * 스크립트를 실행하지 않으므로 그 확인은 여기서만 가능하다. (M5 DoD 2)
  */
 
+/**
+ * 자동 저장이 끝나기를 기다리는 예산.
+ *
+ * 제품 계약(500ms 목표, 1초 하드 상한)은 가짜 시계를 쓰는
+ * `tests/unit/autosave`가 판정한다. 여기 값은 "저장이 끝난 뒤에 이동한다"를
+ * 위한 하네스 예산일 뿐이라 제품 기준을 낮추지 않는다. 5초로 두면 워커 4개가
+ * 붙는 Firefox에서 브라우저 기동 경합만으로 넘어간다.
+ */
+const SAVED_TIMEOUT_MS = 15_000;
+
 const FIXTURES = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
   'fixtures',
   'assets',
 );
+
+/**
+ * 미리보기를 열고 첫 단계까지 들어간다.
+ *
+ * M7이 `PreviewPage`를 리더 셸로 바꾸면서 미리보기가 곧바로 단계를 그리지
+ * 않는다. 시작 화면(준비물·경고 게이트)을 지나야 `reader-step`이 나온다.
+ * 그 전 testid는 `preview-step`이었다.
+ */
+async function openPreview(page: Page): Promise<void> {
+  await page.getByRole('button', { name: '미리보기' }).click();
+  await page.getByTestId('reader-start').click();
+  await expect(page.getByTestId('reader-step')).toBeVisible();
+}
 
 /** 편집 화면을 열고 단계 편집 섹션까지 간다. */
 async function openStepEditor(page: Page): Promise<void> {
@@ -73,10 +96,12 @@ test.describe('M5 콘텐츠 블록', () => {
     ].join('\n\n');
 
     await page.getByTestId('block-text').fill(payload);
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
 
-    await page.getByRole('button', { name: '미리보기' }).click();
-    const step = page.getByTestId('preview-step');
+    await openPreview(page);
+    const step = page.getByTestId('reader-step');
     await expect(step).toBeVisible();
 
     // 정상 Markdown은 살아남는다.
@@ -96,8 +121,10 @@ test.describe('M5 콘텐츠 블록', () => {
     const code = '</script><script>alert(1)</script>\necho "hi"';
     await page.getByTestId('block-code').fill(code);
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
 
     const block = page.getByTestId('code-block');
     await expect(block).toBeVisible();
@@ -116,8 +143,10 @@ test.describe('M5 콘텐츠 블록', () => {
     await page.getByTestId('block-link-label').fill('문서');
     await page.getByTestId('block-link-url').fill('https://example.com/docs');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
 
     const link = page.getByTestId('link-card').getByRole('link');
     await expect(link).toHaveAttribute('href', 'https://example.com/docs');
@@ -131,8 +160,10 @@ test.describe('M5 콘텐츠 블록', () => {
     await page.getByTestId('block-link-label').fill('클릭');
     await page.getByTestId('block-link-url').fill('javascript:alert(1)');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
 
     await expect(page.getByTestId('link-blocked')).toBeVisible();
     expect(await page.getByTestId('link-card').getByRole('link').count()).toBe(0);
@@ -180,8 +211,10 @@ test.describe('M5 콘텐츠 블록', () => {
     await expect(page.getByTestId('block-image-preview')).toBeVisible();
     await page.getByTestId('block-image-alt').fill('공유기 뒷면 도식');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
 
     await expect(page.getByRole('img', { name: '공유기 뒷면 도식' })).toBeVisible();
   });
@@ -203,8 +236,10 @@ test.describe('M5 콘텐츠 블록', () => {
     await page.getByTestId('block-image-decorative').check();
     await expect(page.getByTestId('block-image-alt')).toHaveCount(0);
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
 
     const image = page.getByTestId('guide-image').locator('img');
     await expect(image).toHaveAttribute('role', 'presentation');
@@ -230,8 +265,10 @@ test.describe('M5 콘텐츠 블록', () => {
     await expect(page.getByTestId('checklist-item')).toHaveCount(1);
     await expect(page.getByTestId('checklist-item-label')).toHaveValue('케이블 확인');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
     await expect(page.getByText('케이블 확인')).toBeVisible();
   });
 
@@ -246,9 +283,11 @@ test.describe('M5 콘텐츠 블록', () => {
     await openStepEditor(page);
     await page.getByTestId('block-text').fill('![원격](https://example.com/tracker.png)');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
-    await page.getByRole('button', { name: '미리보기' }).click();
-    await expect(page.getByTestId('preview-step')).toBeVisible();
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
+    await openPreview(page);
+    await expect(page.getByTestId('reader-step')).toBeVisible();
 
     expect(external).toEqual([]);
     // 대체 텍스트는 남는다. (디자인 §5.9)

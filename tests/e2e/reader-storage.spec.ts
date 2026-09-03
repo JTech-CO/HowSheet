@@ -3,9 +3,21 @@ import { expect, test, type Page } from '@playwright/test';
 /**
  * 하네스 M7 - 진행 저장·복원·다른 탭 동기화.
  *
- * chromium 단독으로 돈다(하네스 M7 검증 블록). 실제 LocalStorage와 실제
- * `storage` 이벤트가 필요하고, 그 동작은 브라우저마다 다르지 않다.
+ * 하네스 M7 검증 블록은 chromium만 지정하지만 `playwright.config.ts`에 브라우저
+ * 제한이 없어 세 프로젝트에서 모두 돈다. 그대로 둔다 - 실제로 webkit에서만
+ * 드러난 결함이 있었다. 디바운스가 끝났는지 판정하는 폴링이 느슨해서, 저장이
+ * 끝나기 전에 새로고침해도 통과했다. (M8에서 고침)
  */
+
+/**
+ * 자동 저장이 끝나기를 기다리는 예산.
+ *
+ * 제품 계약(500ms 목표, 1초 하드 상한)은 가짜 시계를 쓰는
+ * `tests/unit/autosave`가 판정한다. 여기 값은 "저장이 끝난 뒤에 이동한다"를
+ * 위한 하네스 예산일 뿐이라 제품 기준을 낮추지 않는다. 5초로 두면 워커 4개가
+ * 붙는 Firefox에서 브라우저 기동 경합만으로 넘어간다.
+ */
+const SAVED_TIMEOUT_MS = 15_000;
 
 const PROGRESS_KEY_PREFIX = 'howsheet:progress';
 
@@ -23,7 +35,9 @@ async function createAndOpenReader(page: Page): Promise<string> {
 
   const target = page.getByTestId('branch-default-target');
   await target.selectOption((await target.locator('option').nth(1).getAttribute('value')) ?? '');
-  await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+  await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+    timeout: SAVED_TIMEOUT_MS,
+  });
 
   await page.goto(`/guide/${id}/preview`);
   await expect(page.getByTestId('reader-root')).toBeVisible();
@@ -35,6 +49,17 @@ async function storedProgress(page: Page): Promise<string | null> {
   const [key] = await progressKeys(page);
   if (key === undefined) return null;
   return page.evaluate((k) => localStorage.getItem(k), key);
+}
+
+/** 저장된 커서. 디바운스가 실제로 끝났는지 판정하는 유일하게 정확한 값이다. */
+async function storedCurrentStepId(page: Page): Promise<string | null> {
+  const raw = await storedProgress(page);
+  if (raw === null) return null;
+  try {
+    return (JSON.parse(raw) as { currentStepId?: string }).currentStepId ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** 우리 네임스페이스의 진행 키만 읽는다. */
@@ -76,12 +101,13 @@ test.describe('M7 리더 - 진행 저장', () => {
     const before = await page.getByTestId('reader-step').getAttribute('data-step-id');
 
     // 키 개수만 보면 첫 저장에서 이미 1이라 두 번째 저장을 기다리지 못한다.
-    // 새 커서가 실제로 실릴 때까지 본문으로 확인한다.
-    await expect
-      .poll(async () => (await storedProgress(page))?.includes(before ?? '') ?? false, {
-        timeout: 3000,
-      })
-      .toBe(true);
+    // 새 커서가 실제로 실릴 때까지 기다린다.
+    //
+    // 본문에 ID가 들어 있는지로 보면 안 된다. `activePath`가 경로의 모든 단계
+    // ID를 담고 있어 **첫 저장부터** 다음 단계 ID가 문자열에 들어 있다. 그래서
+    // 부분 문자열 검사는 언제나 즉시 참이 되고, 디바운스가 끝나기 전에 새로
+    // 고침해 webkit에서 이전 커서로 이어하기가 됐다. 커서 필드만 본다.
+    await expect.poll(async () => await storedCurrentStepId(page), { timeout: 3000 }).toBe(before);
 
     await page.goto(`/guide/${id}/preview`);
     await expect(page.getByTestId('resume-prompt')).toBeVisible();

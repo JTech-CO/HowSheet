@@ -18,6 +18,16 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
+/**
+ * 자동 저장이 끝나기를 기다리는 예산.
+ *
+ * 제품 계약(500ms 목표, 1초 하드 상한)은 가짜 시계를 쓰는
+ * `tests/unit/autosave`가 판정한다. 여기 값은 "저장이 끝난 뒤에 이동한다"를
+ * 위한 하네스 예산일 뿐이라 제품 기준을 낮추지 않는다. 5초로 두면 워커 4개가
+ * 붙는 Firefox에서 브라우저 기동 경합만으로 넘어간다.
+ */
+const SAVED_TIMEOUT_MS = 15_000;
+
 test.describe('M4 편집기 기본 흐름', () => {
   test('새 가이드를 만들면 첫 단계가 있는 편집 화면이 열린다 (DoD 1)', async ({ page }) => {
     await expect(page.getByText('아직 만든 가이드가 없습니다')).toBeVisible();
@@ -37,7 +47,9 @@ test.describe('M4 편집기 기본 흐름', () => {
     await page.getByLabel(/대상 사용자/).fill('처음 만져 보는 사람');
 
     // 저장 버튼을 누르지 않는다. 자동 저장만으로 저장됨에 도달해야 한다.
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
 
     await page.reload();
 
@@ -63,7 +75,9 @@ test.describe('M4 편집기 기본 흐름', () => {
     }
     await expect(page.getByTestId('outline-step')).toHaveCount(5);
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
     await page.reload();
 
     await expect(page.getByTestId('outline-step')).toHaveCount(5);
@@ -89,7 +103,9 @@ test.describe('M4 편집기 기본 흐름', () => {
     await expect(page.getByTestId('step-number')).toHaveText('단계 1');
     await expect(page.getByLabel(/단계 제목/)).toHaveValue('두 번째 단계');
 
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
     await page.reload();
     await expect(page.getByTestId('outline-step').first()).toContainText('두 번째 단계');
   });
@@ -97,7 +113,9 @@ test.describe('M4 편집기 기본 흐름', () => {
   test('대시보드에서 복제하고 삭제할 수 있다 (DoD 7, FR-001)', async ({ page }) => {
     await page.getByTestId('create-guide').click();
     await page.getByLabel(/가이드 제목/).fill('원본 가이드');
-    await expect(page.getByTestId('save-state')).toContainText('저장됨', { timeout: 5000 });
+    await expect(page.getByTestId('save-state')).toContainText('저장됨', {
+      timeout: SAVED_TIMEOUT_MS,
+    });
 
     await page.getByRole('link', { name: 'HowSheet' }).click();
     await expect(page.getByTestId('guide-card')).toHaveCount(1);
