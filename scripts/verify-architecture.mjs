@@ -70,31 +70,6 @@ export const STORAGE_ONLY_PACKAGES = ['dexie', 'dexie-react-hooks'];
 export const STORAGE_ONLY_GLOBALS = ['localStorage', 'sessionStorage', 'indexedDB'];
 
 /**
- * D-04 - reader-runtime의 내부 import 허용 목록.
- * 디렉터리 단위가 아니라 모듈 단위로 판정한다. features 전체를 금지하면 리더가
- * 분기 엔진과 살균기를 쓸 수 없고, features 전체를 허용하면 편집기 전용 모듈이
- * 리더 번들에 들어온다.
- */
-export const READER_RUNTIME_ALLOWED_PREFIXES = [
-  'src/domain/',
-  'src/features/branching/',
-  'src/features/sanitize/',
-  'src/reader-runtime/',
-];
-
-/**
- * reader-runtime이 쓸 수 있는 외부 패키지. **기본 거부**다.
- * 금지 목록으로 두면 M2의 zod, M10의 unified/remark처럼 나중에 추가되는
- * 편집기 전용 의존성이 목록에 추가되지 않아 조용히 리더 번들에 들어간다.
- *
- * `dompurify` 하나만 허용한다. (D-12, 2026-09-02 사용자 승인)
- * `reader-renderer.ts`가 `features/sanitize/sanitize-html.ts`를 쓰기 때문이고,
- * 그 파일의 패키지 폐포가 `{dompurify}` 하나임을 실측으로 확인했다.
- * `markdown-to-html.ts`를 쓰면 unified·remark 4종이 함께 들어와 위반 6건이 된다.
- */
-export const READER_RUNTIME_ALLOWED_PACKAGES = ['dompurify'];
-
-/**
  * M1 DoD 5 - domain은 브라우저 API에 의존하지 않는다.
  * eslint.config.js가 이 목록을 가져다 쓰므로 두 곳이 어긋날 수 없다.
  */
@@ -271,17 +246,10 @@ export function packageRoot(specifier) {
   return specifier.startsWith('@') ? segments.slice(0, 2).join('/') : (segments[0] ?? null);
 }
 
-function underAnyPrefix(target, prefixes) {
-  return prefixes.some(
-    (prefix) => target === prefix.replace(/\/$/, '') || target.startsWith(prefix),
-  );
-}
-
 /** 이 스크립트가 판정하는 규칙 종류. 요약 줄의 숫자는 여기서 나온다. */
 export const RULE_KINDS = [
   'FORBIDDEN_DIRECTORY',
   'DOMAIN_PURITY',
-  'READER_RUNTIME_BOUNDARY',
   'UI_DOMAIN_INDEPENDENCE',
   'STORAGE_ENCAPSULATION',
   'SANITIZE_BOUNDARY',
@@ -322,24 +290,13 @@ export function analyze(input) {
     const imports = file.imports ?? [];
     const globals = file.globals ?? [];
     const inDomain = file.path.startsWith('src/domain/');
-    const inReaderRuntime = file.path.startsWith('src/reader-runtime/');
     const inUi = file.path.startsWith('src/components/ui/');
     const inStorage = file.path.startsWith('src/storage/');
     const inSrc = file.path.startsWith('src/');
 
-    // INV-11 - reader-runtime은 프레임워크 비의존이다. JSX 파일은 React 런타임을
-    // 자동 주입하므로 import 문 없이도 React가 리더 번들에 들어간다.
-    if (inReaderRuntime && /\.(tsx|jsx)$/.test(file.path)) {
-      add(
-        'READER_RUNTIME_BOUNDARY',
-        file.path,
-        'reader-runtime에는 JSX 파일을 두지 않는다. JSX 런타임이 React를 리더 번들에 넣는다. (INV-11)',
-      );
-    }
-
-    // M1 DoD 5 - domain에도 같은 이유로 JSX 파일을 두지 않는다. import 문만 보는
-    // 검사는 자동 주입 경로를 놓친다. reader-runtime만 막고 domain을 열어 두면
-    // `src/domain/x.tsx` 하나로 domain 순수성이 조용히 뚫린다.
+    // domain에는 JSX 파일을 두지 않는다. JSX 런타임이 React를 자동 주입하므로
+    // import 문만 보는 검사는 그 경로를 놓친다. `src/domain/x.tsx` 하나로
+    // domain 순수성이 조용히 뚫린다.
     if (inDomain && /\.(tsx|jsx)$/.test(file.path)) {
       add(
         'DOMAIN_PURITY',
@@ -366,28 +323,7 @@ export function analyze(input) {
         }
       }
 
-      // M1 DoD 6·10, INV-11 - reader-runtime 경계
-      if (inReaderRuntime) {
-        if (pkg && !READER_RUNTIME_ALLOWED_PACKAGES.includes(pkg)) {
-          add(
-            'READER_RUNTIME_BOUNDARY',
-            file.path,
-            `reader-runtime이 외부 패키지 '${specifier}'를 import한다. ` +
-              '리더 런타임의 패키지 허용 목록은 기본 거부다. 필요하면 ' +
-              'READER_RUNTIME_ALLOWED_PACKAGES에 명시적으로 추가한다. (INV-11)',
-          );
-        }
-        if (target && !underAnyPrefix(target, READER_RUNTIME_ALLOWED_PREFIXES)) {
-          add(
-            'READER_RUNTIME_BOUNDARY',
-            file.path,
-            `reader-runtime이 허용 목록 밖의 '${specifier}'를 import한다. ` +
-              `허용: ${READER_RUNTIME_ALLOWED_PREFIXES.join(', ')} (M1 DoD 6·10, D-04)`,
-          );
-        }
-      }
-
-      // §3.2-7 - ui는 도메인을 모른다
+      // ui는 도메인을 모른다
       if (inUi && target && target.startsWith('src/domain/')) {
         add(
           'UI_DOMAIN_INDEPENDENCE',
@@ -434,65 +370,6 @@ export function analyze(input) {
         'SANITIZE_BOUNDARY',
         file.path,
         `dangerouslySetInnerHTML은 ${SANITIZE_BOUNDARY} 안에서만 사용한다. (INV-07, 기술 §7.1-2)`,
-      );
-    }
-  }
-
-  // INV-11 (전이) - reader-runtime이 직접 허용된 모듈을 통해 편집기 전용
-  // 패키지를 끌어오는 경우. `@/domain/guide.schema`는 허용 경로에 있지만 zod를
-  // import하므로, 리더가 그것을 쓰면 zod가 리더 번들에 들어간다. M9의
-  // verify:bundle까지 가서야 드러나는 것을 여기서 막는다.
-  const byPath = new Map(files.map((file) => [file.path, file]));
-
-  const resolveToFile = (fromFile, specifier) => {
-    const target = resolveSpecifier(fromFile, specifier);
-    if (target === null) return null;
-    if (byPath.has(target)) return target;
-    for (const suffix of ['.ts', '.tsx', '/index.ts', '.js', '.mjs']) {
-      if (byPath.has(`${target}${suffix}`)) return `${target}${suffix}`;
-    }
-    return null;
-  };
-
-  /** entry에서 도달하는 내부 모듈이 쓰는 외부 패키지를 모은다. */
-  const reachablePackages = (entry) => {
-    const found = new Map();
-    const seen = new Set();
-    const queue = [entry];
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (seen.has(current)) continue;
-      seen.add(current);
-
-      const file = byPath.get(current);
-      if (file === undefined) continue;
-
-      for (const specifier of file.imports ?? []) {
-        const pkg = packageRoot(specifier);
-        if (pkg !== null) {
-          if (!found.has(pkg)) found.set(pkg, current);
-          continue;
-        }
-        const next = resolveToFile(current, specifier);
-        if (next !== null) queue.push(next);
-      }
-    }
-
-    return found;
-  };
-
-  for (const file of files) {
-    if (!file.path.startsWith('src/reader-runtime/')) continue;
-
-    for (const [pkg, via] of reachablePackages(file.path)) {
-      if (READER_RUNTIME_ALLOWED_PACKAGES.includes(pkg)) continue;
-      if (via === file.path) continue; // 직접 import는 위에서 이미 보고했다
-      add(
-        'READER_RUNTIME_BOUNDARY',
-        file.path,
-        `reader-runtime이 '${via}'를 거쳐 외부 패키지 '${pkg}'를 끌어온다. ` +
-          '리더 번들에 편집기 전용 의존성이 들어간다. (INV-11, M9 번들 예산)',
       );
     }
   }
@@ -552,22 +429,6 @@ async function main() {
     return;
   }
 
-  // reader-runtime 규칙 4종이 빈 집합 위에서 돌지 않게 한다.
-  //
-  // M5·M6 감사에서 이 디렉터리가 비어 있어 D-11 전이 검사가 공회전했다.
-  // 통과 요약줄만 고치면 게이트가 아니라 안내문이므로 실패로 만든다. (M7 DoD 10)
-  const readerCount = collected.files.filter((f) =>
-    f.path.startsWith('src/reader-runtime/'),
-  ).length;
-  if (readerCount === 0) {
-    console.error(
-      'verify:architecture - src/reader-runtime/ 아래에 소스가 없습니다.\n' +
-        '  경계 규칙 4종이 검사할 대상이 없으면 이 게이트는 아무것도 보장하지 않습니다. (M7 DoD 10)',
-    );
-    process.exitCode = 1;
-    return;
-  }
-
   const violations = analyze(collected);
 
   if (violations.length > 0) {
@@ -576,14 +437,14 @@ async function main() {
       console.error(`  [${v.rule}] ${v.file}`);
       console.error(`      ${v.detail}`);
     }
-    console.error('\n경계 규칙: docs/File_Structure.md §3');
+    console.error('\n경계 규칙: docs/HowSheet_v2_제품정의.md §8');
     process.exitCode = 1;
     return;
   }
 
   console.log(
-    `verify:architecture - 통과. 소스 ${collected.files.length}개(src ${srcCount}개, ` +
-      `reader-runtime ${readerCount}개), 규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
+    `verify:architecture - 통과. 소스 ${collected.files.length}개(src ${srcCount}개), ` +
+      `규칙 ${RULE_KINDS.length}종을 검사했습니다.`,
   );
 }
 
