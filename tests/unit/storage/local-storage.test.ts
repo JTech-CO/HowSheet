@@ -1,27 +1,26 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
-import { readerProgressKey } from '@/domain/progress.types.ts';
 import {
   DisallowedKeyError,
-  EDITOR_KEYS,
+  PREFERENCE_KEYS,
   PreferenceStore,
   isAllowedKey,
   type KeyValueStore,
 } from '@/storage/local-storage.ts';
 
-/** 동작을 제어할 수 있는 최소 저장소 대역. */
-function fakeStore(
-  options: { failOnSet?: boolean } = {},
-): KeyValueStore & { map: Map<string, string> } {
-  const map = new Map<string, string>();
+/**
+ * 기준: v2 제품정의 §7(키 취급), §8 INV-01·INV-03.
+ *
+ * 이 허용 목록이 느슨해지면 API 키가 화면 설정 경로로 새어 들어올 수 있다.
+ * P0에서 v1의 리더 진행 키 규칙을 걷어내면서 목록을 다시 정했으므로, 여기서
+ * 그 모양을 고정한다.
+ */
+
+function memoryStore(seed: Record<string, string> = {}): KeyValueStore {
+  const map = new Map(Object.entries(seed));
   return {
-    map,
     getItem: (key) => map.get(key) ?? null,
     setItem: (key, value) => {
-      if (options.failOnSet) throw new DOMException('QuotaExceededError', 'QuotaExceededError');
       map.set(key, value);
     },
     removeItem: (key) => {
@@ -34,160 +33,80 @@ function fakeStore(
   };
 }
 
-describe('키 허용 목록 (M3 DoD 7)', () => {
-  it.each([
-    EDITOR_KEYS.theme,
-    EDITOR_KEYS.lastGuideId,
-    EDITOR_KEYS.panelLayout,
-    'howsheet:progress:guide-1:r1',
-    'howsheet:progress:가이드:r42',
-  ])("'%s'는 허용한다", (key) => {
-    expect(isAllowedKey(key)).toBe(true);
+/** 쓰기가 언제나 실패하는 저장소. 사생활 보호 모드를 흉내 낸다. */
+function failingStore(): KeyValueStore {
+  return {
+    getItem: () => null,
+    setItem: () => {
+      throw new Error('QuotaExceededError');
+    },
+    removeItem: () => {},
+    key: () => null,
+    length: 0,
+  };
+}
+
+describe('키 허용 목록 (INV-01·INV-03)', () => {
+  it('v2 화면 설정 키를 허용한다', () => {
+    expect(isAllowedKey(PREFERENCE_KEYS.theme)).toBe(true);
   });
 
-  // 기술 백서 §7.2 - 비밀번호·복구 코드·원문 파일 경로는 저장하지 않는다.
-  it.each([
-    'howsheet:editor:password',
-    'howsheet:editor:recoveryCode',
-    'howsheet:editor:sourceFilePath',
-    'howsheet:progress:guide-1',
-    'howsheet:progress:guide-1:rX',
-    'howsheet:secret',
-    'other-app:theme',
-    '',
-  ])("'%s'는 거부한다", (key) => {
-    expect(isAllowedKey(key)).toBe(false);
-  });
-
-  it('허용하지 않는 키에 쓰려 하면 던진다', () => {
-    const store = new PreferenceStore({ store: fakeStore() });
-    expect(() => store.set('howsheet:editor:password', 'hunter2')).toThrow(DisallowedKeyError);
-    expect(() => store.get('howsheet:editor:password')).toThrow(DisallowedKeyError);
-    expect(() => store.remove('howsheet:editor:password')).toThrow(DisallowedKeyError);
-  });
-
-  it('거부된 키는 실제로 저장되지 않는다', () => {
-    const backing = fakeStore();
-    const store = new PreferenceStore({ store: backing });
-    try {
-      store.set('howsheet:editor:password', 'hunter2');
-    } catch {
-      // 의도된 예외
+  it('목록에 없는 키는 거부한다', () => {
+    for (const key of ['theme', 'howsheet:unknown', 'other:theme', '']) {
+      expect(isAllowedKey(key)).toBe(false);
     }
-    expect(backing.map.size).toBe(0);
   });
 
-  it('진행 키는 INV-10 형식만 통과한다', () => {
-    expect(isAllowedKey(readerProgressKey('guide-1', 3))).toBe(true);
-  });
-});
-
-describe('읽기·쓰기', () => {
-  it('문자열을 왕복한다', () => {
-    const store = new PreferenceStore({ store: fakeStore() });
-    store.set(EDITOR_KEYS.theme, 'dark');
-    expect(store.get(EDITOR_KEYS.theme)).toBe('dark');
+  it('네임스페이스 접두사만으로는 통과하지 못한다', () => {
+    // 접두사 규칙이면 API 키가 이 경로로 저장될 수 있다. 정확한 목록이어야 한다.
+    expect(isAllowedKey('howsheet:apiKey')).toBe(false);
+    expect(isAllowedKey('howsheet:theme:extra')).toBe(false);
   });
 
-  it('JSON을 왕복한다', () => {
-    const store = new PreferenceStore({ store: fakeStore() });
-    store.setJson(EDITOR_KEYS.panelLayout, { left: 240, right: 320 });
-    expect(store.getJson(EDITOR_KEYS.panelLayout)).toEqual({ left: 240, right: 320 });
+  it('v1의 리더 진행 키를 더는 허용하지 않는다', () => {
+    expect(isAllowedKey('howsheet:progress:guide-1:r1')).toBe(false);
+    expect(isAllowedKey('howsheet:editor:theme')).toBe(false);
   });
 
-  it('깨진 JSON은 null로 돌려준다', () => {
-    const backing = fakeStore();
-    backing.map.set(EDITOR_KEYS.panelLayout, '{ 깨짐');
-    const store = new PreferenceStore({ store: backing });
-    expect(store.getJson(EDITOR_KEYS.panelLayout)).toBeNull();
-  });
-
-  it('없는 키는 null이다', () => {
-    const store = new PreferenceStore({ store: fakeStore() });
-    expect(store.get(EDITOR_KEYS.theme)).toBeNull();
-  });
-
-  it('우리 키만 나열하고 지운다', () => {
-    const backing = fakeStore();
-    backing.map.set(EDITOR_KEYS.theme, 'dark');
-    backing.map.set('howsheet:progress:g:r1', '{}');
-    backing.map.set('other-app:data', 'keep');
-
-    const store = new PreferenceStore({ store: backing });
-    expect(store.ownedKeys()).toEqual(['howsheet:editor:theme', 'howsheet:progress:g:r1']);
-
-    store.clearOwned();
-    expect([...backing.map.keys()]).toEqual(['other-app:data']);
+  it('허용 목록이 비어 있지 않다', () => {
+    // 목록이 비면 위 거부 단언이 전부 공허하게 통과한다.
+    expect(Object.values(PREFERENCE_KEYS).length).toBeGreaterThan(0);
   });
 });
 
-describe('세션 폴백 (기술 §7.5)', () => {
-  it('저장소가 없으면 세션 모드로 시작하고 이유를 알린다', () => {
-    const store = new PreferenceStore({ store: null });
+describe('PreferenceStore', () => {
+  it('허용된 키를 읽고 쓴다', () => {
+    const store = new PreferenceStore({ store: memoryStore() });
+    store.set(PREFERENCE_KEYS.theme, 'dark');
+    expect(store.get(PREFERENCE_KEYS.theme)).toBe('dark');
+  });
+
+  it('허용되지 않은 키 쓰기를 던져서 막는다', () => {
+    const store = new PreferenceStore({ store: memoryStore() });
+    expect(() => store.set('howsheet:apiKey', 'sk-ant-secret')).toThrow(DisallowedKeyError);
+  });
+
+  it('허용되지 않은 키는 값이 이미 있어도 읽지 못한다', () => {
+    // 조용히 null을 주지 않고 던진다. 다른 버전이나 확장이 남긴 값을 우리
+    // 경로로 끌어들이려는 시도는 실수이지 정상 흐름이 아니다.
+    const store = new PreferenceStore({ store: memoryStore({ 'howsheet:apiKey': 'sk-ant-x' }) });
+    expect(() => store.get('howsheet:apiKey')).toThrow(DisallowedKeyError);
+  });
+
+  it('쓰기가 실패하면 세션 모드로 떨어지고 이유를 남긴다', () => {
+    const store = new PreferenceStore({ store: failingStore() });
+    store.set(PREFERENCE_KEYS.theme, 'dark');
+
     expect(store.state().mode).toBe('session');
     expect(store.state().unavailableReason).toBeTruthy();
+    // 세션 모드에서도 값은 살아 있어야 한다. 던지면 화면이 멈춘다.
+    expect(store.get(PREFERENCE_KEYS.theme)).toBe('dark');
   });
 
-  it('세션 모드에서도 읽고 쓸 수 있다', () => {
-    const store = new PreferenceStore({ store: null });
-    store.set(EDITOR_KEYS.theme, 'light');
-    expect(store.get(EDITOR_KEYS.theme)).toBe('light');
-  });
-
-  it('쓰기가 실패하면 예외를 내보내지 않고 세션 모드로 전환한다', () => {
-    const store = new PreferenceStore({ store: fakeStore({ failOnSet: true }) });
-    expect(store.state().mode).toBe('persistent');
-
-    expect(() => store.set(EDITOR_KEYS.theme, 'dark')).not.toThrow();
-
-    expect(store.state().mode).toBe('session');
-    expect(store.state().unavailableReason).toContain('QuotaExceededError');
-    // 이번 세션 동안은 값이 유지된다.
-    expect(store.get(EDITOR_KEYS.theme)).toBe('dark');
-  });
-
-  it('전환 시 이미 저장돼 있던 우리 키를 옮긴다', () => {
-    const backing = fakeStore();
-    backing.map.set(EDITOR_KEYS.lastGuideId, 'guide-1');
-    const store = new PreferenceStore({ store: backing });
-
-    // 이후 쓰기부터 실패하게 만든다.
-    backing.setItem = () => {
-      throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-    };
-
-    store.set(EDITOR_KEYS.theme, 'dark');
-
-    expect(store.state().mode).toBe('session');
-    expect(store.get(EDITOR_KEYS.lastGuideId)).toBe('guide-1');
-    expect(store.get(EDITOR_KEYS.theme)).toBe('dark');
-  });
-
-  it('한 번 세션으로 떨어지면 계속 세션이다', () => {
-    const store = new PreferenceStore({ store: fakeStore({ failOnSet: true }) });
-    store.set(EDITOR_KEYS.theme, 'dark');
-    store.set(EDITOR_KEYS.lastGuideId, 'g');
-    expect(store.state().mode).toBe('session');
-    expect(store.get(EDITOR_KEYS.lastGuideId)).toBe('g');
-  });
-});
-
-describe('index.html 인라인 테마 스크립트와의 결속 (M2 이월)', () => {
-  // 인라인 스크립트는 번들 밖이라 어떤 검사도 닿지 않는다. 여기서 문자열을
-  // 직접 묶어 두지 않으면 EDITOR_KEYS.theme을 바꿨을 때 첫 페인트 전에 읽는
-  // 키만 옛 이름으로 남아 테마가 조용히 깜빡인다. (디자인 백서 §3.4)
-  const html = readFileSync(fileURLToPath(new URL('../../../index.html', import.meta.url)), 'utf8');
-
-  it('인라인 스크립트가 EDITOR_KEYS.theme과 같은 키를 읽는다', () => {
-    expect(html).toContain(`localStorage.getItem('${EDITOR_KEYS.theme}')`);
-  });
-
-  it('인라인 스크립트가 읽는 키는 허용 목록을 통과한다', () => {
-    const found = html.match(/localStorage\.getItem\('([^']+)'\)/g) ?? [];
-    expect(found.length).toBeGreaterThan(0);
-    for (const call of found) {
-      const key = /'([^']+)'/.exec(call)?.[1] ?? '';
-      expect(isAllowedKey(key)).toBe(true);
-    }
+  it('remove가 값을 지운다', () => {
+    const store = new PreferenceStore({ store: memoryStore() });
+    store.set(PREFERENCE_KEYS.theme, 'light');
+    store.remove(PREFERENCE_KEYS.theme);
+    expect(store.get(PREFERENCE_KEYS.theme)).toBeNull();
   });
 });

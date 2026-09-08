@@ -1,12 +1,14 @@
 /**
  * 앱 헤더.
  *
- * 기준: 디자인 백서 §2.1.2(높이 64px sticky), §2.3.1(헤더 구성).
- * 로고, 현재 문서 제목, 저장 상태, 오른쪽 액션을 담는다.
+ * 기준: v2 제품정의 §3(화면). 배치 근거는
+ * `docs/archive/v1/HowSheet_디자인_백서.md` §2.1.2(높이 64px sticky)에서 왔다.
+ *
+ * v2는 화면이 하나라 라우터가 없다. 브랜드는 링크가 아니라 글자다 - 갈 곳이
+ * 없는 링크를 두면 키보드 사용자가 아무 일도 일어나지 않는 정지점을 지난다.
  */
 
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
 import { useUiStore } from '../../../store/ui.store.ts';
@@ -14,13 +16,13 @@ import { ThemeToggle } from '../../ui/ThemeToggle/ThemeToggle.tsx';
 import styles from './AppHeader.module.css';
 
 export interface AppHeaderProps {
-  /** 편집 중인 문서 제목. 대시보드에서는 비운다. */
-  documentTitle?: string;
+  /** 브랜드 옆에 붙는 부제. 지금 무엇을 하는 화면인지 알린다. */
+  subtitle?: string;
   status?: ReactNode;
   actions?: ReactNode;
 }
 
-export function AppHeader({ documentTitle, status, actions }: AppHeaderProps) {
+export function AppHeader({ subtitle, status, actions }: AppHeaderProps) {
   const themeMode = useUiStore((state) => state.themeMode);
   const initTheme = useUiStore((state) => state.initTheme);
   const setThemeMode = useUiStore((state) => state.setThemeMode);
@@ -32,16 +34,14 @@ export function AppHeader({ documentTitle, status, actions }: AppHeaderProps) {
 
   return (
     <header className={styles.header}>
-      <Link className={[styles.brand, 'focus-ring'].join(' ')} to="/">
-        HowSheet
-      </Link>
+      <p className={styles.brand}>HowSheet</p>
 
-      {documentTitle === undefined ? null : (
+      {subtitle === undefined ? null : (
         <>
           <span className={styles.divider} aria-hidden="true">
             /
           </span>
-          <p className={styles.title}>{documentTitle}</p>
+          <p className={styles.title}>{subtitle}</p>
         </>
       )}
 

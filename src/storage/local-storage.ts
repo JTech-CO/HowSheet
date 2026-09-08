@@ -1,35 +1,33 @@
 /**
  * LocalStorage 래퍼.
  *
- * 기준: 기술 백서 §2.1.1(저장소 역할 분리), §4.5.2(키 네임스페이스),
- * §7.2(개인정보), §7.5(브라우저 이슈). 하네스 M3 DoD 7, INV-10.
+ * 기준: v2 제품정의 §7(키 취급), §8 INV-03.
+ * 보관 근거는 `docs/archive/v1/HowSheet_기술_백서.md` §7.5(브라우저 이슈)에서 왔다.
  *
- * 여기에는 **테마·패널·진행 정보만** 들어간다. 비밀번호, 복구 코드, 원문 파일
- * 경로는 저장하지 않는다. 허용 목록에 없는 키는 쓰기 자체를 거부한다.
+ * 여기에는 **화면 설정만** 들어간다. API 키 같은 자격 증명은 담지 않는다 -
+ * 마스킹·삭제·로그 금지 같은 별도 규칙이 필요해서 P4가 전용 모듈을 만든다.
+ * 허용 목록에 없는 키는 쓰기 자체를 거부한다.
  *
- * `localStorage`를 직접 만지는 곳은 이 파일뿐이다. (File_Structure.md §3.2-5)
- * `file://`이나 사생활 보호 모드에서 쓰기가 실패할 수 있으므로 세션 메모리로
- * 떨어지고, 호출자가 그 사실을 안내할 수 있게 상태를 노출한다. (기술 §7.5)
+ * `localStorage`를 직접 만지는 곳은 이 파일뿐이다. `file://`이나 사생활 보호
+ * 모드에서 쓰기가 실패할 수 있으므로 세션 메모리로 떨어지고, 호출자가 그 사실을
+ * 안내할 수 있게 상태를 노출한다.
  */
 
-import { PROGRESS_KEY_PREFIX } from '../domain/progress.types.ts';
-
-/** §4.5.2가 정한 편집기 키. */
-export const EDITOR_KEYS = {
-  theme: 'howsheet:editor:theme',
-  lastGuideId: 'howsheet:editor:lastGuideId',
-  panelLayout: 'howsheet:editor:panelLayout',
+/** v2가 쓰는 화면 설정 키. */
+export const PREFERENCE_KEYS = {
+  theme: 'howsheet:theme',
 } as const;
 
-export type EditorKey = (typeof EDITOR_KEYS)[keyof typeof EDITOR_KEYS];
+export type PreferenceKey = (typeof PREFERENCE_KEYS)[keyof typeof PREFERENCE_KEYS];
 
 /**
  * 쓰기가 허용되는 키인지 본다.
- * 편집기 키 3종과 `howsheet:progress:{guideId}:r{revision}` 형식만 허용한다.
+ *
+ * 접두사 규칙이 아니라 **정확한 목록**이다. `howsheet:`로 시작하기만 하면
+ * 통과시키면 자격 증명이 이 경로로 새어 들어올 수 있다.
  */
 export function isAllowedKey(key: string): boolean {
-  if ((Object.values(EDITOR_KEYS) as string[]).includes(key)) return true;
-  return new RegExp(`^${PROGRESS_KEY_PREFIX}:.+:r\\d+$`).test(key);
+  return (Object.values(PREFERENCE_KEYS) as string[]).includes(key);
 }
 
 export type PreferenceMode = 'persistent' | 'session';

@@ -13,7 +13,7 @@
 
 import createDOMPurify from 'dompurify';
 
-import { isAllowedUrl } from '../../domain/guide.types.ts';
+import { isAllowedUrl } from '../../utils/url.ts';
 
 /** Markdown이 만들어 낼 수 있는 태그만 허용한다. GFM 표와 작업 목록 포함. */
 export const ALLOWED_TAGS = [
