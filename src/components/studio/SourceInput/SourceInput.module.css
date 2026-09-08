@@ -1,0 +1,62 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.modes {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input {
+  width: 100%;
+  min-height: 20rem;
+  /* 붙여넣는 자료는 코드나 표를 담는 일이 많다. 고정폭이 줄맞춤을 살린다. */
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.preview {
+  min-height: 20rem;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  /* 표와 코드가 넘칠 때 본문이 아니라 이 상자가 스크롤한다. (INV-10) */
+  overflow-x: auto;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.counts {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-warning, var(--color-surface-raised));
+  color: var(--color-text-default);
+  font-size: var(--font-size-sm);
+}
