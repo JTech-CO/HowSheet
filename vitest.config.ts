@@ -30,7 +30,7 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'jsdom',
-          // Dexie보다 먼저 전역 indexedDB를 채운다. 테스트 파일의 import 순서에
+          // 저장소 모듈보다 먼저 전역 indexedDB를 채운다. 테스트 파일의 import 순서에
           // 기대면 저장소 통합 테스트가 조용히 메모리 백엔드로 떨어진다.
           setupFiles: ['./tests/setup/fake-indexeddb.ts'],
           include: ['tests/integration/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
@@ -43,25 +43,12 @@ export default defineConfig({
       // D-07은 대상을 src/**로 두고 테스트 파일 자신만 제외한다.
       exclude: ['src/**/*.test.{ts,tsx}'],
       reporter: ['text', 'json-summary'],
-      // 임계는 하네스가 phase별로 지정한 대상에만 건다. glob 키는 저장소 루트
-      // 기준 상대 경로에 맞춰지고 경로 정규화가 pathe라 Windows에서도 같다.
+      // 임계는 아직 걸지 않는다. 측정한 적 없는 수치에 맞춰 임계를 정하면
+      // 게이트가 아니라 스냅샷이 된다. 하네스 P7이 대상과 값을 정한 뒤에 더한다.
       //
-      // vitest 4의 glob 임계는 전역 임계의 **면제가 아니라 추가**다. 전역을 함께
-      // 걸면 glob에 걸린 파일까지 전역 계산에 들어간다. 그래서 M12에서 전체
-      // 임계를 더해도 이 90%가 무뎌지지 않는다.
-      //
-      // 전역 임계를 지금 정의하지 않는 이유: M6 DoD 11이 요구하지 않고, 아직
-      // 측정한 적 없는 수치에 맞춰 임계를 정하면 게이트가 아니라 스냅샷이 된다.
-      // 전체 80%는 M12 DoD 4가 같은 객체 최상위에 더한다.
-      thresholds: {
-        // M6 DoD 11 - 분기·그래프·진행률 핵심 모듈.
-        'src/features/branching/**': {
-          statements: 90,
-          branches: 90,
-          functions: 90,
-          lines: 90,
-        },
-      },
+      // v1이 걸어 둔 `src/features/branching/**` 90%는 P2에서 지웠다. 그
+      // 디렉터리는 P0에서 사라졌고, 대상이 없는 임계는 통과가 아니라 빈
+      // 게이트다. (CLAUDE.md "게이트가 비면 지운다")
     },
   },
 });
