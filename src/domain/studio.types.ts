@@ -10,13 +10,27 @@
  * 타입과 상수만 둔다. 로직은 `studio.defaults.ts`가 갖는다.
  */
 
-/** 문서 형식 버전. 저장된 문서를 읽을 때 모양이 맞는지 판단한다. */
-export const STUDIO_DOCUMENT_VERSION = 1;
+import type { DesignChoice, ElementId } from './spec.types.ts';
+
+/**
+ * 문서 형식 버전.
+ *
+ * 2 - P2가 `elements`와 `design`을 더했다.
+ * 1 - P1. 자료만 담았다.
+ *
+ * 올릴 때는 **반드시** `migrateStudioDocument`에 올림 경로를 함께 넣는다.
+ * 버전만 올리면 저장된 문서가 모양 검사에서 걸려 사용자의 자료가 사라진다.
+ */
+export const STUDIO_DOCUMENT_VERSION = 2;
 
 export interface StudioDocument {
   version: typeof STUDIO_DOCUMENT_VERSION;
   /** 사용자가 붙여넣은 원문. Markdown일 수도 평문일 수도 있다. */
   source: string;
+  /** 담을 요소. 비어 있으면 "자료를 보고 정한다"는 뜻이다. (P2 DoD 1) */
+  elements: ElementId[];
+  /** 축마다 하나씩. 선택 없음 상태가 없다. (P2 DoD 2) */
+  design: DesignChoice;
   updatedAt: string;
 }
 

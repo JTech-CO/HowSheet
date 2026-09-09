@@ -1,21 +1,28 @@
 /**
  * 작업 문서 기본값과 측정.
  *
- * 기준: v2 제품정의 §3(화면 - 글자 수와 대략의 토큰 수). 하네스 P1 DoD 5.
+ * 기준: v2 제품정의 §3(화면 - 글자 수와 대략의 토큰 수). 하네스 P1 DoD 5, P2 DoD 3·5.
  *
  * 순수 함수만 둔다. 브라우저 API를 쓰지 않아 node 환경에서 그대로 돈다.
  */
 
+import { DEFAULT_DESIGN, normalizeDesign, normalizeElements } from './spec.defaults.ts';
 import { STUDIO_DOCUMENT_VERSION, type StudioDocument } from './studio.types.ts';
 
 export function createStudioDocument(now: string): StudioDocument {
-  return { version: STUDIO_DOCUMENT_VERSION, source: '', updatedAt: now };
+  return {
+    version: STUDIO_DOCUMENT_VERSION,
+    source: '',
+    elements: [],
+    design: { ...DEFAULT_DESIGN },
+    updatedAt: now,
+  };
 }
 
 /**
  * 저장된 값이 우리가 아는 문서인지 본다.
  *
- * 손으로 검사한다. 스키마 라이브러리를 다시 들이기에는 필드가 셋뿐이고, 그
+ * 손으로 검사한다. 스키마 라이브러리를 다시 들이기에는 필드가 다섯뿐이고, 그
  * 의존성이 번들에 들어가는 값이 이 검사 하나에 비해 크다.
  */
 export function isStudioDocument(value: unknown): value is StudioDocument {
@@ -24,8 +31,41 @@ export function isStudioDocument(value: unknown): value is StudioDocument {
   return (
     candidate['version'] === STUDIO_DOCUMENT_VERSION &&
     typeof candidate['source'] === 'string' &&
-    typeof candidate['updatedAt'] === 'string'
+    typeof candidate['updatedAt'] === 'string' &&
+    Array.isArray(candidate['elements']) &&
+    typeof candidate['design'] === 'object' &&
+    candidate['design'] !== null
   );
+}
+
+/**
+ * 저장된 값을 현재 버전으로 올린다. 올릴 수 없으면 `null`.
+ *
+ * **버전을 올릴 때 이 함수를 함께 고친다.** 모양 검사만 바꾸면 저장된 문서가
+ * 통째로 "없는 것"이 되어, 앱을 업데이트한 사용자가 붙여넣어 둔 자료를 잃는다.
+ *
+ * 필드를 더하는 올림은 기본값을 채우는 것으로 끝난다. 자료(`source`)는 v1부터
+ * 같은 자리에 있으므로 그대로 옮긴다.
+ */
+export function migrateStudioDocument(value: unknown): StudioDocument | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Record<string, unknown>;
+
+  if (typeof candidate['source'] !== 'string' || typeof candidate['updatedAt'] !== 'string') {
+    return null;
+  }
+
+  const version = candidate['version'];
+  if (version !== 1 && version !== STUDIO_DOCUMENT_VERSION) return null;
+
+  // 알 수 없는 요소·축 값은 그것만 버리고 나머지를 살린다.
+  return {
+    version: STUDIO_DOCUMENT_VERSION,
+    source: candidate['source'],
+    elements: normalizeElements(candidate['elements']),
+    design: normalizeDesign(candidate['design']),
+    updatedAt: candidate['updatedAt'],
+  };
 }
 
 /**
@@ -36,8 +76,8 @@ export function isStudioDocument(value: unknown): value is StudioDocument {
  *
  * 범위를 숫자 이스케이프로 쓴다. 소스에 비ASCII 리터럴을 넣으면 편집기·포매터를
  * 거치며 조용히 바뀔 수 있고, 바뀌어도 눈으로 보이지 않는다.
- *   ぀-ヿ 가나 / 㐀-䶿 한자 확장 A
- *   一-鿿 한자 / 가-힣 한글 음절
+ *   3040-30ff 가나 / 3400-4dbf 한자 확장 A
+ *   4e00-9fff 한자 / ac00-d7a3 한글 음절
  */
 const DENSE_SCRIPT = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7a3]/u;
 

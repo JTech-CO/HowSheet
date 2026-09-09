@@ -11,6 +11,8 @@
 
 import { create } from 'zustand';
 
+import { isDesignOptionId, toggleElement as toggleIn } from '../domain/spec.defaults.ts';
+import { DESIGN_AXIS_IDS, type DesignAxisId, type ElementId } from '../domain/spec.types.ts';
 import { createStudioDocument } from '../domain/studio.defaults.ts';
 import type { StudioDocument } from '../domain/studio.types.ts';
 import {
@@ -72,6 +74,8 @@ export interface StudioStoreState {
   init: () => Promise<void>;
   setSource: (source: string) => void;
   clearSource: () => void;
+  toggleElement: (id: ElementId) => void;
+  setDesign: (axis: DesignAxisId, option: string) => void;
   save: () => Promise<void>;
   reset: () => void;
 }
@@ -89,6 +93,21 @@ const INITIAL = {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * 저장을 시작한 뒤로 사용자가 무언가 바꿨는지 본다.
+ *
+ * 자료만 비교하면 저장 중에 누른 요소 토글이 스냅샷에 덮여 사라진다.
+ * 사용자가 편집할 수 있는 필드를 모두 본다. (INV-07)
+ */
+function sameEdit(a: StudioDocument, b: StudioDocument): boolean {
+  return (
+    a.source === b.source &&
+    a.elements.length === b.elements.length &&
+    a.elements.every((id, index) => id === b.elements[index]) &&
+    DESIGN_AXIS_IDS.every((axis) => a.design[axis] === b.design[axis])
+  );
 }
 
 export const useStudioStore = create<StudioStoreState>((set, get) => ({
@@ -135,6 +154,28 @@ export const useStudioStore = create<StudioStoreState>((set, get) => ({
     get().setSource('');
   },
 
+  toggleElement(id) {
+    const current = get().document;
+    if (current === null) return;
+
+    set({ document: { ...current, elements: toggleIn(current.elements, id) }, dirty: true });
+    schedulerFor(get, set).request();
+  },
+
+  setDesign(axis, option) {
+    const current = get().document;
+    if (current === null) return;
+    // 축이 모르는 값으로 비는 일이 없게 여기서 막는다. 축마다 반드시 하나다.
+    if (!isDesignOptionId(axis, option)) return;
+    if (current.design[axis] === option) return;
+
+    set({
+      document: { ...current, design: { ...current.design, [axis]: option } },
+      dirty: true,
+    });
+    schedulerFor(get, set).request();
+  },
+
   async save() {
     const current = get().document;
     if (current === null) return;
@@ -157,9 +198,9 @@ export const useStudioStore = create<StudioStoreState>((set, get) => ({
     const mode = documents.state();
 
     set({
-      // 저장하는 사이에 더 입력했을 수 있다. 그때는 메모리를 스냅샷으로
-      // 덮지 않는다 - 덮으면 그 사이의 타이핑이 사라진다.
-      ...(after !== null && after.source === current.source
+      // 저장하는 사이에 더 입력하거나 선택을 바꿨을 수 있다. 그때는 메모리를
+      // 스냅샷으로 덮지 않는다 - 덮으면 그 사이의 편집이 사라진다.
+      ...(after !== null && sameEdit(after, current)
         ? { document: snapshot, dirty: false, saveState: 'saved' as SaveState }
         : { dirty: true, saveState: 'saved' as SaveState }),
       storageMode: mode.mode,

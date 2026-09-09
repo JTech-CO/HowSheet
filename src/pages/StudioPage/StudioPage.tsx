@@ -14,6 +14,8 @@ import { useEffect } from 'react';
 
 import { AppHeader } from '../../components/layout/AppHeader/AppHeader.tsx';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader.tsx';
+import { DesignPicker } from '../../components/studio/DesignPicker/DesignPicker.tsx';
+import { ElementPicker } from '../../components/studio/ElementPicker/ElementPicker.tsx';
 import { SaveStatus } from '../../components/studio/SaveStatus/SaveStatus.tsx';
 import { SourceInput } from '../../components/studio/SourceInput/SourceInput.tsx';
 import { useStudioStore } from '../../store/studio.store.ts';
@@ -39,10 +41,16 @@ export function StudioPage() {
   const init = useStudioStore((state) => state.init);
   const setSource = useStudioStore((state) => state.setSource);
   const clearSource = useStudioStore((state) => state.clearSource);
+  const toggleElement = useStudioStore((state) => state.toggleElement);
+  const setDesign = useStudioStore((state) => state.setDesign);
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  // 문서가 오기 전에는 선택 UI를 그리지 않는다. 기본값으로 먼저 그리면
+  // 저장된 선택이 도착하는 순간 화면이 한 번 뒤집힌다.
+  const ready = status === 'ready' && document !== null;
 
   return (
     <div className={styles.page}>
@@ -65,7 +73,7 @@ export function StudioPage() {
             title="자료"
             description="한 페이지로 만들고 싶은 내용을 붙여넣습니다. 붙여넣은 자료는 이 브라우저 밖으로 나가지 않습니다."
           />
-          {status === 'ready' && document !== null ? (
+          {ready ? (
             <SourceInput value={document.source} onChange={setSource} onClear={clearSource} />
           ) : (
             <p className={styles.loading} role="status">
@@ -78,18 +86,18 @@ export function StudioPage() {
           <SectionHeader
             id="elements-heading"
             title="담을 것"
-            description="다이어그램, 순서도, 비교표 같은 요소를 고릅니다. 고르지 않으면 자료를 보고 정합니다."
+            description="다이어그램, 순서도, 비교표 같은 요소를 고릅니다. 여러 개를 고를 수 있습니다."
           />
-          <Pending phase="P2">요소 토글 10종</Pending>
+          {ready ? <ElementPicker selected={document.elements} onToggle={toggleElement} /> : null}
         </section>
 
         <section className={styles.section} aria-labelledby="design-heading">
           <SectionHeader
             id="design-heading"
             title="보일 방식"
-            description="색, 톤, 밀도, 타이포를 고릅니다."
+            description="색, 톤, 밀도, 타이포를 고릅니다. 축마다 하나씩 정해져 있습니다."
           />
-          <Pending phase="P2">디자인 축 4종</Pending>
+          {ready ? <DesignPicker value={document.design} onChange={setDesign} /> : null}
         </section>
 
         <section className={styles.section} aria-labelledby="result-heading">

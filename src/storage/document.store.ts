@@ -22,7 +22,7 @@
  * 작업 자체를 못 한다. 대신 어느 모드인지 노출해 화면이 알릴 수 있게 한다.
  */
 
-import { isStudioDocument } from '../domain/studio.defaults.ts';
+import { migrateStudioDocument } from '../domain/studio.defaults.ts';
 import type { StudioDocument } from '../domain/studio.types.ts';
 
 export const DATABASE_NAME = 'howsheet';
@@ -161,9 +161,9 @@ export async function openDocumentStore(
       if (fallback !== null) return fallback.load();
       try {
         const raw = await transact('readonly', (store) => store.get(DOCUMENT_KEY));
-        // 모양이 다르면 없는 것으로 다룬다. 옛 형식이나 남의 데이터를 우리
-        // 문서인 척 화면에 올리지 않는다.
-        return isStudioDocument(raw) ? raw : null;
+        // 옛 형식은 올려서 살린다. 모양 검사만 하면 앱을 업데이트한 사용자가
+        // 붙여넣어 둔 자료를 통째로 잃는다. 올릴 수 없는 값만 없는 것으로 다룬다.
+        return migrateStudioDocument(raw);
       } catch (error) {
         return degrade(error).load();
       }

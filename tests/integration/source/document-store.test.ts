@@ -85,8 +85,10 @@ describe('IndexedDB 왕복', () => {
 });
 
 describe('모양이 다른 값', () => {
-  it('우리 문서가 아니면 없는 것으로 다룬다', async () => {
-    // 옛 형식이나 남의 데이터를 우리 문서인 척 화면에 올리지 않는다.
+  it('올릴 수 없는 값은 없는 것으로 다룬다', async () => {
+    // 아는 옛 버전은 P2가 더한 올림 경로가 살린다. 여기서 보는 것은 그 경로도
+    // 손댈 수 없는 값이다. 남의 데이터를 우리 문서인 척 화면에 올리지 않는다.
+    // (올림 경로 자체는 tests/unit/spec/studio-document.test.ts가 본다.)
     const name = freshName();
     const store = await openDocumentStore({ name });
     expect(store.state().mode).toBe('indexeddb');

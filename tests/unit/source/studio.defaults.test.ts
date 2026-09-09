@@ -1,48 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  countCharacters,
-  createStudioDocument,
-  estimateTokens,
-  isStudioDocument,
-} from '@/domain/studio.defaults.ts';
-import { STUDIO_DOCUMENT_VERSION } from '@/domain/studio.types.ts';
+import { countCharacters, estimateTokens } from '@/domain/studio.defaults.ts';
 
-/** 기준: v2 제품정의 §3. 하네스 P1 DoD 5. */
-
-describe('createStudioDocument', () => {
-  it('빈 자료로 시작한다', () => {
-    const doc = createStudioDocument('2026-09-08T00:00:00.000Z');
-    expect(doc).toEqual({
-      version: STUDIO_DOCUMENT_VERSION,
-      source: '',
-      updatedAt: '2026-09-08T00:00:00.000Z',
-    });
-  });
-});
-
-describe('isStudioDocument', () => {
-  const valid = createStudioDocument('2026-09-08T00:00:00.000Z');
-
-  it('우리 문서를 통과시킨다', () => {
-    expect(isStudioDocument(valid)).toBe(true);
-  });
-
-  it('다른 버전을 거부한다', () => {
-    expect(isStudioDocument({ ...valid, version: 99 })).toBe(false);
-  });
-
-  it('필드 타입이 다르면 거부한다', () => {
-    expect(isStudioDocument({ ...valid, source: 123 })).toBe(false);
-    expect(isStudioDocument({ ...valid, updatedAt: null })).toBe(false);
-  });
-
-  it('객체가 아니면 거부한다', () => {
-    for (const value of [null, undefined, 'x', 42, [], true]) {
-      expect(isStudioDocument(value)).toBe(false);
-    }
-  });
-});
+/**
+ * 기준: v2 제품정의 §3. 하네스 P1 DoD 5.
+ *
+ * 문서의 모양과 버전 올림은 `tests/unit/spec/studio-document.test.ts`가 본다.
+ * 같은 함수를 두 곳에서 단언하면 한쪽만 고쳐지는 날이 온다.
+ */
 
 describe('countCharacters', () => {
   it('빈 문자열은 0', () => {
