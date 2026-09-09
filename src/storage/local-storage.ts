@@ -8,10 +8,21 @@
  * 마스킹·삭제·로그 금지 같은 별도 규칙이 필요해서 P4가 전용 모듈을 만든다.
  * 허용 목록에 없는 키는 쓰기 자체를 거부한다.
  *
- * `localStorage`를 직접 만지는 곳은 이 파일뿐이다. `file://`이나 사생활 보호
- * 모드에서 쓰기가 실패할 수 있으므로 세션 메모리로 떨어지고, 호출자가 그 사실을
- * 안내할 수 있게 상태를 노출한다.
+ * `localStorage`에 실제로 닿는 것은 `browser-store.ts`이고, 이 파일은 그 위에
+ * 허용 목록 정책만 얹는다. `file://`이나 사생활 보호 모드에서 쓰기가 실패할 수
+ * 있으므로 세션 메모리로 떨어지고, 호출자가 그 사실을 안내할 수 있게 상태를
+ * 노출한다.
  */
+
+import {
+  createMemoryKeyValueStore,
+  detectBrowserStore,
+  type KeyValueStore,
+} from './browser-store.ts';
+
+// 저장소를 얻는 방법은 정책이 아니라 환경 탐지라 `browser-store.ts`가 갖는다.
+// 이 파일은 **허용 목록 정책**만 갖는다. 자격 증명은 `api-key.store.ts`다.
+export type { KeyValueStore };
 
 /** v2가 쓰는 화면 설정 키. */
 export const PREFERENCE_KEYS = {
@@ -38,15 +49,6 @@ export interface PreferenceStoreState {
   unavailableReason?: string;
 }
 
-/** 이 래퍼가 기대하는 최소 저장소 모양. 테스트가 대역을 넣을 수 있다. */
-export interface KeyValueStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-  key(index: number): string | null;
-  readonly length: number;
-}
-
 export class DisallowedKeyError extends Error {
   constructor(readonly key: string) {
     super(
@@ -55,38 +57,6 @@ export class DisallowedKeyError extends Error {
     );
     this.name = 'DisallowedKeyError';
   }
-}
-
-/** 브라우저의 `localStorage`. 접근 자체가 던질 수 있어 감싼다. */
-function detectBrowserStore(): KeyValueStore | null {
-  try {
-    const store = globalThis.localStorage;
-    if (store === undefined || store === null) return null;
-    // 사생활 보호 모드는 읽기는 되고 쓰기에서 던지는 경우가 있다.
-    const probe = '__howsheet_probe__';
-    store.setItem(probe, '1');
-    store.removeItem(probe);
-    return store;
-  } catch {
-    return null;
-  }
-}
-
-function createMemoryStore(): KeyValueStore {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => {
-      map.set(key, value);
-    },
-    removeItem: (key) => {
-      map.delete(key);
-    },
-    key: (index) => [...map.keys()][index] ?? null,
-    get length() {
-      return map.size;
-    },
-  };
 }
 
 export interface CreatePreferenceStoreOptions {
@@ -109,7 +79,7 @@ export class PreferenceStore {
   constructor(options: CreatePreferenceStoreOptions = {}) {
     const provided = options.store === undefined ? detectBrowserStore() : options.store;
     if (provided === null) {
-      this.store = createMemoryStore();
+      this.store = createMemoryKeyValueStore();
       this.mode = 'session';
       this.reason = '이 브라우저에서 로컬 저장소를 쓸 수 없습니다.';
     } else {
@@ -214,7 +184,7 @@ export class PreferenceStore {
       // 전환을 못 하면 이후 모든 쓰기가 던진다.
     }
 
-    this.store = createMemoryStore();
+    this.store = createMemoryKeyValueStore();
     this.mode = 'session';
     this.reason =
       error instanceof Error ? `${error.name}: ${error.message}` : '로컬 저장소에 쓸 수 없습니다.';

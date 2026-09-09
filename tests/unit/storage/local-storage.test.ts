@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { API_KEY_STORAGE_KEY } from '@/storage/api-key.store.ts';
 import {
   DisallowedKeyError,
   PREFERENCE_KEYS,
@@ -58,9 +59,11 @@ describe('키 허용 목록 (INV-01·INV-03)', () => {
   });
 
   it('네임스페이스 접두사만으로는 통과하지 못한다', () => {
-    // 접두사 규칙이면 API 키가 이 경로로 저장될 수 있다. 정확한 목록이어야 한다.
-    expect(isAllowedKey('howsheet:apiKey')).toBe(false);
+    // 접두사 규칙이면 자격 증명이 이 경로로 저장될 수 있다. 정확한 목록이어야
+    // 한다. API 키가 목록에 없다는 단언은 tests/unit/api-key에 둔다 - P4의
+    // 검증 블록이 그쪽을 돌린다.
     expect(isAllowedKey('howsheet:theme:extra')).toBe(false);
+    expect(isAllowedKey('howsheet:secret')).toBe(false);
   });
 
   it('v1의 리더 진행 키를 더는 허용하지 않는다', () => {
@@ -83,14 +86,16 @@ describe('PreferenceStore', () => {
 
   it('허용되지 않은 키 쓰기를 던져서 막는다', () => {
     const store = new PreferenceStore({ store: memoryStore() });
-    expect(() => store.set('howsheet:apiKey', 'sk-ant-secret')).toThrow(DisallowedKeyError);
+    expect(() => store.set(API_KEY_STORAGE_KEY, 'sk-ant-secret')).toThrow(DisallowedKeyError);
   });
 
   it('허용되지 않은 키는 값이 이미 있어도 읽지 못한다', () => {
     // 조용히 null을 주지 않고 던진다. 다른 버전이나 확장이 남긴 값을 우리
     // 경로로 끌어들이려는 시도는 실수이지 정상 흐름이 아니다.
-    const store = new PreferenceStore({ store: memoryStore({ 'howsheet:apiKey': 'sk-ant-x' }) });
-    expect(() => store.get('howsheet:apiKey')).toThrow(DisallowedKeyError);
+    const store = new PreferenceStore({
+      store: memoryStore({ [API_KEY_STORAGE_KEY]: 'sk-ant-x' }),
+    });
+    expect(() => store.get(API_KEY_STORAGE_KEY)).toThrow(DisallowedKeyError);
   });
 
   it('쓰기가 실패하면 세션 모드로 떨어지고 이유를 남긴다', () => {

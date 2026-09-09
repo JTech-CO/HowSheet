@@ -97,6 +97,26 @@ export const DOM_GLOBALS = [
 /** 전역 객체를 통한 우회. `globalThis.document` 같은 형태를 잡는다. */
 const GLOBAL_CARRIERS = new Set(['globalThis', 'window', 'self']);
 
+/**
+ * §7-1, P4 DoD 5 - 키를 만지는 모듈은 프로젝트 전체에서 하나다.
+ *
+ * 저장 키 문자열이 다른 파일에 나타나면 마스킹·삭제·로그 금지 규칙을 우회하는
+ * 두 번째 경로가 생긴 것이다. 상수를 import해 쓰는 것은 막지 않는다 - 막는 것은
+ * **리터럴을 다시 적는 일**이다.
+ */
+export const API_KEY_MODULE = 'src/storage/api-key.store.ts';
+
+/**
+ * 우리 네임스페이스 아래의 키 관련 저장 키 리터럴인지 본다.
+ *
+ * `howsheet:theme` 같은 화면 설정은 걸리지 않고 `howsheet:apiKey`,
+ * `howsheet:api-key`, `howsheet:anthropicKey`가 걸린다. 경계 검사에서는
+ * 놓치는 것보다 과하게 잡는 쪽이 안전하다.
+ */
+export function isApiKeyLiteral(value) {
+  return value.includes('howsheet:') && /key/i.test(value);
+}
+
 /** §3.3 - 살균된 Markdown 렌더링 경계는 프로젝트 전체에서 한 곳뿐이다. */
 export const SANITIZE_BOUNDARY = 'src/components/content/MarkdownText/';
 
@@ -151,6 +171,7 @@ export function parseModule(source, filePath = 'probe.tsx') {
 
   const imports = [];
   const globals = new Set();
+  const apiKeyLiterals = new Set();
   let usesDangerouslySetInnerHTML = false;
 
   const visit = (node) => {
@@ -199,6 +220,14 @@ export function parseModule(source, filePath = 'probe.tsx') {
       usesDangerouslySetInnerHTML = true;
     }
 
+    // 키 저장 키 리터럴. 템플릿 리터럴도 본다 - 백틱으로 적으면 빠져나간다.
+    if (
+      (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
+      isApiKeyLiteral(node.text)
+    ) {
+      apiKeyLiterals.add(node.text);
+    }
+
     // 브라우저 전역
     // 스코프 분석은 하지 않는다. 지역 선언이 전역 이름을 가려도 참조는 전역
     // 사용으로 본다. 파일 단위 섀도잉 집합으로 완화했더니 파라미터 하나가 파일
@@ -221,6 +250,7 @@ export function parseModule(source, filePath = 'probe.tsx') {
   return {
     imports: [...new Set(imports)],
     globals: [...globals],
+    apiKeyLiterals: [...apiKeyLiterals],
     usesDangerouslySetInnerHTML,
   };
 }
@@ -253,6 +283,7 @@ export const RULE_KINDS = [
   'UI_DOMAIN_INDEPENDENCE',
   'STORAGE_ENCAPSULATION',
   'SANITIZE_BOUNDARY',
+  'API_KEY_BOUNDARY',
 ];
 
 // ────────────────────────────────────────────────────────────── 판정
@@ -364,12 +395,38 @@ export function analyze(input) {
       );
     }
 
+    // §7-1 / INV-01 - 키 경계
+    const keyLiterals = file.apiKeyLiterals ?? [];
+    if (keyLiterals.length > 0 && file.path !== API_KEY_MODULE) {
+      add(
+        'API_KEY_BOUNDARY',
+        file.path,
+        `키 저장 키 ${keyLiterals.join(', ')}를 여기서 다시 적는다. ` +
+          `${API_KEY_MODULE}에서 상수를 가져다 쓴다. (제품정의 §7-1, P4 DoD 5)`,
+      );
+    }
+
     // §3.3 / INV-07 - 살균 경계
     if (file.usesDangerouslySetInnerHTML && !file.path.startsWith(SANITIZE_BOUNDARY)) {
       add(
         'SANITIZE_BOUNDARY',
         file.path,
         `dangerouslySetInnerHTML은 ${SANITIZE_BOUNDARY} 안에서만 사용한다. (INV-07, 기술 §7.1-2)`,
+      );
+    }
+  }
+
+  // 대상이 없는 규칙은 통과가 아니다. 키 모듈이 사라지거나 리터럴이 빠지면
+  // 위의 검사가 빈 집합 위에서 돌면서 조용히 통과한다. (하네스 P4 주의)
+  if (input.requireApiKeyOwner === true) {
+    const owner = files.find((file) => file.path === API_KEY_MODULE);
+    if (owner === undefined) {
+      add('API_KEY_BOUNDARY', API_KEY_MODULE, '키 모듈이 없다. 이 규칙의 검사 대상이 사라졌다.');
+    } else if ((owner.apiKeyLiterals ?? []).length === 0) {
+      add(
+        'API_KEY_BOUNDARY',
+        API_KEY_MODULE,
+        '키 모듈에 저장 키 리터럴이 없다. 규칙이 빈 집합 위에서 돈다.',
       );
     }
   }
@@ -429,7 +486,7 @@ async function main() {
     return;
   }
 
-  const violations = analyze(collected);
+  const violations = analyze({ ...collected, requireApiKeyOwner: true });
 
   if (violations.length > 0) {
     console.error(`verify:architecture - 위반 ${violations.length}건\n`);

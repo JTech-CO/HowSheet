@@ -13,11 +13,13 @@
 import { useEffect } from 'react';
 
 import { AppHeader } from '../../components/layout/AppHeader/AppHeader.tsx';
+import { ApiKeySettings } from '../../components/settings/ApiKeySettings/ApiKeySettings.tsx';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader.tsx';
 import { DesignPicker } from '../../components/studio/DesignPicker/DesignPicker.tsx';
 import { ElementPicker } from '../../components/studio/ElementPicker/ElementPicker.tsx';
 import { SaveStatus } from '../../components/studio/SaveStatus/SaveStatus.tsx';
 import { SourceInput } from '../../components/studio/SourceInput/SourceInput.tsx';
+import { useSettingsStore } from '../../store/settings.store.ts';
 import { useStudioStore } from '../../store/studio.store.ts';
 import styles from './StudioPage.module.css';
 
@@ -44,9 +46,17 @@ export function StudioPage() {
   const toggleElement = useStudioStore((state) => state.toggleElement);
   const setDesign = useStudioStore((state) => state.setDesign);
 
+  const apiKey = useSettingsStore((state) => state.key);
+  const apiKeyError = useSettingsStore((state) => state.keyError);
+  const apiKeyJustSaved = useSettingsStore((state) => state.justSaved);
+  const initSettings = useSettingsStore((state) => state.initSettings);
+  const saveKey = useSettingsStore((state) => state.saveKey);
+  const removeKey = useSettingsStore((state) => state.removeKey);
+
   useEffect(() => {
     void init();
-  }, [init]);
+    initSettings();
+  }, [init, initSettings]);
 
   // 문서가 오기 전에는 선택 UI를 그리지 않는다. 기본값으로 먼저 그리면
   // 저장된 선택이 도착하는 순간 화면이 한 번 뒤집힌다.
@@ -107,6 +117,21 @@ export function StudioPage() {
             description="여기서 만든 프롬프트를 Claude나 ChatGPT에 붙여넣습니다."
           />
           <Pending phase="P3·P5">템플릿 조립과 AI 합성, 복사·다운로드</Pending>
+        </section>
+
+        <section className={styles.section} aria-labelledby="settings-heading">
+          <SectionHeader
+            id="settings-heading"
+            title="설정"
+            description="API 키를 넣으면 AI가 프롬프트를 다듬습니다. 키가 없어도 템플릿으로 동작합니다."
+          />
+          <ApiKeySettings
+            state={apiKey}
+            justSaved={apiKeyJustSaved}
+            {...(apiKeyError === undefined ? {} : { error: apiKeyError })}
+            onSave={saveKey}
+            onRemove={removeKey}
+          />
         </section>
       </main>
     </div>

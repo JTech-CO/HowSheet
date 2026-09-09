@@ -1,0 +1,61 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: var(--width-editor-column);
+}
+
+.warning {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-warning-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  line-height: var(--line-height-body);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/*
+  상태를 색이 아니라 글자로 말한다. "저장됨"과 "없음"이 배지 안에 그대로 적혀
+  있어 색을 못 보는 환경에서도 읽힌다. (INV-09)
+*/
+.badge {
+  flex: none;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.masked {
+  font-family: var(--font-mono);
+  /* 마스킹된 형태라도 선택해 복사할 이유가 없다. 눈으로 확인하는 용도다. */
+  user-select: none;
+}
+
+.note {
+  color: var(--color-text-muted);
+}
