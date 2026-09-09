@@ -2,8 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 
-// 지원 브라우저 3종을 모두 프로젝트로 둔다. M1은 chromium만 실행하지만
-// M7 이후 test:e2e가 세 프로젝트를 모두 통과해야 한다. (하네스 §0.9, M12 DoD 5)
+// 지원 브라우저 3종을 모두 프로젝트로 둔다. (하네스 §0.9)
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -25,7 +24,10 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
-    command: `pnpm exec vite preview --port ${PORT} --strictPort`,
+    // **빌드를 함께 돌린다.** `vite preview`는 `dist`를 만들지 않으므로,
+    // 빌드를 빼면 낡은 산출물을 검사하고도 통과한다. 그러면 e2e가 지금 코드에
+    // 대해 아무것도 말하지 않는다. (하네스 P7 주의와 같은 종류의 함정)
+    command: `pnpm build && pnpm exec vite preview --port ${PORT} --strictPort`,
     port: PORT,
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

@@ -47,7 +47,7 @@ export function AppHeader({ subtitle, status, actions }: AppHeaderProps) {
 
       {status}
 
-      <div className={styles.actions}>
+      <div className={styles.actions} data-print="hide">
         {actions}
         <ThemeToggle mode={themeMode} onChange={setThemeMode} />
       </div>

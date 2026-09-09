@@ -1,11 +1,18 @@
 /*
- * 인쇄 레이아웃. 여기서 겨냥하는 클래스명은 각 컴포넌트가 *.module.css의
- * :global()로 노출한다. (File_Structure.md §4 D-06, 기술 §5.5)
- * INV-14: 단계 번호·경고·코드·링크·오류 해결은 보존하고 인터랙션 UI는 제거한다.
+ * 인쇄 레이아웃.
+ *
+ * 기준: v2 제품정의 §8 INV-09. 하네스 P7 할 일·DoD 5.
+ *
+ * 인쇄에서 남겨야 하는 것은 **프롬프트 전문**이다. 그것을 만들기 위한 입력 폼,
+ * 선택 버튼, 설정은 종이에서 아무 일도 하지 못한다.
+ *
+ * 감출 것은 `data-print="hide"`로 표시한다. v1은 클래스 이름 목록으로 겨냥했고
+ * 그 이름들이 P0에서 전부 사라지면서, 목록이 아무것도 맞히지 못한 채 남아
+ * 있었다. 속성은 마크업에 붙어 있는지 눈으로 확인할 수 있다.
  */
 
 @media print {
-  /* 다크 모드에서 인쇄해도 흰 배경·검정 텍스트를 강제한다. (기술 §7.5-7) */
+  /* 다크 모드에서 인쇄해도 흰 배경·검정 텍스트를 강제한다. */
   :root,
   [data-theme='dark'] {
     --color-bg: #ffffff;
@@ -22,19 +29,17 @@
     font-size: 11pt;
   }
 
-  .editor-only,
-  .reader-actions,
-  .theme-toggle,
-  .copy-button,
-  .toast-region {
+  /* 종이에서 눌리지 않는 것은 자리를 차지하지 않는다. */
+  [data-print='hide'] {
     display: none !important;
   }
 
-  .step-card,
-  .warning-card,
-  pre,
-  figure {
-    break-inside: avoid;
+  /*
+    긴 블록은 페이지를 넘어 이어지게 둔다. `break-inside: avoid`를 걸면
+    브라우저가 한 페이지에 밀어 넣으려다 넘치는 부분을 버린다. (DoD 5)
+  */
+  pre {
+    break-inside: auto;
   }
 
   a[href^='http']::after {

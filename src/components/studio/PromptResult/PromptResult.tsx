@@ -12,9 +12,11 @@
  * - 만드는 중에는 취소할 수 있고, 취소해도 앞의 결과가 남는다. (P5 DoD 5)
  * - 복사가 막히면 전문을 선택 상태로 만든다. (P6 DoD 1)
  * - 다시 만들어도 앞의 결과가 목록에 남아 언제든 돌아갈 수 있다. (P6 DoD 3)
+ * - 시작·완료·실패를 **말로** 전한다. 화면이 바뀌는 것만으로는 보조 기술이
+ *   알지 못한다. (P7 DoD 4)
  */
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import type { SynthesisError } from '../../../features/synthesize/errors.ts';
 import type { GeneratedResult, GenerateStatus } from '../../../store/generate.store.ts';
@@ -22,6 +24,7 @@ import { downloadText } from '../../../utils/download.ts';
 import { promptFileName } from '../../../utils/filename.ts';
 import { CopyButton } from '../../content/CopyButton/CopyButton.tsx';
 import { Button } from '../../ui/Button/Button.tsx';
+import { LiveRegion } from '../../ui/LiveRegion/LiveRegion.tsx';
 import styles from './PromptResult.module.css';
 
 /** `.md`로 내려받는다. 붙여넣는 것이 목적이라 서식 없는 텍스트가 맞다. */
@@ -41,6 +44,26 @@ export interface PromptResultProps {
   onGenerate: () => void;
   onCancel: () => void;
   onSelect: (index: number) => void;
+}
+
+/**
+ * 지금 무슨 일이 일어났는지 한 문장으로.
+ *
+ * 완료 문장에 회차를 넣는다. 같은 문장이 두 번 이어지면 보조 기술이 변화를
+ * 감지하지 못하는데, 회차가 들어가면 매번 달라진다. (DoD 4)
+ */
+function announcementFor(
+  status: GenerateStatus,
+  result: GeneratedResult | null,
+  error: SynthesisError | undefined,
+): string {
+  if (status === 'running') return '프롬프트를 만드는 중입니다.';
+  if (status === 'error' && error !== undefined) return `만들지 못했습니다. ${error.message}`;
+  if (status === 'done' && result !== null) {
+    const how = result.origin === 'ai' ? 'AI가 다듬었습니다' : '템플릿으로 조립했습니다';
+    return `${result.revision}회차 프롬프트를 만들었습니다. ${how}.`;
+  }
+  return '';
 }
 
 function fallbackNotice(result: GeneratedResult): string | null {
@@ -73,9 +96,26 @@ export function PromptResult({
   const result = results[selected] ?? null;
   const notice = result === null ? null : fallbackNotice(result);
 
+  // 알림 문장이 바뀔 때마다 노드를 새로 만든다. effect로 비웠다 채우면 렌더가
+  // 두 번 돌고 그 사이의 빈 문자열이 읽힐 수 있다.
+  const announcement = announcementFor(status, result, error);
+  const [announced, setAnnounced] = useState(announcement);
+  const [announceKey, setAnnounceKey] = useState(0);
+  if (announcement !== announced) {
+    setAnnounced(announcement);
+    setAnnounceKey((value) => value + 1);
+  }
+
   return (
     <div className={styles.wrapper}>
-      <div className={styles.toolbar}>
+      {/* 알림 경로는 여기 하나다. 보이는 문구에 role을 또 붙이면 두 번 읽힌다. */}
+      <LiveRegion
+        message={announcement}
+        messageKey={announceKey}
+        politeness={status === 'error' ? 'assertive' : 'polite'}
+      />
+
+      <div className={styles.toolbar} data-print="hide">
         <Button variant="primary" data-testid="prompt-generate" busy={running} onClick={onGenerate}>
           {results.length === 0 ? '프롬프트 만들기' : '다시 만들기'}
         </Button>
@@ -91,7 +131,7 @@ export function PromptResult({
 
       {running ? (
         <div className={styles.running}>
-          <p className={styles.status} role="status">
+          <p className={styles.status} data-testid="prompt-running">
             만드는 중입니다. 취소해도 앞의 결과는 남습니다.
           </p>
           {/* 차오르는 것을 그대로 보여 준다. 텍스트로만 넣는다. */}
@@ -102,7 +142,7 @@ export function PromptResult({
       ) : null}
 
       {status === 'error' && error !== undefined ? (
-        <p className={styles.error} role="alert" data-testid="prompt-error">
+        <p className={styles.error} data-testid="prompt-error">
           {error.message}
         </p>
       ) : null}
@@ -112,6 +152,7 @@ export function PromptResult({
           {results.length > 1 ? (
             <div
               className={styles.history}
+              data-print="hide"
               role="group"
               aria-label="만든 결과"
               data-testid="prompt-history"
@@ -163,7 +204,7 @@ export function PromptResult({
             </p>
           ) : null}
 
-          <div className={styles.actions}>
+          <div className={styles.actions} data-print="hide">
             {/* 복사가 막히면 아래 상자를 통째로 선택한다. (DoD 1) */}
             <CopyButton text={result.text} fallbackTarget={textRef} label="프롬프트 복사" />
             <Button

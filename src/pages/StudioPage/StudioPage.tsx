@@ -78,7 +78,8 @@ export function StudioPage() {
       />
 
       <main className={styles.main}>
-        <section className={styles.section} aria-labelledby="source-heading">
+        {/* 종이에서는 프롬프트만 남는다. 만들기 위한 입력은 감춘다. (P7 DoD 5) */}
+        <section className={styles.section} aria-labelledby="source-heading" data-print="hide">
           <SectionHeader
             id="source-heading"
             title="자료"
@@ -93,7 +94,7 @@ export function StudioPage() {
           )}
         </section>
 
-        <section className={styles.section} aria-labelledby="elements-heading">
+        <section className={styles.section} aria-labelledby="elements-heading" data-print="hide">
           <SectionHeader
             id="elements-heading"
             title="담을 것"
@@ -102,7 +103,7 @@ export function StudioPage() {
           {ready ? <ElementPicker selected={document.elements} onToggle={toggleElement} /> : null}
         </section>
 
-        <section className={styles.section} aria-labelledby="design-heading">
+        <section className={styles.section} aria-labelledby="design-heading" data-print="hide">
           <SectionHeader
             id="design-heading"
             title="보일 방식"
@@ -133,7 +134,7 @@ export function StudioPage() {
           ) : null}
         </section>
 
-        <section className={styles.section} aria-labelledby="settings-heading">
+        <section className={styles.section} aria-labelledby="settings-heading" data-print="hide">
           <SectionHeader
             id="settings-heading"
             title="설정"

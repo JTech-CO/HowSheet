@@ -75,6 +75,7 @@
 }
 
 .text {
+  /* 화면에서는 상자 안에서 스크롤한다. 인쇄에서는 이 상한을 푼다. (DoD 5) */
   max-height: 32rem;
   margin: 0;
   padding: var(--space-4);
@@ -101,4 +102,21 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+}
+
+/*
+  인쇄. 전문이 **잘리지 않아야 한다.** (P7 DoD 5)
+
+  화면에서는 32rem 상자 안에서 스크롤하지만, 인쇄에서 그 상한이 남으면 첫
+  페이지 분량만 나오고 나머지는 사라진다. 상한과 스크롤을 풀고 페이지를 넘어
+  이어지게 둔다 - 긴 프롬프트에 `break-inside: avoid`를 걸면 브라우저가 한
+  페이지에 밀어 넣으려다 넘치는 부분을 버린다.
+*/
+@media print {
+  .text {
+    max-height: none;
+    overflow: visible;
+    border-color: #999;
+    break-inside: auto;
+  }
 }

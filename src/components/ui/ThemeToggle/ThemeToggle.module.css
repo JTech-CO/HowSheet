@@ -1,6 +1,4 @@
-/* 인쇄 훅. styles/print.css가 이 이름을 겨냥한다. (D-06) */
-.toggle,
-:global(.theme-toggle) {
+.toggle {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
@@ -9,7 +7,9 @@
 }
 
 .option {
-  min-height: 32px;
+  /* 누르는 자리는 44px를 지킨다. (INV-10) */
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
   padding: 0 var(--space-3);
   font: inherit;
   font-size: 0.8125rem;

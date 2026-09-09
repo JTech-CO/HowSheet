@@ -1,6 +1,4 @@
-/* 인쇄 훅. styles/print.css가 이 이름을 겨냥한다. (D-06) */
-.header,
-:global(.editor-only) {
+.header {
   position: sticky;
   top: 0;
   z-index: 10;

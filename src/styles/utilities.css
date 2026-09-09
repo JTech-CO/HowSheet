@@ -1,7 +1,7 @@
 /*
  * 전역 유틸리티는 이 세 개로 제한한다. (디자인 §3.3, File_Structure.md §4 D-06)
- * 인쇄 훅 클래스는 여기에 추가하지 않고 각 컴포넌트의 *.module.css에서
- * :global()로 노출한다.
+ * 인쇄에서 감출 곳은 클래스가 아니라 `data-print="hide"`로 표시하고
+ * `styles/print.css`가 그 속성을 겨냥한다. (P7)
  */
 
 .sr-only {

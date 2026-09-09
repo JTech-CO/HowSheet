@@ -23,7 +23,8 @@
     "test:coverage": "vitest run --coverage",
     "test:security": "node scripts/verify-security.mjs",
     "verify:architecture": "node scripts/verify-architecture.mjs",
-    "verify:dependencies": "node scripts/verify-dependencies.mjs"
+    "verify:dependencies": "node scripts/verify-dependencies.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.124.0",
