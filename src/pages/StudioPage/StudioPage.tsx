@@ -47,10 +47,12 @@ export function StudioPage() {
 
   const generateStatus = useGenerateStore((state) => state.status);
   const streaming = useGenerateStore((state) => state.streaming);
-  const result = useGenerateStore((state) => state.result);
+  const results = useGenerateStore((state) => state.results);
+  const selected = useGenerateStore((state) => state.selected);
   const generateError = useGenerateStore((state) => state.error);
   const generate = useGenerateStore((state) => state.generate);
   const cancel = useGenerateStore((state) => state.cancel);
+  const selectResult = useGenerateStore((state) => state.selectResult);
 
   useEffect(() => {
     void init();
@@ -113,17 +115,20 @@ export function StudioPage() {
           <SectionHeader
             id="result-heading"
             title="프롬프트"
-            description="여기서 만든 프롬프트를 Claude나 ChatGPT에 붙여넣습니다. 복사와 다운로드는 P6에서 붙습니다."
+            description="여기서 만든 프롬프트를 Claude나 ChatGPT에 붙여넣습니다. 복사하거나 .md로 내려받을 수 있습니다."
           />
           {ready ? (
             <PromptResult
               status={generateStatus}
               streaming={streaming}
-              result={result}
+              results={results}
+              selected={selected}
               hasKey={apiKey.present}
+              source={document.source}
               {...(generateError === undefined ? {} : { error: generateError })}
               onGenerate={() => void generate(document)}
               onCancel={cancel}
+              onSelect={selectResult}
             />
           ) : null}
         </section>

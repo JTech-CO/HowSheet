@@ -1,36 +1,49 @@
 /**
  * 프롬프트 생성과 결과.
  *
- * 기준: v2 제품정의 §3(생성·결과), §6.3. 하네스 P5 할 일 3, DoD 1·2·5.
+ * 기준: v2 제품정의 §3(생성·결과), §6.3. 하네스 P5 할 일 3·DoD 1·2·5,
+ * P6 할 일 전부·DoD 1·2·3.
  *
  * 여기서 지키는 것.
  *
  * - **어느 쪽으로 만들었는지 반드시 밝힌다.** AI가 다듬었는지 템플릿으로
- *   조립했는지가 배지에 글자로 적힌다. 색으로만 구분하지 않는다. (DoD 1, INV-09)
- * - 실패는 종류마다 다른 문장으로 안내한다. (DoD 2)
- * - 만드는 중에는 취소할 수 있고, 취소해도 앞의 결과가 남는다. (DoD 5)
- *
- * 복사·다운로드·이전 결과 보기는 P6이 붙인다.
+ *   조립했는지가 배지에 글자로 적힌다. 색으로만 구분하지 않는다. (P5 DoD 1, INV-09)
+ * - 실패는 종류마다 다른 문장으로 안내한다. (P5 DoD 2)
+ * - 만드는 중에는 취소할 수 있고, 취소해도 앞의 결과가 남는다. (P5 DoD 5)
+ * - 복사가 막히면 전문을 선택 상태로 만든다. (P6 DoD 1)
+ * - 다시 만들어도 앞의 결과가 목록에 남아 언제든 돌아갈 수 있다. (P6 DoD 3)
  */
 
+import { useRef } from 'react';
+
 import type { SynthesisError } from '../../../features/synthesize/errors.ts';
-import type { SynthesisOutcome } from '../../../features/synthesize/synthesize.ts';
-import type { GenerateStatus } from '../../../store/generate.store.ts';
+import type { GeneratedResult, GenerateStatus } from '../../../store/generate.store.ts';
+import { downloadText } from '../../../utils/download.ts';
+import { promptFileName } from '../../../utils/filename.ts';
+import { CopyButton } from '../../content/CopyButton/CopyButton.tsx';
 import { Button } from '../../ui/Button/Button.tsx';
 import styles from './PromptResult.module.css';
+
+/** `.md`로 내려받는다. 붙여넣는 것이 목적이라 서식 없는 텍스트가 맞다. */
+const MARKDOWN_MIME = 'text/markdown;charset=utf-8';
 
 export interface PromptResultProps {
   status: GenerateStatus;
   streaming: string;
-  result: SynthesisOutcome | null;
+  /** 만든 결과들. 앞이 최신이다. */
+  results: readonly GeneratedResult[];
+  selected: number;
   error?: SynthesisError;
   /** 키가 있는지. 누르기 전에 무슨 일이 일어날지 알려 준다. */
   hasKey: boolean;
+  /** 파일명을 만드는 데 쓰는 자료. (DoD 2) */
+  source: string;
   onGenerate: () => void;
   onCancel: () => void;
+  onSelect: (index: number) => void;
 }
 
-function fallbackNotice(result: SynthesisOutcome): string | null {
+function fallbackNotice(result: GeneratedResult): string | null {
   if (result.fallback === undefined) return null;
   if (result.fallback.reason === 'no-key') {
     return 'API 키가 없어 템플릿으로 조립했습니다. 설정에서 키를 넣으면 AI가 자료에 맞게 다듬습니다.';
@@ -44,20 +57,27 @@ function fallbackNotice(result: SynthesisOutcome): string | null {
 export function PromptResult({
   status,
   streaming,
-  result,
+  results,
+  selected,
   error,
   hasKey,
+  source,
   onGenerate,
   onCancel,
+  onSelect,
 }: PromptResultProps) {
+  // 복사가 막혔을 때 선택할 대상. 전문이 들어 있는 상자다. (DoD 1)
+  const textRef = useRef<HTMLPreElement>(null);
+
   const running = status === 'running';
+  const result = results[selected] ?? null;
   const notice = result === null ? null : fallbackNotice(result);
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.toolbar}>
         <Button variant="primary" data-testid="prompt-generate" busy={running} onClick={onGenerate}>
-          {result === null ? '프롬프트 만들기' : '다시 만들기'}
+          {results.length === 0 ? '프롬프트 만들기' : '다시 만들기'}
         </Button>
         {running ? (
           <Button variant="secondary" data-testid="prompt-cancel" onClick={onCancel}>
@@ -89,8 +109,30 @@ export function PromptResult({
 
       {result !== null && !running ? (
         <div className={styles.result}>
+          {results.length > 1 ? (
+            <div
+              className={styles.history}
+              role="group"
+              aria-label="만든 결과"
+              data-testid="prompt-history"
+            >
+              {results.map((item, index) => (
+                <Button
+                  key={item.revision}
+                  size="sm"
+                  variant={index === selected ? 'primary' : 'ghost'}
+                  aria-pressed={index === selected}
+                  data-testid={'prompt-history-' + String(item.revision)}
+                  onClick={() => onSelect(index)}
+                >
+                  {/* 순서를 색이 아니라 글자로 말한다. (INV-09) */}
+                  {item.revision}회차{index === 0 ? ' (최신)' : ''}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+
           <p className={styles.meta} data-testid="prompt-origin">
-            {/* 색이 아니라 글자로 말한다. (INV-09) */}
             <span className={styles.badge}>
               {result.origin === 'ai' ? 'AI가 다듬음' : '템플릿으로 조립'}
             </span>
@@ -121,7 +163,21 @@ export function PromptResult({
             </p>
           ) : null}
 
-          <pre className={styles.text} data-testid="prompt-text">
+          <div className={styles.actions}>
+            {/* 복사가 막히면 아래 상자를 통째로 선택한다. (DoD 1) */}
+            <CopyButton text={result.text} fallbackTarget={textRef} label="프롬프트 복사" />
+            <Button
+              variant="secondary"
+              data-testid="prompt-download"
+              onClick={() =>
+                downloadText(promptFileName(source, result.revision), MARKDOWN_MIME, result.text)
+              }
+            >
+              .md 내려받기
+            </Button>
+          </div>
+
+          <pre className={styles.text} data-testid="prompt-text" ref={textRef}>
             {result.text}
           </pre>
         </div>
