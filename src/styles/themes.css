@@ -18,6 +18,13 @@
   --color-warning: #fb923c;
   --color-danger: #f87171;
   --color-info: #38bdf8;
+
+  /* 상태 배경은 반드시 함께 덮는다. 라이트 값을 그대로 두면 다크 모드에서
+     밝은 배경 위에 밝은 글자가 얹혀 읽을 수 없다. (INV-09) */
+  --color-success-bg: #052e16;
+  --color-warning-bg: #3b1d06;
+  --color-danger-bg: #3b0d0d;
+  --color-info-bg: #082f49;
   --color-focus: #93c5fd;
 
   /* 다크 모드에서는 그림자보다 밝은 테두리와 표면 차이를 우선한다. (디자인 §5.4) */
