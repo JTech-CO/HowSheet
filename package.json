@@ -26,6 +26,7 @@
     "verify:dependencies": "node scripts/verify-dependencies.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.124.0",
     "dompurify": "3.4.14",
     "react": "19.2.8",
     "react-dom": "19.2.8",

@@ -117,6 +117,21 @@ export function isApiKeyLiteral(value) {
   return value.includes('howsheet:') && /key/i.test(value);
 }
 
+/**
+ * INV-01, P5 - 전체 키를 읽는 접근자를 부를 수 있는 곳.
+ *
+ * 이름을 그대로 잡는다. 정의한 자리, 요청을 보내는 자리, 그리고 그 둘을
+ * 검사하는 테스트뿐이다. 스토어나 컴포넌트가 이 이름을 부르면 키가 화면 상태로
+ * 흘러들 길이 생긴다.
+ */
+export const API_KEY_READER = 'readForAnthropicRequest';
+
+export const API_KEY_READER_ALLOWED = [
+  'src/storage/api-key.store.ts',
+  'src/features/synthesize/',
+  'tests/unit/api-key/',
+];
+
 /** §3.3 - 살균된 Markdown 렌더링 경계는 프로젝트 전체에서 한 곳뿐이다. */
 export const SANITIZE_BOUNDARY = 'src/components/content/MarkdownText/';
 
@@ -172,6 +187,7 @@ export function parseModule(source, filePath = 'probe.tsx') {
   const imports = [];
   const globals = new Set();
   const apiKeyLiterals = new Set();
+  let usesApiKeyReader = false;
   let usesDangerouslySetInnerHTML = false;
 
   const visit = (node) => {
@@ -228,6 +244,11 @@ export function parseModule(source, filePath = 'probe.tsx') {
       apiKeyLiterals.add(node.text);
     }
 
+    // 전체 키 접근자. 선언이든 호출이든 이름이 나오면 잡는다.
+    if (ts.isIdentifier(node) && node.text === API_KEY_READER) {
+      usesApiKeyReader = true;
+    }
+
     // 브라우저 전역
     // 스코프 분석은 하지 않는다. 지역 선언이 전역 이름을 가려도 참조는 전역
     // 사용으로 본다. 파일 단위 섀도잉 집합으로 완화했더니 파라미터 하나가 파일
@@ -251,6 +272,7 @@ export function parseModule(source, filePath = 'probe.tsx') {
     imports: [...new Set(imports)],
     globals: [...globals],
     apiKeyLiterals: [...apiKeyLiterals],
+    usesApiKeyReader,
     usesDangerouslySetInnerHTML,
   };
 }
@@ -284,6 +306,7 @@ export const RULE_KINDS = [
   'STORAGE_ENCAPSULATION',
   'SANITIZE_BOUNDARY',
   'API_KEY_BOUNDARY',
+  'API_KEY_READER',
 ];
 
 // ────────────────────────────────────────────────────────────── 판정
@@ -406,6 +429,21 @@ export function analyze(input) {
       );
     }
 
+    // INV-01 - 전체 키 접근자
+    if (
+      file.usesApiKeyReader === true &&
+      !API_KEY_READER_ALLOWED.some(
+        (allowed) => file.path === allowed || file.path.startsWith(allowed),
+      )
+    ) {
+      add(
+        'API_KEY_READER',
+        file.path,
+        `${API_KEY_READER}는 ${API_KEY_READER_ALLOWED.join(', ')}에서만 부른다. ` +
+          '여기서 부르면 전체 키가 화면 상태로 흘러들 길이 생긴다. (INV-01)',
+      );
+    }
+
     // §3.3 / INV-07 - 살균 경계
     if (file.usesDangerouslySetInnerHTML && !file.path.startsWith(SANITIZE_BOUNDARY)) {
       add(
@@ -422,12 +460,21 @@ export function analyze(input) {
     const owner = files.find((file) => file.path === API_KEY_MODULE);
     if (owner === undefined) {
       add('API_KEY_BOUNDARY', API_KEY_MODULE, '키 모듈이 없다. 이 규칙의 검사 대상이 사라졌다.');
-    } else if ((owner.apiKeyLiterals ?? []).length === 0) {
-      add(
-        'API_KEY_BOUNDARY',
-        API_KEY_MODULE,
-        '키 모듈에 저장 키 리터럴이 없다. 규칙이 빈 집합 위에서 돈다.',
-      );
+    } else {
+      if ((owner.apiKeyLiterals ?? []).length === 0) {
+        add(
+          'API_KEY_BOUNDARY',
+          API_KEY_MODULE,
+          '키 모듈에 저장 키 리터럴이 없다. 규칙이 빈 집합 위에서 돈다.',
+        );
+      }
+      if (owner.usesApiKeyReader !== true) {
+        add(
+          'API_KEY_READER',
+          API_KEY_MODULE,
+          `키 모듈에 ${API_KEY_READER}가 없다. 이름이 바뀌었다면 규칙도 함께 고친다.`,
+        );
+      }
     }
   }
 

@@ -21,28 +21,6 @@
   gap: var(--space-3);
 }
 
-/* 아직 만들지 않은 영역. 빈 자리가 아니라 예정된 자리로 보여야 한다. */
-.pending {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-4);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-card);
-  color: var(--color-text-muted);
-  font-size: 0.875rem;
-}
-
-.phase {
-  flex: none;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-input);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .loading {
   margin: 0;
   color: var(--color-text-muted);

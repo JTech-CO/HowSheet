@@ -57,8 +57,9 @@ describe('자료 입력 (DoD 6)', () => {
     render(<StudioPage />);
 
     await screen.findByTestId('source-input');
-    // 아직 만들지 않은 영역도 무엇이 올지 알려 준다.
-    expect(screen.getByText('템플릿 조립과 AI 합성, 복사·다운로드')).toBeTruthy();
+    // 자료가 없어도 다음 단계가 전부 보인다.
+    expect(screen.getByTestId('element-diagram')).toBeTruthy();
+    expect(screen.getByTestId('prompt-generate')).toBeTruthy();
     expect(screen.getByTestId('source-counts').textContent).toContain('0자');
   });
 

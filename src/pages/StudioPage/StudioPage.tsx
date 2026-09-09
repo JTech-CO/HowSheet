@@ -6,8 +6,8 @@
  * v2는 화면이 하나다. 자료를 붙여넣고, 담을 것과 보일 방식을 고르고, 프롬프트를
  * 받아 복사한다. 그 전부가 이 파일 아래에 붙는다.
  *
- * 아직 채우지 않은 영역은 어느 phase가 맡는지 표시해 둔다. 빈 화면을 두면 다음
- * phase가 자리를 다시 정하게 된다.
+ * 네 영역이 모두 찼다. P5까지 오면서 마지막 자리인 결과 영역이 채워졌고,
+ * P6이 그 안에 복사·다운로드·이전 결과를 더한다.
  */
 
 import { useEffect } from 'react';
@@ -17,21 +17,13 @@ import { ApiKeySettings } from '../../components/settings/ApiKeySettings/ApiKeyS
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader.tsx';
 import { DesignPicker } from '../../components/studio/DesignPicker/DesignPicker.tsx';
 import { ElementPicker } from '../../components/studio/ElementPicker/ElementPicker.tsx';
+import { PromptResult } from '../../components/studio/PromptResult/PromptResult.tsx';
 import { SaveStatus } from '../../components/studio/SaveStatus/SaveStatus.tsx';
 import { SourceInput } from '../../components/studio/SourceInput/SourceInput.tsx';
+import { useGenerateStore } from '../../store/generate.store.ts';
 import { useSettingsStore } from '../../store/settings.store.ts';
 import { useStudioStore } from '../../store/studio.store.ts';
 import styles from './StudioPage.module.css';
-
-/** 아직 만들지 않은 영역. 어느 phase가 채우는지 함께 적는다. */
-function Pending({ phase, children }: { phase: string; children: string }) {
-  return (
-    <p className={styles.pending}>
-      <span className={styles.phase}>{phase}</span>
-      {children}
-    </p>
-  );
-}
 
 export function StudioPage() {
   const document = useStudioStore((state) => state.document);
@@ -52,6 +44,13 @@ export function StudioPage() {
   const initSettings = useSettingsStore((state) => state.initSettings);
   const saveKey = useSettingsStore((state) => state.saveKey);
   const removeKey = useSettingsStore((state) => state.removeKey);
+
+  const generateStatus = useGenerateStore((state) => state.status);
+  const streaming = useGenerateStore((state) => state.streaming);
+  const result = useGenerateStore((state) => state.result);
+  const generateError = useGenerateStore((state) => state.error);
+  const generate = useGenerateStore((state) => state.generate);
+  const cancel = useGenerateStore((state) => state.cancel);
 
   useEffect(() => {
     void init();
@@ -114,9 +113,19 @@ export function StudioPage() {
           <SectionHeader
             id="result-heading"
             title="프롬프트"
-            description="여기서 만든 프롬프트를 Claude나 ChatGPT에 붙여넣습니다."
+            description="여기서 만든 프롬프트를 Claude나 ChatGPT에 붙여넣습니다. 복사와 다운로드는 P6에서 붙습니다."
           />
-          <Pending phase="P3·P5">템플릿 조립과 AI 합성, 복사·다운로드</Pending>
+          {ready ? (
+            <PromptResult
+              status={generateStatus}
+              streaming={streaming}
+              result={result}
+              hasKey={apiKey.present}
+              {...(generateError === undefined ? {} : { error: generateError })}
+              onGenerate={() => void generate(document)}
+              onCancel={cancel}
+            />
+          ) : null}
         </section>
 
         <section className={styles.section} aria-labelledby="settings-heading">
