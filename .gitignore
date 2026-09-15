@@ -15,6 +15,10 @@ artifacts/qa/performance/
 artifacts/qa/security/
 artifacts/qa/exports/
 
+# 프롬프트 평가 결과: `pnpm eval:prompts`가 매번 지우고 새로 쓴다. 요약은
+# phase 보고서에 옮긴다. (하네스 P8 DoD 4)
+artifacts/eval/
+
 # 로컬 환경
 .env
 .env.*

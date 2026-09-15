@@ -91,7 +91,7 @@ export default tseslint.config(
 
   // Node에서 실행되는 설정·검증 스크립트
   {
-    files: ['*.config.{ts,js}', 'scripts/**/*.mjs', 'playwright.config.ts'],
+    files: ['*.config.{ts,js}', 'scripts/**/*.{mjs,ts}', 'playwright.config.ts'],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-console': 'off' },
   },

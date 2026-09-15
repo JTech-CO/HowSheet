@@ -24,7 +24,8 @@
     "test:security": "node scripts/verify-security.mjs",
     "verify:architecture": "node scripts/verify-architecture.mjs",
     "verify:dependencies": "node scripts/verify-dependencies.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "eval:prompts": "node scripts/check-node.mjs && node scripts/eval-prompts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.124.0",

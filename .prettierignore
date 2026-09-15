@@ -9,3 +9,7 @@ artifacts/qa/accessibility
 artifacts/qa/performance
 artifacts/qa/security
 artifacts/qa/exports
+artifacts/eval
+# 평가 자료와 프롬프트는 글자 그대로가 입력이다. 재작성 프롬프트가 자료를
+# 바이트 단위로 인용하므로 포맷터가 표 정렬을 바꾸면 인용이 깨진다.
+tests/fixtures/eval
