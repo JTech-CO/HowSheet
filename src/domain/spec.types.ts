@@ -250,8 +250,8 @@ export const DESIGN_AXES: readonly DesignAxis[] = [
         id: 'mixed',
         label: '혼합',
         requirement:
-          '제목은 세리프, 본문은 산세리프로 둔다. 코드는 고정폭이다. 폰트 계열은 ' +
-          '이 셋을 넘지 않는다.',
+          '제목은 세리프, 본문은 산세리프로 둔다. 코드는 고정폭으로 두고, 이 밖의 ' +
+          '폰트 계열을 더하지 않는다.',
       },
     ],
   },
