@@ -23,7 +23,7 @@
  * 부를 수 있는 곳을 이 디렉터리로 묶는다. (INV-01)
  */
 
-import { DEFAULT_MODEL, MAX_OUTPUT_TOKENS } from './model.ts';
+import { DEFAULT_MODEL, outputTokenBudget } from './model.ts';
 
 export interface StreamRequest {
   apiKey: string;
@@ -97,7 +97,9 @@ export function createAnthropicStreamer(options: CreateStreamerOptions = {}): St
     const stream = client.messages.stream(
       {
         model: model ?? DEFAULT_MODEL,
-        max_tokens: MAX_OUTPUT_TOKENS,
+        // 초안 크기에서 예산을 뽑되 모델의 출력 한계 안에 둔다. 고정 상한은 긴
+        // 자료에서 반드시 잘리고, 한계를 넘긴 예산은 요청 자체가 거부된다.
+        max_tokens: outputTokenBudget(user, model ?? DEFAULT_MODEL),
         system,
         messages: [{ role: 'user', content: user }],
       },
@@ -107,10 +109,37 @@ export function createAnthropicStreamer(options: CreateStreamerOptions = {}): St
 
     if (onDelta !== undefined) stream.on('text', onDelta);
 
+    let message;
     try {
-      return await stream.finalText();
+      // `finalText()`가 아니라 메시지 전체를 받는다. `stop_reason`을 봐야
+      // 잘린 응답을 완성본으로 내미는 일을 막을 수 있다.
+      message = await stream.finalMessage();
     } catch (error) {
       throw tagError(error);
     }
+
+    /*
+      끝까지 오지 않은 응답은 실패다.
+
+      시스템 프롬프트가 자료를 그대로 인용하라고 요구하므로, 중간에 끊긴 출력은
+      인용이 문장 중간에서 잘린 프롬프트다. 그것을 "AI가 다듬었습니다"라고 내밀면
+      사용자는 잘린 줄 모르고 다른 AI에 붙여넣는다. 던져서 템플릿으로 떨어뜨린다.
+      템플릿은 언제나 완성된 프롬프트다. (INV-02)
+
+      **허용 목록으로 판정한다.** `max_tokens`만 막던 판은 `refusal`과
+      `model_context_window_exceeded`를 완성본으로 통과시켰다. 새 stop_reason이
+      생겨도 기본이 "막는다"여야 한다. (출시 점검 2026-09-16)
+    */
+    if (message.stop_reason !== 'end_turn' && message.stop_reason !== 'stop_sequence') {
+      const truncated = message.stop_reason === 'max_tokens';
+      throw Object.assign(
+        new Error(
+          truncated ? '출력 상한에서 응답이 끊겼습니다.' : '응답이 끝까지 오지 않았습니다.',
+        ),
+        { name: truncated ? 'PromptTruncatedError' : 'PromptIncompleteError' },
+      );
+    }
+
+    return message.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
   };
 }

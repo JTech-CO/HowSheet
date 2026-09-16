@@ -74,7 +74,11 @@ function fallbackNotice(result: GeneratedResult): string | null {
   if (result.fallback.reason === 'empty-response') {
     return 'AI가 빈 응답을 돌려줘 템플릿으로 조립했습니다. 다시 시도해 보세요.';
   }
-  return `AI 합성에 실패해 템플릿으로 조립했습니다. ${result.fallback.error.message}`;
+  const { error } = result.fallback;
+  // 다시 보내도 같은 결과가 나오는 실패는 그렇다고 말한다. 말하지 않으면 사용자는
+  // "다시 만들기"를 눌러 같은 요청을 또 보낸다.
+  const retry = error.retryable ? '' : ' 고치기 전에 다시 만들면 같은 안내가 나옵니다.';
+  return `AI 합성에 실패해 템플릿으로 조립했습니다. ${error.message}${retry}`;
 }
 
 export function PromptResult({

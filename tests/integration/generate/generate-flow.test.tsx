@@ -224,6 +224,16 @@ describe('실패 안내 (DoD 2)', () => {
     ['401', apiError(401), '키가 거부됐습니다'],
     ['429', apiError(429), '요청이 너무 잦습니다'],
     [
+      '잘린 응답',
+      Object.assign(new Error('cut'), { name: 'PromptTruncatedError' }),
+      '출력 상한에서 잘려',
+    ],
+    [
+      '끝까지 오지 않은 응답',
+      Object.assign(new Error('stopped'), { name: 'PromptIncompleteError' }),
+      '끝까지 오지 않아',
+    ],
+    [
       '네트워크',
       Object.assign(new Error('down'), { name: 'APIConnectionError' }),
       '네트워크에 닿지 못했습니다',
@@ -239,6 +249,27 @@ describe('실패 안내 (DoD 2)', () => {
     // 실패해도 쓸 수 있는 프롬프트가 함께 나온다. (INV-02)
     expect((await screen.findByTestId('prompt-origin')).textContent).toContain('템플릿으로 조립');
     expect(screen.getByTestId('prompt-text').textContent).toContain('한 페이지 문서 만들기');
+  });
+
+  it('다시 보내도 같은 실패는 그렇다고 말한다', async () => {
+    // 키가 거부됐는데 "다시 만들기"만 보이면 같은 요청을 또 보낸다.
+    setup({ key: KEY, stream: failingStream(apiError(401)) });
+    render(<StudioPage />);
+
+    await generate();
+
+    const fallback = await screen.findByTestId('prompt-fallback');
+    expect(fallback.textContent).toContain('고치기 전에 다시 만들면 같은 안내가 나옵니다');
+  });
+
+  it('다시 보내 볼 만한 실패에는 그 말을 붙이지 않는다', async () => {
+    setup({ key: KEY, stream: failingStream(apiError(429)) });
+    render(<StudioPage />);
+
+    await generate();
+
+    const fallback = await screen.findByTestId('prompt-fallback');
+    expect(fallback.textContent).not.toContain('고치기 전에');
   });
 
   it('세 상황이 서로 다른 문장을 낸다', async () => {

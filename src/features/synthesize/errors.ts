@@ -17,7 +17,15 @@
  */
 
 export type SynthesisErrorKind =
-  'aborted' | 'auth' | 'rate-limit' | 'network' | 'server' | 'request' | 'unknown';
+  | 'aborted'
+  | 'auth'
+  | 'rate-limit'
+  | 'network'
+  | 'server'
+  | 'request'
+  | 'truncated'
+  | 'incomplete'
+  | 'unknown';
 
 export interface SynthesisError {
   kind: SynthesisErrorKind;
@@ -52,6 +60,18 @@ const MESSAGES: Record<SynthesisErrorKind, { message: string; retryable: boolean
     message: '요청이 거부됐습니다. 자료가 너무 길지 않은지 확인하고 다시 시도하세요.',
     retryable: false,
   },
+  truncated: {
+    message:
+      'AI 응답이 출력 상한에서 잘려 쓸 수 없는 프롬프트가 됐습니다. 다시 만들어 보고, 또 잘리면 고른 요소를 줄이거나 자료를 줄이세요.',
+    // 출력 길이는 실행마다 달라 다시 만들면 될 때가 있다. 예산이 초안에 비례하므로
+    // 자료만 줄여서는 잘 풀리지 않는다 - 요소를 줄이는 쪽이 출력을 더 줄인다.
+    retryable: true,
+  },
+  incomplete: {
+    message:
+      'AI 응답이 끝까지 오지 않아 템플릿으로 조립했습니다. 자료에 지시문처럼 읽히는 문장이 있으면 덜어 내고 다시 시도하세요.',
+    retryable: true,
+  },
   unknown: { message: '알 수 없는 이유로 생성하지 못했습니다.', retryable: true },
 };
 
@@ -73,6 +93,15 @@ export function classifySynthesisError(error: unknown): SynthesisError {
   // 취소가 먼저다. 사용자가 멈춘 것을 실패로 안내하면 안 된다. (DoD 5)
   if (name === 'AbortError' || name === 'APIUserAbortError') {
     return { kind: 'aborted', ...MESSAGES.aborted };
+  }
+
+  // 끝까지 오지 않은 응답. 요청은 성공했지만 결과를 쓸 수 없다.
+  // `anthropic.client.ts`가 `stop_reason`을 보고 이 이름들로 던진다.
+  if (name === 'PromptTruncatedError') {
+    return { kind: 'truncated', ...MESSAGES.truncated };
+  }
+  if (name === 'PromptIncompleteError') {
+    return { kind: 'incomplete', ...MESSAGES.incomplete };
   }
 
   const status = statusOf(error);

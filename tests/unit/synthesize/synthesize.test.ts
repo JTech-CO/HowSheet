@@ -171,6 +171,29 @@ describe('실패 (DoD 2·3)', () => {
     if (outcome.fallback?.reason === 'error') expect(outcome.fallback.error.kind).toBe(kind);
   });
 
+  it('잘린 응답이면 그것을 내밀지 않고 템플릿으로 간다', async () => {
+    const document = studio();
+    const outcome = await synthesizePrompt(
+      document,
+      deps({
+        stream: async () => {
+          throw Object.assign(new Error('출력 상한에서 응답이 끊겼습니다.'), {
+            name: 'PromptTruncatedError',
+          });
+        },
+      }),
+    );
+
+    expect(outcome.origin).toBe('template');
+    expect(outcome.text).toBe(composePrompt(document).text);
+    if (outcome.fallback?.reason === 'error') {
+      expect(outcome.fallback.error.kind).toBe('truncated');
+      expect(outcome.fallback.error.message).toContain('잘려');
+    } else {
+      expect.unreachable('잘림은 error 폴백이어야 한다');
+    }
+  });
+
   it('실패해도 쓸 수 있는 프롬프트가 나온다 (INV-02)', async () => {
     const document = studio();
     const outcome = await synthesizePrompt(
