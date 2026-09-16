@@ -3,12 +3,12 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-// 편집기 번들 설정. 리더 런타임의 독립 번들은 scripts/build-reader-runtime.mjs가
-// 단독으로 소유한다. (File_Structure.md §3.4, D-08)
+// 앱 번들 설정. v2는 번들이 하나다.
 export default defineConfig({
-  // BrowserRouter가 중첩 경로(/guide/:id/edit)를 쓰므로 절대 base가 필요하다.
-  // 하위 경로 배포 시 VITE_BASE로 덮어쓴다.
-  base: process.env.VITE_BASE ?? '/',
+  // v2는 화면이 하나라 라우터가 없다. 상대 base면 루트든 하위 경로든 같은
+  // 산출물이 그대로 동작한다. 절대 base가 필요하다던 근거(v1의 BrowserRouter
+  // 중첩 경로)는 P0에서 사라졌다. (출시 점검 2026-09-16)
+  base: process.env.VITE_BASE ?? './',
   plugins: [react()],
   resolve: {
     alias: {
