@@ -76,20 +76,21 @@
 
 ## 검증
 
-| 명령                       | 결과                                                  |
-| -------------------------- | ----------------------------------------------------- |
-| `pnpm format:check`        | 통과                                                  |
-| `pnpm lint`                | 통과                                                  |
-| `pnpm typecheck`           | 통과                                                  |
-| `pnpm test:unit`           | 688 통과 (점검 전 667)                                |
-| `pnpm test:integration`    | 102 통과 (점검 전 83)                                 |
-| `pnpm test:security`       | 통과 - 블록 38개, 필수 페이로드 12종                  |
-| `pnpm verify:architecture` | 통과 - 소스 101개, 규칙 7종                           |
-| `pnpm verify:dependencies` | 통과                                                  |
-| `pnpm build`               | 통과 - 초기 번들 gzip 138.76KB (점검 전 137.05KB)     |
-| `pnpm eval:prompts`        | 통과 - 생성 8,780/8,780, 재작성 5/5, 카나리아 81/81종 |
-| `pnpm test:e2e`            | 36 통과 (브라우저 3종 × 12건)                         |
-| 윈도우 새 클론에서 위 11종 | 커밋 뒤 다시 확인 (PROGRESS 검증 로그)                |
+| 명령                                 | 결과                                                                                               |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`                  | 통과                                                                                               |
+| `pnpm lint`                          | 통과                                                                                               |
+| `pnpm typecheck`                     | 통과                                                                                               |
+| `pnpm test:unit`                     | 688 통과 (점검 전 667)                                                                             |
+| `pnpm test:integration`              | 102 통과 (점검 전 83)                                                                              |
+| `pnpm test:security`                 | 통과 - 블록 38개, 필수 페이로드 12종                                                               |
+| `pnpm verify:architecture`           | 통과 - 소스 101개, 규칙 7종                                                                        |
+| `pnpm verify:dependencies`           | 통과                                                                                               |
+| `pnpm build`                         | 통과 - 초기 번들 gzip 138.76KB (점검 전 137.05KB)                                                  |
+| `pnpm eval:prompts`                  | 통과 - 생성 8,780/8,780, 재작성 5/5, 카나리아 81/81종                                              |
+| `pnpm test:e2e`                      | 36 통과 (브라우저 3종 × 12건)                                                                      |
+| 윈도우 새 클론에서 위 11종 (e1632c3) | 전부 통과 - 작업 트리 CRLF 0개. 커밋 14개를 하나씩 체크아웃해 타입 검사·린트·단위·통합도 전부 통과 |
+| GitHub Actions CI (e1632c3)          | **처음으로 통과** - 정적 검사·테스트·평가·빌드 62초, E2E 브라우저 3종 131초                        |
 
 ### 음성 검증
 
