@@ -19,6 +19,7 @@ import { DesignPicker } from '../../components/studio/DesignPicker/DesignPicker.
 import { ElementPicker } from '../../components/studio/ElementPicker/ElementPicker.tsx';
 import { PromptResult } from '../../components/studio/PromptResult/PromptResult.tsx';
 import { SaveStatus } from '../../components/studio/SaveStatus/SaveStatus.tsx';
+import { StorageNotice } from '../../components/studio/SaveStatus/StorageNotice.tsx';
 import { SourceInput } from '../../components/studio/SourceInput/SourceInput.tsx';
 import { useGenerateStore } from '../../store/generate.store.ts';
 import { useSettingsStore } from '../../store/settings.store.ts';
@@ -67,17 +68,17 @@ export function StudioPage() {
     <div className={styles.page}>
       <AppHeader
         subtitle="프롬프트 스튜디오"
-        status={
-          <SaveStatus
-            saveState={saveState}
-            storageMode={storageMode}
-            {...(saveError === undefined ? {} : { saveError })}
-            {...(storageUnavailableReason === undefined ? {} : { storageUnavailableReason })}
-          />
-        }
+        status={<SaveStatus saveState={saveState} storageMode={storageMode} />}
       />
 
       <main className={styles.main}>
+        {/* 저장이 어긋났다는 안내는 헤더가 아니라 본문 맨 위에 둔다. (INV-10) */}
+        <StorageNotice
+          saveState={saveState}
+          storageMode={storageMode}
+          {...(saveError === undefined ? {} : { saveError })}
+          {...(storageUnavailableReason === undefined ? {} : { storageUnavailableReason })}
+        />
         {/* 종이에서는 프롬프트만 남는다. 만들기 위한 입력은 감춘다. (P7 DoD 5) */}
         <section className={styles.section} aria-labelledby="source-heading" data-print="hide">
           {/*

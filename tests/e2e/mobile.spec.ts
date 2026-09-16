@@ -118,3 +118,52 @@ test('요소 격자가 좁은 화면에서 한 칸으로 접힌다 (DoD 3)', asy
 
   expect(columns).toBe(1);
 });
+
+test('저장소가 막혀도 경고가 320px 안에서 읽힌다 (INV-10, 출시 점검 2026-09-16)', async ({
+  page,
+}) => {
+  // 사생활 보호 모드처럼 IndexedDB가 없는 브라우저를 만든다. 저장이 안 된다는
+  // 경고가 가장 필요한 상태에서, 그 경고가 헤더 안에서 1,079px로 늘어나 위로
+  // 잘리고 본문을 덮었다.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'indexedDB', { configurable: true, value: undefined });
+  });
+  await page.goto('/');
+
+  const notice = page.getByTestId('storage-memory');
+  await expect(notice).toBeVisible();
+  // 첫 편집 뒤 헤더 이름표가 붙은 상태까지 잰다.
+  await page.getByTestId('source-input').fill('내용');
+  await expect(page.getByTestId('save-state')).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const header = document.querySelector('header');
+    const banner = document.querySelector('[data-testid="storage-memory"]');
+    if (header === null || banner === null) return null;
+    const headerBox = header.getBoundingClientRect();
+    const bannerBox = banner.getBoundingClientRect();
+    return {
+      viewport: window.innerWidth,
+      headerTop: headerBox.top,
+      headerBottom: headerBox.bottom,
+      bannerTop: bannerBox.top,
+      bannerLeft: bannerBox.left,
+      bannerRight: bannerBox.right,
+      bannerWidth: bannerBox.width,
+    };
+  });
+
+  expect(layout).not.toBeNull();
+  if (layout === null) return;
+  // 화면 위로 잘리지 않는다.
+  expect(layout.headerTop).toBeGreaterThanOrEqual(0);
+  expect(layout.bannerTop).toBeGreaterThanOrEqual(layout.headerBottom);
+  // 좁은 기둥으로 찌그러지지 않고 가로로 넘치지도 않는다.
+  expect(layout.bannerLeft).toBeGreaterThanOrEqual(0);
+  expect(layout.bannerRight).toBeLessThanOrEqual(layout.viewport);
+  expect(layout.bannerWidth).toBeGreaterThan(layout.viewport / 2);
+
+  const overflow = await horizontalOverflow(page);
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  expect(overflow.leaking).toEqual([]);
+});

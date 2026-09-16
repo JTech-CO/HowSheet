@@ -158,6 +158,7 @@ describe('저장 실패 (DoD 2, INV-07)', () => {
   it('메모리 모드를 알린다', async () => {
     setup(createMemoryStore('사생활 보호 모드'));
     render(<StudioPage />);
+    // 아무것도 입력하지 않아도 처음부터 보여야 한다.
     await screen.findByTestId('source-input');
 
     const banner = await screen.findByTestId('storage-memory');
@@ -321,5 +322,24 @@ describe('안내 문구가 사실과 맞는다 (출시 점검 2026-09-16)', () =
     expect(warning.textContent).toContain('잘렸다는 사실을 프롬프트에 적습니다');
     // 예전 문구는 잘리는 순간에도 "자르지 않고 그대로 두니"라고 말했다.
     expect(document.body.textContent).not.toContain('자르지 않고');
+  });
+});
+
+describe('저장 알림 자리 (INV-10, 출시 점검 2026-09-16)', () => {
+  it('자세한 안내는 헤더가 아니라 본문 맨 위에 있다', async () => {
+    setup(createMemoryStore('사생활 보호 모드'));
+    render(<StudioPage />);
+    // 한 번 저장이 돌아야 헤더 이름표가 뜬다.
+    await userEvent.type(await screen.findByTestId('source-input'), '내용');
+    await waitFor(() => expect(store().saveState).toBe('saved'));
+
+    const banner = await screen.findByTestId('storage-memory');
+    expect(banner.closest('header')).toBeNull();
+    // 본문의 첫 자식이다. 아래로 밀리면 저장이 안 된다는 사실을 늦게 본다.
+    expect(banner.closest('main')?.firstElementChild?.contains(banner)).toBe(true);
+    // 헤더에는 짧은 이름표만 남는다.
+    const label = screen.getByTestId('save-state');
+    expect(label.closest('header')).toBeTruthy();
+    expect(label.textContent).toBe('이 탭에만 있습니다');
   });
 });

@@ -3,10 +3,13 @@
   top: 0;
   z-index: 10;
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   align-items: center;
-  height: 64px;
-  padding: 0 var(--space-4);
+  /* 고정 높이는 좁은 화면에서 안쪽 버튼을 위아래로 넘치게 만든다. 320px에서
+     테마 버튼 세 개가 줄바꿈되면 68px이 필요했다. (출시 점검 2026-09-16) */
+  min-height: 64px;
+  padding: var(--space-2) var(--space-4);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
