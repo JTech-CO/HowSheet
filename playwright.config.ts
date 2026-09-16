@@ -30,6 +30,8 @@ export default defineConfig({
     command: `pnpm build && pnpm exec vite preview --port ${PORT} --strictPort`,
     port: PORT,
     reuseExistingServer: !process.env['CI'],
-    timeout: 120_000,
+    // `pnpm build`가 typecheck까지 돌린다. 차가운 CI 러너에서 120초는 빠듯해
+    // 제품 결함이 아닌 타임아웃이 난다. (출시 점검 2026-09-16)
+    timeout: 240_000,
   },
 });

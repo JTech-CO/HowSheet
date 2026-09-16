@@ -1,8 +1,12 @@
 name: CI
 
-# 로컬과 동일한 Node·pnpm 버전 및 핵심 명령을 사용한다. (하네스 M1 DoD 7)
+# 로컬과 같은 Node·pnpm 버전으로 v2 게이트 전부를 돌린다.
 #   Node : .nvmrc
 #   pnpm : package.json 의 packageManager 필드
+#
+# 여기 적는 명령은 AGENTS.md §5의 표준 명령과 하네스의 phase 검증 블록에서 온다.
+# 없는 스크립트를 부르면 CI는 매 커밋 실패하고, 빨간 CI는 아무것도 막지 못한다.
+# (출시 점검 2026-09-16에 verify:fixtures·benchmark:graph·smoke.spec.ts가 그랬다)
 on:
   push:
     branches: [main]
@@ -18,9 +22,9 @@ env:
 
 jobs:
   verify:
-    name: 정적 검사 · 단위 테스트 · 빌드
+    name: 정적 검사 · 테스트 · 평가 · 빌드
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -58,21 +62,16 @@ jobs:
       - name: verify:architecture
         run: pnpm verify:architecture
 
-      - name: verify:fixtures
-        run: pnpm verify:fixtures
+      # 프롬프트 품질 평가. 기준 미달이면 종료 코드 1이다. (하네스 P8 DoD 5)
+      - name: eval:prompts
+        run: pnpm eval:prompts
 
-      - name: test:coverage
-        run: pnpm test:coverage
-
-      - name: benchmark:graph
-        run: pnpm benchmark:graph
-
-      - name: 성능 보고서 업로드
+      - name: 평가 결과 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: performance
-          path: artifacts/qa/performance/
+          name: eval
+          path: artifacts/eval/
           retention-days: 7
 
       - name: build
@@ -86,9 +85,9 @@ jobs:
           retention-days: 7
 
   e2e:
-    name: E2E (chromium)
+    name: E2E (chromium · firefox · webkit)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -102,15 +101,30 @@ jobs:
       - name: 의존성 설치
         run: pnpm install --frozen-lockfile
 
+      # 브라우저는 매번 수백 MB다. 버전이 같으면 받지 않는다.
+      - name: Playwright 버전 확인
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
       - name: 브라우저 설치
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps
+        if: steps.browsers.outputs.cache-hit != 'true'
 
-      - name: 빌드
-        run: pnpm build
+      # 캐시가 맞아도 시스템 의존성은 러너에 없을 수 있다.
+      - name: 브라우저 의존성 설치
+        run: pnpm exec playwright install-deps
+        if: steps.browsers.outputs.cache-hit == 'true'
 
-      # M7에서 pnpm test:e2e(chromium·firefox·webkit)로 확장한다. (하네스 §0.9)
-      - name: 스모크 테스트
-        run: pnpm exec playwright test tests/e2e/smoke.spec.ts --project=chromium
+      # playwright.config.ts의 webServer가 빌드부터 돌린다. 파이프로 감싸지
+      # 않는다 - 종료 코드가 가려진다. (하네스 P7 주의)
+      - name: test:e2e
+        run: pnpm test:e2e
 
       - name: 실패 리포트 업로드
         if: failure()
