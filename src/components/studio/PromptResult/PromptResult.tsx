@@ -129,7 +129,9 @@ export function PromptResult({
           </Button>
         ) : null}
         <p className={styles.hint} data-testid="prompt-plan">
-          {hasKey ? 'AI가 자료에 맞게 다듬습니다.' : '키가 없어 템플릿으로 조립합니다.'}
+          {hasKey
+            ? 'AI가 자료에 맞게 다듬습니다. 누르면 자료가 api.anthropic.com으로 전송됩니다.'
+            : '키가 없어 템플릿으로 조립합니다. 자료는 이 브라우저 밖으로 나가지 않습니다.'}
         </p>
       </div>
 

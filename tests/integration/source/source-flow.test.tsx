@@ -15,8 +15,14 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { MAX_SOURCE_CHARACTERS } from '@/features/compose/compose.ts';
+import { createSynthesizeDeps } from '@/features/synthesize/deps.ts';
 import { StudioPage } from '@/pages/StudioPage/StudioPage.tsx';
+import { API_KEY_STORAGE_KEY, createApiKeyStore } from '@/storage/api-key.store.ts';
+import type { KeyValueStore } from '@/storage/browser-store.ts';
 import { createMemoryStore, type DocumentStore } from '@/storage/document.store.ts';
+import { configureGenerateStore, resetGenerateStore } from '@/store/generate.store.ts';
+import { configureSettingsStore, resetSettingsStore } from '@/store/settings.store.ts';
 import { configureStudioStore, resetStudioStore, useStudioStore } from '@/store/studio.store.ts';
 
 const FIXTURE = path.resolve(
@@ -209,5 +215,111 @@ describe('미리보기 살균 (DoD 3·4, INV-05)', () => {
 
     await userEvent.click(screen.getByTestId('source-mode-write'));
     expect(screen.getByTestId('source-input')).toBeTruthy();
+  });
+});
+
+describe('안내 문구가 사실과 맞는다 (출시 점검 2026-09-16)', () => {
+  let sent: string[] = [];
+
+  function withKey(present: boolean): void {
+    const seed = present ? { [API_KEY_STORAGE_KEY]: 'sk-ant-api03-' + 's'.repeat(80) } : {};
+    const map = new Map(Object.entries(seed));
+    const store: KeyValueStore = {
+      getItem: (key) => map.get(key) ?? null,
+      setItem: (key, value) => {
+        map.set(key, value);
+      },
+      removeItem: (key) => {
+        map.delete(key);
+      },
+      key: (index) => [...map.keys()][index] ?? null,
+      get length() {
+        return map.size;
+      },
+    };
+    const keys = createApiKeyStore({ store });
+    configureSettingsStore({ keys });
+    // 문구가 아니라 **실제 전송**과 맞는지 보려면 같은 저장소를 합성 경로에도
+    // 준다. 인스턴스가 갈라지면 화면과 동작이 어긋난다.
+    sent = [];
+    configureGenerateStore(
+      createSynthesizeDeps({
+        keys,
+        stream: async (request) => {
+          sent.push(request.user);
+          return '# AI가 쓴 프롬프트';
+        },
+      }),
+    );
+    resetSettingsStore();
+    resetGenerateStore();
+  }
+
+  afterEach(() => {
+    configureSettingsStore(null);
+    configureGenerateStore(null);
+    resetSettingsStore();
+    resetGenerateStore();
+  });
+
+  it('키가 없으면 자료가 브라우저를 벗어나지 않는다고 적는다', async () => {
+    setup();
+    withKey(false);
+    render(<StudioPage />);
+    await screen.findByTestId('source-input');
+
+    const section = screen.getByRole('region', { name: '자료' });
+    expect(section.textContent).toContain('브라우저 밖으로 나가지 않습니다');
+    expect(screen.getByTestId('prompt-plan').textContent).toContain('템플릿으로 조립');
+
+    store().setSource('보내면 안 되는 자료');
+    await userEvent.click(screen.getByTestId('prompt-generate'));
+
+    await waitFor(() => expect(screen.getByTestId('prompt-origin')).toBeTruthy());
+    expect(sent).toEqual([]);
+  });
+
+  it('키가 있으면 자료가 Anthropic으로 간다고 적는다', async () => {
+    setup();
+    withKey(true);
+    render(<StudioPage />);
+    await screen.findByTestId('source-input');
+
+    const section = screen.getByRole('region', { name: '자료' });
+    expect(section.textContent).toContain('api.anthropic.com으로 전송됩니다');
+    expect(screen.getByTestId('prompt-plan').textContent).toContain('api.anthropic.com');
+
+    store().setSource('전송되는 자료');
+    await userEvent.click(screen.getByTestId('prompt-generate'));
+
+    await waitFor(() => expect(sent.length).toBe(1));
+    expect(sent[0]).toContain('전송되는 자료');
+  });
+
+  it('상한까지는 잘린다고 말하지 않는다', async () => {
+    setup();
+    withKey(false);
+    render(<StudioPage />);
+    await screen.findByTestId('source-input');
+
+    store().setSource('가'.repeat(MAX_SOURCE_CHARACTERS));
+
+    await waitFor(() => expect(store().document?.source.length).toBe(MAX_SOURCE_CHARACTERS));
+    expect(screen.queryByTestId('source-will-truncate')).toBeNull();
+  });
+
+  it('상한을 넘은 자료는 만들기 전에 잘린다고 알린다', async () => {
+    setup();
+    withKey(false);
+    render(<StudioPage />);
+    await screen.findByTestId('source-input');
+
+    store().setSource('가'.repeat(MAX_SOURCE_CHARACTERS + 1));
+
+    const warning = await screen.findByTestId('source-will-truncate');
+    expect(warning.textContent).toContain('앞의');
+    expect(warning.textContent).toContain('잘렸다는 사실을 프롬프트에 적습니다');
+    // 예전 문구는 잘리는 순간에도 "자르지 않고 그대로 두니"라고 말했다.
+    expect(document.body.textContent).not.toContain('자르지 않고');
   });
 });

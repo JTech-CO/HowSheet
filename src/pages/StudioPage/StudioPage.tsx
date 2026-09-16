@@ -80,10 +80,19 @@ export function StudioPage() {
       <main className={styles.main}>
         {/* 종이에서는 프롬프트만 남는다. 만들기 위한 입력은 감춘다. (P7 DoD 5) */}
         <section className={styles.section} aria-labelledby="source-heading" data-print="hide">
+          {/*
+            키가 있으면 자료가 Anthropic으로 간다. 그 사실을 적지 않으면 이 문구가
+            거짓이 된다. INV-03은 Anthropic 전송을 허용하지만, 허용과 고지는
+            다른 문제다. (출시 점검 2026-09-16)
+          */}
           <SectionHeader
             id="source-heading"
             title="자료"
-            description="한 페이지로 만들고 싶은 내용을 붙여넣습니다. 붙여넣은 자료는 이 브라우저 밖으로 나가지 않습니다."
+            description={
+              apiKey.present
+                ? '한 페이지로 만들고 싶은 내용을 붙여넣습니다. 프롬프트를 만들 때 자료가 api.anthropic.com으로 전송됩니다. 그 밖으로는 나가지 않습니다.'
+                : '한 페이지로 만들고 싶은 내용을 붙여넣습니다. 키가 없으므로 자료는 이 브라우저 밖으로 나가지 않습니다.'
+            }
           />
           {ready ? (
             <SourceInput value={document.source} onChange={setSource} onClear={clearSource} />

@@ -11,6 +11,7 @@ import { useId, useState } from 'react';
 
 import { countCharacters, estimateTokens } from '../../../domain/studio.defaults.ts';
 import { SOURCE_LENGTH_WARN } from '../../../domain/studio.types.ts';
+import { MAX_SOURCE_CHARACTERS } from '../../../features/compose/compose.ts';
 import { Button } from '../../ui/Button/Button.tsx';
 import { Textarea } from '../../ui/Textarea/Textarea.tsx';
 import { MarkdownText } from '../../content/MarkdownText/MarkdownText.tsx';
@@ -31,6 +32,8 @@ export function SourceInput({ value, onChange, onClear }: SourceInputProps) {
 
   const characters = countCharacters(value);
   const tokens = estimateTokens(value);
+  // 공백만 있는 자료는 조립기가 자르지 않는다(compose.ts의 빈 자료 분기).
+  const willTruncate = characters > MAX_SOURCE_CHARACTERS && value.trim() !== '';
   const tooLong = characters > SOURCE_LENGTH_WARN;
 
   return (
@@ -97,10 +100,24 @@ export function SourceInput({ value, onChange, onClear }: SourceInputProps) {
         <span>약 {tokens.toLocaleString('ko-KR')}토큰</span>
       </p>
 
+      {/*
+        잘림은 생성한 뒤가 아니라 붙여넣은 자리에서 알린다. 예전 문구는
+        "자르지 않고 그대로 두니"라고 했는데, 그 문구가 보이는 모든 경우가
+        이미 상한을 넘겨 잘리는 경우였다. (출시 점검 2026-09-16)
+      */}
+      {willTruncate ? (
+        <p className={styles.warning} role="status" data-testid="source-will-truncate">
+          자료가 {MAX_SOURCE_CHARACTERS.toLocaleString('ko-KR')}자를 넘습니다. 프롬프트에는 앞의{' '}
+          {MAX_SOURCE_CHARACTERS.toLocaleString('ko-KR')}자만 싣고, 잘렸다는 사실을 프롬프트에
+          적습니다. 남길 부분을 직접 고르려면 자료를 줄이세요.
+        </p>
+      ) : null}
+
       {tooLong ? (
-        <p className={styles.warning} role="status" data-testid="source-too-long">
-          자료가 {SOURCE_LENGTH_WARN.toLocaleString('ko-KR')}자를 넘습니다. 입력이 느려질 수
-          있습니다. 자르지 않고 그대로 두니 필요하면 직접 줄이세요.
+        // 잘림 경고와 함께 뜬다. 둘 다 알림 영역이면 한꺼번에 두 번 읽힌다.
+        <p className={styles.warning} data-testid="source-too-long">
+          자료가 {SOURCE_LENGTH_WARN.toLocaleString('ko-KR')}자를 넘습니다. 입력과 미리보기가 느려질
+          수 있습니다. 입력 칸에는 전문이 그대로 남습니다.
         </p>
       ) : null}
     </div>
