@@ -199,6 +199,17 @@ function purifier(): Purifier {
 
   const created = createDOMPurify(view as Parameters<typeof createDOMPurify>[0]);
 
+  /*
+    DOMPurify는 돌 수 없는 환경에서 **던지지 않고 입력을 그대로 돌려준다**
+    (`if (!DOMPurify.isSupported) return dirty;`). 그러면 1단계가 만든
+    `<a href="javascript:...">`를 조일 곳이 없어지고, 호출부는 그것을 살균된
+    HTML로 믿는다. 여기서 막아 실패를 조용한 통과가 아니라 예외로 만든다.
+    (INV-05, 출시 점검 2026-09-16)
+  */
+  if (created.isSupported !== true) {
+    throw new Error('이 환경에서는 살균기를 쓸 수 없습니다.');
+  }
+
   // 속성 살균이 끝난 뒤 링크·이미지·체크박스를 우리 규칙으로 한 번 더 조인다.
   created.addHook('afterSanitizeAttributes', (node) => {
     const element = node as unknown as Element;
