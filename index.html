@@ -16,7 +16,9 @@
       // 인라인 스니펫으로 둔다. (File_Structure.md §2.3, 디자인 §2.1.6, 기술 §4.3.1)
       (function () {
         try {
-          var stored = localStorage.getItem('howsheet:editor:theme');
+          // 키는 storage/local-storage.ts의 PREFERENCE_KEYS.theme과 같아야 한다.
+          // v1 키('howsheet:editor:theme')를 읽던 동안 고른 테마가 매번 깜빡였다.
+          var stored = localStorage.getItem('howsheet:theme');
           var mode =
             stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
           var resolved =
