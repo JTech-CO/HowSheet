@@ -82,3 +82,14 @@
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-input);
 }
+
+/* 변환 실패 안내. 미리보기 자리에 그대로 들어간다. */
+.failed {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  line-height: 1.6;
+}
