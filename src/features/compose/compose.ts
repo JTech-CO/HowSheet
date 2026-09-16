@@ -108,10 +108,22 @@ function designSection(design: StudioDocument['design']): string {
     .join('\n');
 }
 
+/**
+ * 줄바꿈을 LF로 맞춘다.
+ *
+ * 붙여넣기 칸은 언제나 LF를 주지만, 프로그램으로 넣은 CRLF 자료가 들어오면
+ * 캐리지 리턴까지 글자로 세어 화면의 "전체 N자"와 잘림 경계가 어긋난다.
+ * 세기 전에 맞춘다. (출시 점검 2026-09-16)
+ */
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n?/gu, '\n');
+}
+
 function sourceSection(
-  source: string,
+  raw: string,
   limit: number,
 ): { body: string; included: number; total: number } {
+  const source = normalizeNewlines(raw);
   const characters = [...source];
   const total = characters.length;
 

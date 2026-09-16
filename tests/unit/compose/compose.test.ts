@@ -276,3 +276,28 @@ describe('missingProhibitions (P5가 쓴다)', () => {
     expect(missingProhibitions(text.replace(dropped ?? '', ''))).toEqual([dropped]);
   });
 });
+
+describe('줄바꿈 (출시 점검 2026-09-16)', () => {
+  const body = '첫 줄\n둘째 줄\n셋째 줄';
+
+  it('CRLF 자료를 LF와 같게 센다', () => {
+    const lf = composePrompt(studio({ source: body }));
+    const crlf = composePrompt(studio({ source: body.replace(/\n/gu, '\r\n') }));
+
+    expect(crlf.sourceCharacters).toBe(lf.sourceCharacters);
+    expect(crlf.includedCharacters).toBe(lf.includedCharacters);
+    expect(crlf.text).toBe(lf.text);
+  });
+
+  it('CRLF 자료의 잘림 경계가 LF와 같다', () => {
+    const long = '가나다라마\n'.repeat(400);
+    const options = { maxSourceCharacters: 600 };
+
+    const lf = composePrompt(studio({ source: long }), options);
+    const crlf = composePrompt(studio({ source: long.replace(/\n/gu, '\r\n') }), options);
+
+    expect(lf.truncated).toBe(true);
+    expect(crlf.sourceCharacters).toBe(lf.sourceCharacters);
+    expect(crlf.includedCharacters).toBe(lf.includedCharacters);
+  });
+});
