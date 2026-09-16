@@ -1,7 +1,7 @@
 {
   "name": "HowSheet",
   "short_name": "HowSheet",
-  "description": "누구나 만드는 단일 페이지 단계별 해결 가이드",
+  "description": "붙여넣은 자료로 한 페이지 HTML을 만들 프롬프트를 써 주는 생성기",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

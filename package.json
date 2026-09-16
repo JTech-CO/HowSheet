@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "누구나 만드는 단일 페이지 단계별 해결 가이드",
+  "description": "붙여넣은 자료로 한 페이지 HTML을 만들 프롬프트를 써 주는 생성기",
   "packageManager": "pnpm@11.5.3",
   "engines": {
     "node": ">=24.20.0 <25.0.0",
