@@ -145,6 +145,24 @@ export interface CreateApiKeyStoreOptions {
  * localStorage를 쓸 수 없으면 메모리로 떨어진다. 그때 키는 이 탭에서만 살아
  * 있으므로 화면이 그 사실을 알려야 한다. 저장하지 못한다고 입력을 막지 않는다.
  */
+let sharedStore: ApiKeyStore | null = null;
+
+/**
+ * 앱이 쓰는 **하나뿐인** 키 저장소.
+ *
+ * 설정 화면과 합성 경로가 각자 `createApiKeyStore()`를 부르면 인스턴스가 둘이
+ * 된다. 평소에는 둘 다 같은 localStorage를 읽어 티가 나지 않지만, 저장소를 쓸 수
+ * 없는 환경에서는 각자 다른 메모리를 들고 화면과 실제 전송이 어긋난다. 저장에
+ * 실패해 메모리로 내려간 뒤 "키 삭제"를 누르면 화면은 "없음"인데 다른 인스턴스는
+ * 남은 키로 계속 요청을 보낸다. (출시 점검 2026-09-16)
+ *
+ * 테스트는 대역을 주입하므로 이 함수를 거치지 않는다.
+ */
+export function sharedApiKeyStore(): ApiKeyStore {
+  sharedStore ??= createApiKeyStore();
+  return sharedStore;
+}
+
 export function createApiKeyStore(options: CreateApiKeyStoreOptions = {}): ApiKeyStore {
   const provided = options.store === undefined ? detectBrowserStore() : options.store;
 

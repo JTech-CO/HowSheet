@@ -12,7 +12,7 @@ import { create } from 'zustand';
 
 import {
   InvalidApiKeyError,
-  createApiKeyStore,
+  sharedApiKeyStore,
   type ApiKeyState,
   type ApiKeyStore,
 } from '../storage/api-key.store.ts';
@@ -29,7 +29,7 @@ export function configureSettingsStore(next: SettingsStoreDeps | null): void {
 }
 
 function settingsStoreDeps(): SettingsStoreDeps {
-  deps ??= { keys: createApiKeyStore() };
+  deps ??= { keys: sharedApiKeyStore() };
   return deps;
 }
 

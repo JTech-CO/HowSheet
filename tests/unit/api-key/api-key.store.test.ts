@@ -8,7 +8,9 @@ import {
   checkApiKey,
   createApiKeyStore,
   maskApiKey,
+  sharedApiKeyStore,
 } from '@/storage/api-key.store.ts';
+import { createSynthesizeDeps } from '@/features/synthesize/deps.ts';
 import type { KeyValueStore } from '@/storage/browser-store.ts';
 import { isAllowedKey } from '@/storage/local-storage.ts';
 
@@ -225,5 +227,24 @@ describe('저장소를 쓸 수 없을 때 (INV-07)', () => {
 
     expect(store.state().unavailableReason).not.toContain(SECRET);
     expect(store.state().unavailableReason).not.toContain('QuotaExceededError');
+  });
+});
+
+describe('앱은 저장소를 하나만 쓴다 (출시 점검 2026-09-16)', () => {
+  it('sharedApiKeyStore가 같은 인스턴스를 돌려준다', () => {
+    // 인스턴스가 둘이면 설정 화면의 "저장됨"과 실제 전송이 어긋난다.
+    expect(sharedApiKeyStore()).toBe(sharedApiKeyStore());
+  });
+
+  it('설정 스토어와 합성 의존성이 같은 저장소를 본다', () => {
+    const shared = sharedApiKeyStore();
+    shared.save(KEY);
+
+    // 합성 경로가 만드는 의존성은 주입이 없으면 같은 저장소를 쓴다.
+    expect(createSynthesizeDeps().readApiKey()).toBe(KEY);
+    expect(shared.state().present).toBe(true);
+
+    shared.remove();
+    expect(createSynthesizeDeps().readApiKey()).toBeNull();
   });
 });

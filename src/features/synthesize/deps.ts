@@ -10,7 +10,7 @@
  * 스토어는 여기서 만든 묶음을 받아 쓰기만 한다. 전체 키를 보지 않는다.
  */
 
-import { createApiKeyStore, type ApiKeyStore } from '../../storage/api-key.store.ts';
+import { sharedApiKeyStore, type ApiKeyStore } from '../../storage/api-key.store.ts';
 import { createAnthropicStreamer, type StreamPrompt } from './anthropic.client.ts';
 import type { SynthesizeDeps } from './synthesize.ts';
 
@@ -28,7 +28,7 @@ export interface CreateSynthesizeDepsOptions {
  * 규칙이 거기를 허용해야 한다. 대역을 받아들이는 편이 경계를 좁게 유지한다.
  */
 export function createSynthesizeDeps(options: CreateSynthesizeDepsOptions = {}): SynthesizeDeps {
-  const keys = options.keys ?? createApiKeyStore();
+  const keys = options.keys ?? sharedApiKeyStore();
   return {
     readApiKey: () => keys.readForAnthropicRequest(),
     stream: options.stream ?? createAnthropicStreamer(),
